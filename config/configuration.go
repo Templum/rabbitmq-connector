@@ -17,9 +17,9 @@ const rabbitUser = "rabbit_mq_user"
 const rabbitPass = "rabbit_mq_pass"
 
 type connectorConfig struct {
-	gatewayURL            string
-	topics                []string
-	rabbitMQConnectionURI string
+	GatewayURL            string
+	Topics                []string
+	RabbitMQConnectionURI string
 }
 
 func BuildConnectorConfig() connectorConfig {
@@ -44,9 +44,9 @@ func BuildConnectorConfig() connectorConfig {
 	rabbitURI := generateRabbitConnectionUri()
 
 	return connectorConfig{
-		gatewayURL:            gatewayURL,
-		topics:                topics,
-		rabbitMQConnectionURI: rabbitURI,
+		GatewayURL:            gatewayURL,
+		Topics:                topics,
+		RabbitMQConnectionURI: rabbitURI,
 	}
 }
 
@@ -63,15 +63,15 @@ func generateRabbitConnectionUri() string {
 		port = val
 	}
 
-	user := ""
+	user := "user"
 	if val, exists := os.LookupEnv(rabbitUser); exists {
 		port = val
 	}
 
-	pass := ""
+	pass := "user"
 	if val, exists := os.LookupEnv(rabbitPass); exists {
 		port = val
 	}
 
-	return fmt.Sprintf("amqp://%s:%st@%s:%s/", user, pass, host, port)
+	return fmt.Sprintf("amqp://%s:%s@%s:%s/", user, pass, host, port)
 }

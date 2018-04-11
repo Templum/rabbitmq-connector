@@ -1,5 +1,14 @@
 version: '3.2'
 services:
+  rabbitqueue:
+    image: rabbitmq:3.7.4
+    hostname: rabbitqueue
+    enviroment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: pass
+    networks:
+      - streaming
+
   connector:
     image: alexellis2/kafka-connector:latest
     hostname: kafka-connector

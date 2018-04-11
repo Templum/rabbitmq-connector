@@ -5,19 +5,87 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/streadway/amqp"
+	"github.com/Templum/rabbitmq-connector/config"
+	"os"
 )
 
-func failOnError(err error, msg string) {
+func failOnError(err error, msg string){
 	if err != nil {
 		log.Fatalf("%s: %s", msg, err)
 		panic(fmt.Sprintf("%s: %s", msg, err))
 	}
 }
 
-func main() {
+func receiveMessagesFromTopic(){
+	conf := config.BuildConnectorConfig()
+	con, err := amqp.Dial(conf.RabbitMQConnectionURI)
+	failOnError(err, "Failed to open a channel")
+	defer con.Close()
+
+	ch, err := con.Channel()
+	failOnError(err, "Failed to open a channel")
+	defer ch.Close()
+
+	//TODO: Build up connection pool for provided topics
+	err = ch.ExchangeDeclare(
+		"OpenFaaS-Topic",
+		"topic",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	failOnError(err, "Failed to declare an exchange")
+
+	queue, err := ch.QueueDeclare(
+		"OpenFaaS-Queue",    // name
+		false, // durable
+		false, // delete when usused
+		true,  // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
+	failOnError(err, "Failed to declare a queue")
+
+	for _, s := range conf.Topics{
+		log.Printf("Binding queue %s to exchange %s with routing key %s",
+			queue.Name, "logs_topic", s)
+		err = ch.QueueBind(
+			queue.Name,       // queue name
+			s,            // routing key
+			"OpenFaaS-Topic", // exchange
+			false,
+			nil)
+		failOnError(err, "Failed to bind a queue")
+	}
+
+	msgs, err := ch.Consume(
+		queue.Name, // queue
+		"FaaS Worker",     // consumer
+		true,   // auto ack
+		false,  // exclusive
+		false,  // no local
+		false,  // no wait
+		nil,    // args
+	)
+	failOnError(err, "Failed to register a consumer")
+
+	forever := make(chan bool)
+
+	go func() {
+		for d := range msgs {
+			log.Printf(" [x] %s", d.Body)
+		}
+	}()
+
+	log.Printf(" [*] Waiting for logs. To exit press CTRL+C")
+	<-forever
+}
+
+func emitMessagesOnTopic(){
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
@@ -37,51 +105,23 @@ func main() {
 	)
 	failOnError(err, "Failed to declare an exchange")
 
-	q, err := ch.QueueDeclare(
-		"",    // name
-		false, // durable
-		false, // delete when usused
-		true,  // exclusive
-		false, // no-wait
-		nil,   // arguments
-	)
-	failOnError(err, "Failed to declare a queue")
+	err = ch.Publish(
+		"logs_topic",          // exchange
+		"", // routing key
+		false, // mandatory
+		false, // immediate
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body:        []byte(body),
+		})
+	failOnError(err, "Failed to publish a message")
 
-	if len(os.Args) < 2 {
-		log.Printf("Usage: %s [binding_key]...", os.Args[0])
-		os.Exit(0)
-	}
-	for _, s := range os.Args[1:] {
-		log.Printf("Binding queue %s to exchange %s with routing key %s",
-			q.Name, "logs_topic", s)
-		err = ch.QueueBind(
-			q.Name,       // queue name
-			s,            // routing key
-			"logs_topic", // exchange
-			false,
-			nil)
-		failOnError(err, "Failed to bind a queue")
-	}
+	log.Printf(" [x] Sent %s", body)
+}
 
-	msgs, err := ch.Consume(
-		q.Name, // queue
-		"",     // consumer
-		true,   // auto ack
-		false,  // exclusive
-		false,  // no local
-		false,  // no wait
-		nil,    // args
-	)
-	failOnError(err, "Failed to register a consumer")
 
-	forever := make(chan bool)
 
-	go func() {
-		for d := range msgs {
-			log.Printf(" [x] %s", d.Body)
-		}
-	}()
 
-	log.Printf(" [*] Waiting for logs. To exit press CTRL+C")
-	<-forever
+func main() {
+	receiveMessagesFromTopic()
 }
