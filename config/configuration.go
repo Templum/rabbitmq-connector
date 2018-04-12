@@ -15,17 +15,31 @@ const rabbitHost = "rabbit_mq_host"
 const rabbitPort = "rabbit_mq_port"
 const rabbitUser = "rabbit_mq_user"
 const rabbitPass = "rabbit_mq_pass"
+const rabbitExchange = "rabbit_mq_exchange"
+const rabbitQueue = "rabbit_mq_queue"
 
-type connectorConfig struct {
+type ConnectorConfig struct {
 	GatewayURL            string
 	Topics                []string
 	RabbitMQConnectionURI string
+	ExchangeName          string
+	QueueName             string
 }
 
-func BuildConnectorConfig() connectorConfig {
+func BuildConnectorConfig() ConnectorConfig {
 	gatewayURL := "http://gateway:8080"
 	if val, exists := os.LookupEnv(gatewayUrl); exists {
 		gatewayURL = val
+	}
+
+	exchangeName := "OpenFaaS-Exchange"
+	if val, exists := os.LookupEnv(rabbitExchange); exists {
+		exchangeName = val
+	}
+
+	queueName := "FaaS Worker Queue"
+	if val, exists := os.LookupEnv(rabbitQueue); exists {
+		queueName = val
 	}
 
 	topics := []string{}
@@ -43,17 +57,19 @@ func BuildConnectorConfig() connectorConfig {
 
 	rabbitURI := generateRabbitConnectionUri()
 
-	return connectorConfig{
+	return ConnectorConfig{
 		GatewayURL:            gatewayURL,
 		Topics:                topics,
 		RabbitMQConnectionURI: rabbitURI,
+		ExchangeName:          exchangeName,
+		QueueName:             queueName,
 	}
 }
 
 // Generates the connection string to RabbitMQ based on
 // information provided through environment variables
 func generateRabbitConnectionUri() string {
-	host := "rabbitqueue"
+	host := "localhost"
 	if val, exists := os.LookupEnv(rabbitHost); exists {
 		host = val
 	}
@@ -68,7 +84,7 @@ func generateRabbitConnectionUri() string {
 		port = val
 	}
 
-	pass := "user"
+	pass := "pass"
 	if val, exists := os.LookupEnv(rabbitPass); exists {
 		port = val
 	}
