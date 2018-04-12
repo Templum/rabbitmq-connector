@@ -9,6 +9,7 @@ import (
 	"github.com/Templum/rabbitmq-connector/config"
 	"github.com/streadway/amqp"
 	"time"
+	"github.com/Templum/rabbitmq-connector/openfaas"
 )
 
 func failOnError(err error, msg string) {
@@ -123,8 +124,36 @@ func emitMessagesOnTopic() {
 	}
 }
 
+func synchronizeLookupTable(ticker *time.Ticker,
+	lookupBuilder *openfaas.FunctionLookupBuilder,
+	topicMap *openfaas.TopicLookupTable) {
+
+	for {
+		<-ticker.C
+		topics, err := lookupBuilder.Build()
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		log.Println("Syncing topic map")
+		topicMap.Sync(&topics)
+	}
+}
+
+
 func main() {
 	conf := config.BuildConnectorConfig()
+
+	topicMap := openfaas.TopicLookupTable{}
+
+	lookupBuilder  := openfaas.FunctionLookupBuilder{
+		GatewayURL:conf.GatewayURL,
+		Client: openfaas.MakeClient(30 * time.Second ), // TODO: Read in from conf
+	}
+
+	ticker := time.NewTicker(5 * time.Second) // TODO: Read in from conf
+	go synchronizeLookupTable(ticker, &lookupBuilder, &topicMap)
+
 	go makeConsumer(conf)
 
 	go emitMessagesOnTopic()
