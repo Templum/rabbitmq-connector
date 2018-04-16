@@ -19,7 +19,7 @@ func failOnError(err error, msg string) {
 	}
 }
 
-func makeConsumer(conf config.ConnectorConfig) {
+func makeConsumer(conf config.ConnectorConfig, lookupTable * openfaas.TopicLookupTable) {
 	con, err := amqp.Dial(conf.RabbitMQConnectionURI)
 	failOnError(err, "Failed to create a connection")
 	defer con.Close()
@@ -76,11 +76,21 @@ func makeConsumer(conf config.ConnectorConfig) {
 
 	go func() {
 		for msg := range messages {
-			log.Printf("Received Message [%s] on Topic [%s] of Type [%s]", msg.Body, msg.RoutingKey, msg.ContentType)
+			handleIncomingMessages(msg, conf, lookupTable)
 		}
 	}()
 
 	<-forever
+}
+
+func handleIncomingMessages(message amqp.Delivery, conf config.ConnectorConfig, lookupTable * openfaas.TopicLookupTable){
+	log.Printf("Received Message [%s] on Topic [%s] of Type [%s]", message.Body, message.RoutingKey, message.ContentType)
+	invoker := openfaas.Invoker{
+		GatewayURL: conf.GatewayURL,
+		Client: openfaas.MakeClient(30 * time.Second ), // TODO: Read in from conf
+	}
+
+	invoker.Invoke(lookupTable, message.RoutingKey, &message.Body)
 }
 
 func emitMessagesOnTopic() {
@@ -152,11 +162,12 @@ func main() {
 	}
 
 	ticker := time.NewTicker(5 * time.Second) // TODO: Read in from conf
+
+	forever := make(chan bool)
 	go synchronizeLookupTable(ticker, &lookupBuilder, &topicMap)
 
-	go makeConsumer(conf)
+	go makeConsumer(conf, &topicMap)
 
 	go emitMessagesOnTopic()
-	forever := make(chan bool)
 	<-forever
 }

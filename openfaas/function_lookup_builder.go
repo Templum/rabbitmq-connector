@@ -23,7 +23,8 @@ func (s *FunctionLookupBuilder) Build() (map[string][]string, error) {
 	var err error
 	serviceMap := make(map[string][]string)
 
-	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/system/functions", s.GatewayURL), nil)
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/system/functions", s.GatewayURL),  nil)
+	req.Close = true
 	res, err := s.Client.Do(req)
 
 	if err != nil {

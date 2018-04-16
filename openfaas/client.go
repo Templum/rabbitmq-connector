@@ -49,11 +49,12 @@ func (i *Invoker) Invoke(lookupTable *TopicLookupTable, topic string, message *[
 
 func invokeFunction(c *http.Client, gatewayURL string, reader io.Reader) (*[]byte, int, error) {
 
-	httpReq, _ := http.NewRequest(http.MethodPost, gatewayURL, reader)
-	defer httpReq.Body.Close()
+	req, _ := http.NewRequest(http.MethodPost, gatewayURL, reader)
+	req.Close = true
+	defer req.Body.Close()
 
 	var body *[]byte
-	res, err := c.Do(httpReq)
+	res, err := c.Do(req)
 
 	if err != nil {
 		return nil, http.StatusServiceUnavailable, err
