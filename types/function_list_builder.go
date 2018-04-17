@@ -1,6 +1,7 @@
 // Copyright (c) OpenFaaS Project 2018. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-package openfaas
+
+package types
 
 import (
 	"encoding/json"
@@ -23,29 +24,24 @@ func (s *FunctionLookupBuilder) Build() (map[string][]string, error) {
 	var err error
 	serviceMap := make(map[string][]string)
 
-	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/system/functions", s.GatewayURL),  nil)
-	req.Close = true
-	res, err := s.Client.Do(req)
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/system/functions", s.GatewayURL), nil)
+	res, reqErr := s.Client.Do(req)
 
-	if err != nil {
-		return serviceMap, err
+	if reqErr != nil {
+		return serviceMap, reqErr
 	}
 
 	if res.Body != nil {
 		defer res.Body.Close()
 	}
 
-	bytesOut, err := ioutil.ReadAll(res.Body)
-
-	if err != nil {
-		return serviceMap, err
-	}
+	bytesOut, _ := ioutil.ReadAll(res.Body)
 
 	functions := []requests.Function{}
-	err = json.Unmarshal(bytesOut, &functions)
+	marshalErr := json.Unmarshal(bytesOut, &functions)
 
-	if err != nil {
-		return serviceMap, err
+	if marshalErr != nil {
+		return serviceMap, marshalErr
 	}
 
 	for _, function := range functions {

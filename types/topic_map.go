@@ -1,23 +1,24 @@
 // Copyright (c) OpenFaaS Project 2018. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-package openfaas
+
+package types
 
 import "sync"
 
-func CreateEmptyLookupMap() TopicLookupTable {
+func NewTopicMap() TopicMap {
 	lookup := make(map[string][]string)
-	return TopicLookupTable{
+	return TopicMap{
 		lookup: &lookup,
 		lock:   sync.Mutex{},
 	}
 }
 
-type TopicLookupTable struct {
+type TopicMap struct {
 	lookup *map[string][]string
 	lock   sync.Mutex
 }
 
-func (t *TopicLookupTable) Match(topicName string) []string {
+func (t *TopicMap) Match(topicName string) []string {
 	t.lock.Lock()
 
 	var values []string
@@ -34,7 +35,7 @@ func (t *TopicLookupTable) Match(topicName string) []string {
 	return values
 }
 
-func (t *TopicLookupTable) Sync(updated *map[string][]string) {
+func (t *TopicMap) Sync(updated *map[string][]string) {
 	t.lock.Lock()
 
 	t.lookup = updated

@@ -9,7 +9,8 @@ import (
 	"github.com/Templum/rabbitmq-connector/config"
 	"github.com/streadway/amqp"
 	"time"
-	"github.com/Templum/rabbitmq-connector/openfaas"
+
+	"github.com/Templum/rabbitmq-connector/types"
 )
 
 func failOnError(err error, msg string) {
@@ -19,7 +20,7 @@ func failOnError(err error, msg string) {
 	}
 }
 
-func makeConsumer(conf config.ConnectorConfig, lookupTable * openfaas.TopicLookupTable) {
+func makeConsumer(conf config.ConnectorConfig, topicMap *types.TopicMap) {
 	con, err := amqp.Dial(conf.RabbitMQConnectionURI)
 	failOnError(err, "Failed to create a connection")
 	defer con.Close()
@@ -76,18 +77,18 @@ func makeConsumer(conf config.ConnectorConfig, lookupTable * openfaas.TopicLooku
 
 	go func() {
 		for msg := range messages {
-			handleIncomingMessages(msg, conf, lookupTable)
+			handleIncomingMessages(msg, conf, topicMap)
 		}
 	}()
 
 	<-forever
 }
 
-func handleIncomingMessages(message amqp.Delivery, conf config.ConnectorConfig, lookupTable * openfaas.TopicLookupTable){
+func handleIncomingMessages(message amqp.Delivery, conf config.ConnectorConfig, lookupTable *types.TopicMap) {
 	log.Printf("Received Message [%s] on Topic [%s] of Type [%s]", message.Body, message.RoutingKey, message.ContentType)
-	invoker := openfaas.Invoker{
+	invoker := types.Invoker{
 		GatewayURL: conf.GatewayURL,
-		Client: openfaas.MakeClient(30 * time.Second ), // TODO: Read in from conf
+		Client:     types.MakeClient(30 * time.Second), // TODO: Read in from conf
 	}
 
 	invoker.Invoke(lookupTable, message.RoutingKey, &message.Body)
@@ -135,8 +136,8 @@ func emitMessagesOnTopic() {
 }
 
 func synchronizeLookupTable(ticker *time.Ticker,
-	lookupBuilder *openfaas.FunctionLookupBuilder,
-	topicMap *openfaas.TopicLookupTable) {
+	lookupBuilder *types.FunctionLookupBuilder,
+	topicMap *types.TopicMap) {
 
 	for {
 		<-ticker.C
@@ -150,15 +151,14 @@ func synchronizeLookupTable(ticker *time.Ticker,
 	}
 }
 
-
 func main() {
 	conf := config.BuildConnectorConfig()
 
-	topicMap := openfaas.TopicLookupTable{}
+	topicMap := types.TopicMap{}
 
-	lookupBuilder  := openfaas.FunctionLookupBuilder{
-		GatewayURL:conf.GatewayURL,
-		Client: openfaas.MakeClient(30 * time.Second ), // TODO: Read in from conf
+	lookupBuilder := types.FunctionLookupBuilder{
+		GatewayURL: conf.GatewayURL,
+		Client:     types.MakeClient(30 * time.Second), // TODO: Read in from conf
 	}
 
 	ticker := time.NewTicker(5 * time.Second) // TODO: Read in from conf
