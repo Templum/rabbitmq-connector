@@ -8,9 +8,8 @@ import (
 
 	"github.com/Templum/rabbitmq-connector/config"
 	"github.com/streadway/amqp"
-	"time"
-
 	"github.com/Templum/rabbitmq-connector/types"
+	"time"
 )
 
 func failOnError(err error, msg string) {
@@ -87,6 +86,7 @@ func makeConsumer(conf config.ConnectorConfig, topicMap *types.TopicMap) {
 func handleIncomingMessages(message amqp.Delivery, conf config.ConnectorConfig, lookupTable *types.TopicMap) {
 	log.Printf("Received Message [%s] on Topic [%s] of Type [%s]", message.Body, message.RoutingKey, message.ContentType)
 	invoker := types.Invoker{
+		PrintResponse:true,
 		GatewayURL: conf.GatewayURL,
 		Client:     types.MakeClient(30 * time.Second), // TODO: Read in from conf
 	}
@@ -120,7 +120,7 @@ func emitMessagesOnTopic() {
 
 		err = ch.Publish(
 			conf.ExchangeName, // exchange
-			"not",             // routing key
+			"test",             // routing key
 			false,             // mandatory
 			false,             // immediate
 			amqp.Publishing{
@@ -154,7 +154,7 @@ func synchronizeLookupTable(ticker *time.Ticker,
 func main() {
 	conf := config.BuildConnectorConfig()
 
-	topicMap := types.TopicMap{}
+	topicMap := types.NewTopicMap()
 
 	lookupBuilder := types.FunctionLookupBuilder{
 		GatewayURL: conf.GatewayURL,

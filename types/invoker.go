@@ -26,7 +26,7 @@ func (i *Invoker) Invoke(topicMap *TopicMap, topic string, message *[]byte) {
 			gwURL := fmt.Sprintf("%s/function/%s", i.GatewayURL, matchedFunction)
 			reader := bytes.NewReader(*message)
 
-			body, statusCode, doErr := invokefunction(i.Client, gwURL, reader)
+			body, statusCode, doErr := invokeFunction(i.Client, gwURL, reader)
 
 			if doErr != nil {
 				log.Printf("Unable to invoke from %s, error: %s\n", matchedFunction, doErr)
@@ -51,13 +51,14 @@ func (i *Invoker) Invoke(topicMap *TopicMap, topic string, message *[]byte) {
 	}
 }
 
-func invokefunction(c *http.Client, gwURL string, reader io.Reader) (*[]byte, int, error) {
+func invokeFunction(c *http.Client, gwURL string, reader io.Reader) (*[]byte, int, error) {
 
-	httpReq, _ := http.NewRequest(http.MethodPost, gwURL, reader)
-	defer httpReq.Body.Close()
+	req, _ := http.NewRequest(http.MethodPost, gwURL, reader)
+	req.Close = true
+	defer req.Body.Close()
 
 	var body *[]byte
-	res, doErr := c.Do(httpReq)
+	res, doErr := c.Do(req)
 	if doErr != nil {
 		return nil, http.StatusServiceUnavailable, doErr
 	}
