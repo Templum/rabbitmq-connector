@@ -1,3 +1,6 @@
+// Copyright (c) OpenFaaS Project 2018. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 package sdk
 
 import (
@@ -57,14 +60,14 @@ func TestOpenFaaSClient_FetchFunctions(t *testing.T) {
 		t.Errorf("Request Failed with %s", err)
 	}
 
-	if len(functions) != 1{
-		t.Errorf("Response is wrong: Want %d received %d", 1, len(functions))
+	if len(*functions) != 1{
+		t.Errorf("Response is wrong: Want %d received %d", 1, len(*functions))
 	}
 
-	for _, function := range functions{
+	for _, function := range *functions{
 		labels := *function.Labels
 		if(labels["topic"] == ""){
-			t.Errorf("Response is wrong: Expected label topic to be not empty", 1, len(functions))
+			t.Errorf("Response is wrong: Expected label topic to be not empty", 1, len(*functions))
 		}
 	}
 
