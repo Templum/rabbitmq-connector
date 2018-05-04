@@ -11,6 +11,23 @@ services:
       - streaming
 
 
+  connector:
+    image: templum/rabbit-connector:latest
+    environment:
+      MQ_TOPICS: "billing,accounting"
+      MQ_HOST: "rabbitqueue"
+      MQ_PORT: "5672"
+      MQ_USER: "user"
+      MQ_PASS: "pass"
+      FAAS_GW_URL: "http://gateway:8080"
+    networks:
+      - func_functions
+      - streaming
+
 networks:
   streaming:
+    driver: overlay
+    attachable: true
+  func_functions:
+    external: true
 
