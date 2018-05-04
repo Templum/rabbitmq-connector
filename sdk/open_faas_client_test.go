@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestOpenFaaSClient_buildUrl(t *testing.T) {
@@ -56,21 +57,68 @@ func TestOpenFaaSClient_FetchFunctions(t *testing.T) {
 
 	functions, err := client.FetchFunctions()
 
-	if err != nil{
+	if err != nil {
 		t.Errorf("Request Failed with %s", err)
 	}
 
-	if len(*functions) != 1{
+	if len(*functions) != 1 {
 		t.Errorf("Response is wrong: Want %d received %d", 1, len(*functions))
 	}
 
-	for _, function := range *functions{
+	for _, function := range *functions {
 		labels := *function.Labels
-		if(labels["topic"] == ""){
+		if labels["topic"] == "" {
 			t.Errorf("Response is wrong: Expected label topic to be not empty", 1, len(*functions))
 		}
 	}
 
+}
+
+func TestOpenFaaSClient_InvokeFunction(t *testing.T) {
+	mock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := &functionResult{
+			Success: true,
+			Message: "Send Email transcript",
+			Ts:      time.Now().Unix(),
+		}
+
+		bytesOut, _ := json.Marshal(response)
+		w.Write(bytesOut)
+	}))
+
+	client := OpenFaaSClient{
+		url:        mock.URL,
+		httpClient: mock.Client(),
+	}
+
+	rawMessage, err := client.InvokeFunction("transcript", nil)
+
+	if err != nil {
+		t.Errorf("Request Failed with %s", err)
+	}
+
+	var response functionResult
+	err = json.Unmarshal(*rawMessage, &response)
+
+	if err != nil {
+		t.Errorf("Parsing Failed with %s", err)
+	}
+
+	if response.Success != true {
+		t.Errorf("Response is wrong: Want %t received %t", true, response.Success)
+	}
+
+	if response.Message != "Send Email transcript" {
+		t.Errorf("Response is wrong: Want %s received %s", "Send Email transcript", response.Message)
+	}
+}
+
+// Util
+
+type functionResult struct {
+	Success bool
+	Message string
+	Ts      int64
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"

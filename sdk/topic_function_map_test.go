@@ -1,18 +1,18 @@
 package sdk
 
 import (
-	"testing"
-	"sync"
 	"github.com/openfaas/faas/gateway/requests"
+	"sync"
+	"testing"
 )
 
 func TestTopicFunctionMap_Match(t *testing.T) {
 	topics := make(map[string][]string)
-	topics["routing"] = []string{"agentChecker","customerTracker","customerHistory"}
+	topics["routing"] = []string{"agentChecker", "customerTracker", "customerHistory"}
 	topics["billing"] = []string{"emailTranscript"}
 
 	mapping := TopicFunctionMap{
-		mutex: sync.Mutex{},
+		mutex:       sync.Mutex{},
 		lookupTable: &topics,
 	}
 
@@ -27,7 +27,7 @@ func TestTopicFunctionMap_Match(t *testing.T) {
 	}
 
 	foundFunction = mapping.Match("not-existing")
-	if len(foundFunction) > 0{
+	if len(foundFunction) > 0 {
 		t.Errorf("Match result is wrong: Want %d received %d", 0, len(foundFunction))
 	}
 }
@@ -35,18 +35,18 @@ func TestTopicFunctionMap_Match(t *testing.T) {
 func TestTopicFunctionMap_Sync(t *testing.T) {
 	mapping := NewTopicFunctionMap()
 
-	labelMap := make(map[string]string)
-	labelMap["topic"] = "billing"
+	labels := make(map[string]string)
+	labels["topic"] = "billing"
 
 	sampleFunction := &[]requests.Function{
 		{
-			Name: "emailTranscript",
-			Labels: &labelMap,
+			Name:   "emailTranscript",
+			Labels: &labels,
 		},
 	}
 
 	foundFunction := mapping.Match("billing")
-	if len(foundFunction) > 0{
+	if len(foundFunction) != 0 {
 		t.Errorf("Match result is wrong: Want %d received %d", 0, len(foundFunction))
 	}
 
@@ -57,4 +57,7 @@ func TestTopicFunctionMap_Sync(t *testing.T) {
 		t.Errorf("Match result is wrong: Want %d received %d", 1, len(foundFunction))
 	}
 
+	if foundFunction[0] != "emailTranscript" {
+		t.Errorf("Match result is wrong: Want %s received %d", "emailTranscript", foundFunction[0])
+	}
 }
