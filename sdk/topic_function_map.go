@@ -4,29 +4,29 @@
 package sdk
 
 import (
-	"sync"
 	"github.com/openfaas/faas/gateway/requests"
+	"sync"
 )
 
 // TopicFunctionMap is an structure which contains an mapping between
 // functions an topics.
 type TopicFunctionMap struct {
 	lookupTable *map[string][]string
-	mutex sync.Mutex
+	mutex       sync.Mutex
 }
 
-func NewTopicFunctionMap() TopicFunctionMap  {
+func NewTopicFunctionMap() TopicFunctionMap {
 	mapping := make(map[string][]string)
 
 	return TopicFunctionMap{
 		lookupTable: &mapping,
-		mutex: sync.Mutex{},
+		mutex:       sync.Mutex{},
 	}
 }
 
 // Match returns all function names which are listening
 // on the provided topic
-func (t *TopicFunctionMap) Match(topic string)[]string  {
+func (t *TopicFunctionMap) Match(topic string) []string {
 	var values []string
 
 	t.mutex.Lock()
@@ -44,7 +44,7 @@ func (t *TopicFunctionMap) Match(topic string)[]string  {
 }
 
 // Sync takes a list of functions and uses it for syncing the lookupTable
-func (t *TopicFunctionMap) Sync(functions *[]requests.Function){
+func (t *TopicFunctionMap) Sync(functions *[]requests.Function) {
 	mapping := make(map[string][]string)
 
 	for _, function := range *functions {

@@ -20,6 +20,13 @@ type OpenFaaSClient struct {
 	httpClient *http.Client
 }
 
+func NewOpenFaaSClient(url string, client *http.Client) OpenFaaSClient {
+	return OpenFaaSClient{
+		url:        url,
+		httpClient: client,
+	}
+}
+
 // buildUrl returns either the fetch path or the invoke path
 // based on the provided input
 func buildUrl(baseUrl string, function string) string {
