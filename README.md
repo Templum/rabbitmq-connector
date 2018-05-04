@@ -12,4 +12,16 @@ You can create an local docker image using `$ docker build -t yourname .`
 
 ## Try it
 
-> Follows...
+You can use the following section to try out the current version using docker or kubernetes
+
+### Docker
+
+Will deploy an environment which contains:
+* Rabbit MQ `Version 3.7.4`
+* Rabbit MQ Connector `Version Latest`
+
+The connector is attached to the **func_functions**, which should be present if you have deployed
+OpenFaas as described [here](https://docs.openfaas.com/deployment/docker-swarm/#20-deploy-the-stack).
+
+1. Deploy Environment `$ docker stack deploy environment --compose-file=./deployment/docker-compose.yml`
+2. Follows...
