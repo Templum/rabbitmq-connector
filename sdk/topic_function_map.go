@@ -4,8 +4,8 @@ package sdk
 
 import (
 	"github.com/openfaas/faas/gateway/requests"
-	"sync"
 	"strings"
+	"sync"
 )
 
 // TopicFunctionMap is an structure which contains an mapping between
@@ -51,8 +51,8 @@ func (t *TopicFunctionMap) Sync(functions *[]requests.Function) {
 		if *function.Labels != nil {
 			labels := *function.Labels
 			if topics, pass := labels["topic"]; pass {
-				for _, topic := range strings.Split(topics, ","){
-					if len(topic) > 0{
+				for _, topic := range strings.Split(topics, ",") {
+					if len(topic) > 0 {
 						if mapping[topic] == nil {
 							mapping[topic] = []string{}
 						}
