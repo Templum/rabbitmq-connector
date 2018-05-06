@@ -20,8 +20,9 @@ Will deploy an environment which contains:
 * Rabbit MQ `Version 3.7.4`
 * Rabbit MQ Connector `Version Latest`
 
-The connector is attached to the **func_functions**, which should be present if you have deployed
+The connector is attached to the **functions**, which should be present if you have deployed
 OpenFaas as described [here](https://docs.openfaas.com/deployment/docker-swarm/#20-deploy-the-stack).
 
 1. Deploy Environment `$ docker stack deploy environment --compose-file=./deployment/docker-compose.yml`
-2. Follows...
+2. Deploy a function with `topic=account` `$ faas-cli store deploy figlet --label topic="account"`
+3. Publish messages on the exchange with routing key **account**. Using Producer `$cd ./producer` and then `$ go run main.go`
