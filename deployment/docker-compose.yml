@@ -21,13 +21,13 @@ services:
       MQ_PASS: "pass"
       FAAS_GW_URL: "http://gateway:8080"
     networks:
-      - func_functions
+      - functions
       - streaming
 
 networks:
   streaming:
     driver: overlay
     attachable: true
-  func_functions:
+  functions:
     external: true
 
