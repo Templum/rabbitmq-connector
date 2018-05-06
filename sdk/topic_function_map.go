@@ -1,11 +1,11 @@
 // Copyright (c) OpenFaaS Project 2018. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
 package sdk
 
 import (
 	"github.com/openfaas/faas/gateway/requests"
 	"sync"
+	"strings"
 )
 
 // TopicFunctionMap is an structure which contains an mapping between
@@ -50,11 +50,15 @@ func (t *TopicFunctionMap) Sync(functions *[]requests.Function) {
 	for _, function := range *functions {
 		if *function.Labels != nil {
 			labels := *function.Labels
-			if topic, pass := labels["topic"]; pass {
-				if mapping[topic] == nil {
-					mapping[topic] = []string{}
+			if topics, pass := labels["topic"]; pass {
+				for _, topic := range strings.Split(topics, ","){
+					if len(topic) > 0{
+						if mapping[topic] == nil {
+							mapping[topic] = []string{}
+						}
+						mapping[topic] = append(mapping[topic], function.Name)
+					}
 				}
-				mapping[topic] = append(mapping[topic], function.Name)
 			}
 		}
 	}

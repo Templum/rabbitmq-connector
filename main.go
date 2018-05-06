@@ -20,7 +20,7 @@ func syncTopicMapTask(ticker *time.Ticker, client *sdk.OpenFaaSClient, topicMap 
 		if err != nil {
 			log.Printf("Could not sync functions received %s. Will keep running with existing function map.", err)
 		} else {
-			log.Println("Syncing topic map")
+			log.Printf("Syncing Map with %d Functions", len(*functions))
 			topicMap.Sync(functions)
 		}
 	}
