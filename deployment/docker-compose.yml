@@ -10,24 +10,33 @@ services:
     networks:
       - streaming
 
+  producer:
+    image: templum/sample-producer:latest
+    environment:
+      MQ_HOST: "rabbitqueue"
+      MQ_PORT: "5672"
+      MQ_USER: "user"
+      MQ_PASS: "pass"
+    networks:
+      - streaming
 
   connector:
-    image: templum/rabbit-connector:latest
+    image: templum/rabbitmq-connector:latest
     environment:
-      MQ_TOPICS: "billing,accounting"
+      MQ_TOPICS: "billing,account"
       MQ_HOST: "rabbitqueue"
       MQ_PORT: "5672"
       MQ_USER: "user"
       MQ_PASS: "pass"
       FAAS_GW_URL: "http://gateway:8080"
     networks:
-      - functions
+      - func_functions
       - streaming
 
 networks:
   streaming:
     driver: overlay
     attachable: true
-  functions:
+  func_functions:
     external: true
 
