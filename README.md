@@ -1,16 +1,19 @@
 # OpenFaas Rabbit MQ Connector
 
-This connector allows to receive messages from an Rabbit MQ for defined topics (Routing Keys).
-And will invoke functions on the OpenFaas platform that listen on that topic. Currently the
-result will be ignored, however in later version it will send the response back on an defined
-topic (Routing Key).
+This connector allows the receiving of messages from Rabbit MQ on defined topics (Routing Keys).
+Each message received on the defined (whitelisted) topics, will invoke any deployed function listening on that topic. 
 
+A function has to define its topics in an annotation called `topic`. It is further possible to define more than one topic, in that case, they need to be comma separated (e.g. `billing,accounting,reporting`).
+
+In the current implementation, it is only fire-and-forget. So the returned response will be ignored. But in a feature version, it is planned to allow the writing to a specified topic  (Routing Keys).
 
 ## Build it
 
 **Dockerfile:**
 
-You can build the connector using `$ docker build -t yourname .` and for the producer `$ cd producer` followed by `$ docker build -t yourname .`
+The image is available on dockerhub under `templum/rabbitmq-connector:latest`. It is an automated build.
+
+> You can build the connector using `$ docker build -t yourname .` and for the producer `$ cd producer` followed by `$ docker build -t yourname .`
 
 **Compile:**
 
