@@ -2,20 +2,27 @@
 
 
 [[projects]]
+  digest = "1:cd4844d2c87206efa7faa9ea920f936e4f16512ac3fa342e7534dfb6d804a63b"
   name = "github.com/openfaas/faas"
   packages = ["gateway/requests"]
-  revision = "de2c74fcdb88675f9e1e46e307d8a9852eca262d"
-  version = "0.7.8"
+  pruneopts = "NUT"
+  revision = "a4c867fd8fe6c1a88c383c6a3eaea5bf90ea2fb5"
+  version = "0.8.10"
 
 [[projects]]
   branch = "master"
+  digest = "1:538154cd1551f1df56485310c0edf2f217df9232a11b4a0decd5b390d908dae3"
   name = "github.com/streadway/amqp"
   packages = ["."]
-  revision = "8e4aba63da9fc5571e01c6a45dc809a58cbc5a68"
+  pruneopts = "NUT"
+  revision = "70e15c650864f4fc47f5d3c82ea117285480895d"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "af1e9c5d073c8b7ff8562988bfac74f3a43453dd5b0f2c2018d42aad065e0b6b"
+  input-imports = [
+    "github.com/openfaas/faas/gateway/requests",
+    "github.com/streadway/amqp",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
