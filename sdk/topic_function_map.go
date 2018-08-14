@@ -48,9 +48,9 @@ func (t *TopicFunctionMap) Sync(functions *[]requests.Function) {
 	mapping := make(map[string][]string)
 
 	for _, function := range *functions {
-		if *function.Labels != nil {
-			labels := *function.Labels
-			if topics, pass := labels["topic"]; pass {
+		if *function.Annotations != nil {
+			annotations := *function.Annotations
+			if topics, pass := annotations["topic"]; pass {
 				for _, topic := range strings.Split(topics, ",") {
 					if len(topic) > 0 {
 						if mapping[topic] == nil {
