@@ -35,13 +35,13 @@ func TestTopicFunctionMap_Match(t *testing.T) {
 func TestTopicFunctionMap_Sync(t *testing.T) {
 	mapping := NewTopicFunctionMap()
 
-	labels := make(map[string]string)
-	labels["topic"] = "billing"
+	annotations := make(map[string]string)
+	annotations["topic"] = "billing"
 
 	sampleFunction := &[]requests.Function{
 		{
 			Name:   "emailTranscript",
-			Labels: &labels,
+			Annotations: &annotations,
 		},
 	}
 
