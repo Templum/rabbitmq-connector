@@ -42,7 +42,7 @@ func main() {
 
 		for _, function := range functions {
 			response, _ := openFaasClient.InvokeFunction(function, delivery.Body)
-			log.Printf("Function [%s] returned [%s]", function, response)
+			log.Printf("Function [%s] returned [%s]", function, *response)
 		}
 	})
 	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
