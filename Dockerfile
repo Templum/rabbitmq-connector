@@ -1,21 +1,31 @@
-FROM golang:1.9.2
-RUN mkdir -p /go/src/github.com/Templum/rabbitmq-connector
-WORKDIR /go/src/github.com/Templum/rabbitmq-connector
+FROM golang:1.10
 
-LABEL maintainer = "Simon Pelczer <templum.dev@gmail.com>"
-LABEL version = "0.1.0"
+RUN mkdir -p /go/src/github.com/Templum/openfaas-rabbitmq-connector/
 
-COPY vendor     vendor
-COPY sdk        sdk
-COPY connector  connector
-COPY main.go    .
+WORKDIR /go/src/github.com/Templum/openfaas-rabbitmq-connector
 
-# Run a gofmt and exclude all vendored code.
-RUN test -z "$(gofmt -l $(find . -type f -name '*.go' -not -path "./vendor/*"))"
+COPY . .
 
-RUN go test -v ./...
+RUN gofmt -l -d $(find . -type f -name '*.go' -not -path "./vendor/*") && \
+  VERSION=$(git describe --all --exact-match `git rev-parse HEAD` | grep tags | sed 's/tags\///') && \
+  GIT_COMMIT=$(git rev-list -1 HEAD) && \
+  CGO_ENABLED=0 GOOS=linux go build -ldflags "-s -w \
+  -X github.com/Templum/openfaas-rabbitmq-connector/pkg/version.Version=${VERSION} \
+  -X github.com/Templum/openfaas-rabbitmq-connector/pkg/version.GitCommit=${GIT_COMMIT}" \
+  -a -installsuffix cgo -o rmq-connector .
 
-# Stripping via -ldflags "-s -w"
-RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags "-s -w" -installsuffix cgo -o ./rabbit-mq-connector
+FROM alpine:3.7
 
-CMD ["./rabbit-mq-connector"]
+RUN addgroup -S app \
+    && adduser -S -g app app \
+    && apk --no-cache add ca-certificates
+
+WORKDIR /home/app
+
+COPY --from=0 /go/src/github.com/Templum/openfaas-rabbitmq-connector/rmq-connector .
+
+RUN chown -R app:app ./
+
+USER app
+
+ENTRYPOINT ["./rmq-connector"]

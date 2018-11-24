@@ -1,6 +1,6 @@
-// Copyright (c) OpenFaaS Project 2018. All rights reserved.
+// Copyright (c) Simon Pelczer 2018. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-package connector
+package rabbitmq
 
 import (
 	"fmt"
@@ -10,14 +10,14 @@ import (
 	"time"
 )
 
-const EnvFaaSGWUrl = "FAAS_GW_URL"
-const EnvMQTopics = "MQ_TOPICS"
-const EnvMQHost = "MQ_HOST"
-const EnvMQPort = "MQ_PORT"
-const EnvMQUser = "MQ_USER"
-const EnvMQPass = "MQ_PASS"
-const EnvMQQueue = "MQ_QUEUE"
-const EnvMQExchange = "MQ_EXCHANGE"
+const EnvFaaSGWUrl = "OPEN_FAAS_GW_URL"
+const EnvMQTopics = "RMQ_TOPICS"
+const EnvMQHost = "RMQ_HOST"
+const EnvMQPort = "RMQ_PORT"
+const EnvMQUser = "RMQ_USER"
+const EnvMQPass = "RMQ_PASS"
+const EnvMQQueue = "RMQ_QUEUE"
+const EnvMQExchange = "RMQ_EXCHANGE"
 const EnvReqTimeout = "REQ_TIMEOUT"
 const EnvTopicRefreshTime = "TOPIC_MAP_REFRESH_TIME"
 

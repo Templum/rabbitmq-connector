@@ -1,43 +1,40 @@
-# OpenFaas Rabbit MQ Connector
+# OpenFaaS RabbitMQ Connector
 
-This connector allows the receiving of messages from Rabbit MQ on defined topics (Routing Keys).
-Each message received on the defined (whitelisted) topics, will invoke any deployed function listening on that topic. 
+This project is an connector for the OpenFaaS project. It enables the triggering of OpenFaaS functions
+based on Rabbit MQ topics (Routing Keys). During deployment of an OpenFaaS function a list of relevant 
+topics can be specified, that is used to determine which function should receive the message.
 
-A function has to define its topics in an annotation called `topic`. It is further possible to define more than one topic, in that case, they need to be comma separated (e.g. `billing,accounting,reporting`).
+The current implementation is only fire & forget, however this will be adjusted in the future.
 
-In the current implementation, it is only fire-and-forget. So the returned response will be ignored. But in a feature version, it is planned to allow the writing to a specified topic  (Routing Keys).
+## Usage
 
-## Build it
+### General
+ 
+Environment Variables:
+* `basic_auth`: The basic auth secret for the OpenFaaS gateway
+* `secret_mount_path`: The path to a file containing the basic auth secret for the OpenFaaS gateway
+* `OPEN_FAAS_GW_URL`: URL to the OpenFaaS gateway defaults to `http://gateway:8080`
 
-**Dockerfile:**
+* `RMQ_TOPICS`: Rabbit MQ Topics which are relevant in an comma separated list. E.g. `billing,account,support`
+* `RMQ_HOST`: Hostname/ip of Rabbit MQ 
+* `RMQ_PORT`: Port of Rabbit MQ
+* `RMQ_USER`: Default `guest`
+* `RMQ_PASS`: Default `guest`
+* `RMQ_QUEUE`: Queue Name will default to `OpenFaasQueue`
+* `RMQ_EXCHANGE`: Exchange Name will default to `OpenFaasEx` 
 
-The image is available on dockerhub under `templum/rabbitmq-connector:latest`. It is an automated build.
-
-> You can build the connector using `$ docker build -t yourname .` and for the producer `$ cd producer` followed by `$ docker build -t yourname .`
-
-**Compile:**
-
-You can compile it locally using `$ go build main.go`
-
-## Try it
-
-You can use the following section to try out the current version using docker or kubernetes
-
-### Docker
-
-Will deploy an environment which contains:
-* Rabbit MQ `Version 3.7.4`
-* Rabbit MQ Connector `Version Latest`
-* Sample Producer `Version Latest`
-
-The connector is attached to the **functions**, which should be present if you have deployed
-OpenFaas as described [here](https://docs.openfaas.com/deployment/docker-swarm/#20-deploy-the-stack).
-
-1. Deploy Environment `$ docker stack deploy env --compose-file=./deployment/docker-compose.yml`
-2. Deploy a function with `topic=account` `$ faas-cli store deploy figlet --label topic="account"`
-3. You should be able to follow the successfull invocations using `$ docker service logs -f env.connector`
-   * Should Print that it received something along with the result of the figlet invocation.
+* `REQ_TIMEOUT`: Request Timeout for invocations of OpenFaaS functions defaults to `30s`
+* `TOPIC_MAP_REFRESH_TIME`: Refresh time for the topic map defaults to `60s`
 
 ### Kubernetes
 
-> Nothing available yet
+The project contains kubernetes files needed to deploy the OpenFaaS Rabbit MQ Connector. They are configured out of the box
+to work with the default setup of OpenFaaS. If your setup is customize you might want to adjust some values.
+
+## Contribution
+
+> Follows
+
+## Bug Reporting & Feature Requests
+
+Please feel free to report any issues or Feature request on the [Issue Tab](https://github.com/Templum/rabbitmq-connector/issues). 

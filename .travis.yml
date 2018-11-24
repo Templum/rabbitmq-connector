@@ -1,14 +1,14 @@
 language: go
 
 go:
-- "1.8.x"
 - "1.10.x"
 
 before_install:
-- go get -t -v ./...
+- curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+- dep ensure
 
 script:
-- go test -race -coverprofile=coverage.txt -covermode=atomic
+- go build
 
 after_success:
 - bash <(curl -s https://codecov.io/bash)
