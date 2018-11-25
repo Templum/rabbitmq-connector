@@ -9,10 +9,11 @@ var (
 	GitCommit string
 	//DEVVersion string for the development version
 	DEVVersion = "dev"
+	DEVCommit  = "local"
 )
 
 func GetReleaseInfo() (sha, release string) {
-	sha = ""
+	sha = DEVCommit
 	release = DEVVersion
 
 	if len(GitCommit) > 0 {
