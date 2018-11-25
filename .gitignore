@@ -1,1 +1,5 @@
 *.exe
+# Windows
+\.idea/workspace\.xml
+# Linux
+/.idea/workspace.xml
