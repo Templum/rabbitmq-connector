@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-connector-configmap
+data:
+  OPEN_FAAS_GW_URL: "http://gateway.openfaas:8080"
+  RMQ_TOPICS: "account,billing,support"
+  RMQ_HOST: "replace_me"
+  RMQ_PORT: "replace_me"
+  RMQ_USER: "replace_me"
+  RMQ_PASS: "replace_me"
+  REQ_TIMEOUT: "30s"
+  TOPIC_MAP_REFRESH_TIME: "30s"

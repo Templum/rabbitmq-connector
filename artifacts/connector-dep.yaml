@@ -1,0 +1,76 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: rabbitmq-connector
+  namespace: openfaas
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: rabbitmq-connector
+    spec:
+      containers:
+      - name: connector
+        image: templum/rabbitmq-connector:dev
+        imagePullPolicy: Always
+        env:
+        - name: basic_auth
+          value: "true"
+        - name: secret_mount_path
+          value: "/etc/openfaas"
+        - name: OPEN_FAAS_GW_URL
+          valueFrom:
+            configMapKeyRef:
+              name: rabbitmq-connector-configmap
+              key: OPEN_FAAS_GW_URL
+        - name: RMQ_TOPICS
+          valueFrom:
+            configMapKeyRef:
+              name: rabbitmq-connector-configmap
+              key: RMQ_TOPICS
+        - name: RMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: rabbitmq-connector-configmap
+              key: RMQ_HOST
+        - name: RMQ_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: rabbitmq-connector-configmap
+              key: RMQ_PORT
+        - name: RMQ_USER
+          valueFrom:
+            configMapKeyRef:
+              name: rabbitmq-connector-configmap
+              key: RMQ_USER
+        - name: RMQ_PASS
+          valueFrom:
+            configMapKeyRef:
+              name: rabbitmq-connector-configmap
+              key: RMQ_PASS
+        - name: REQ_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: rabbitmq-connector-configmap
+              key: REQ_TIMEOUT
+        - name: TOPIC_MAP_REFRESH_TIME
+          valueFrom:
+            configMapKeyRef:
+              name: rabbitmq-connector-configmap
+              key: TOPIC_MAP_REFRESH_TIME
+        resources: # Adjust them to suite your needs
+          requests:
+            memory: 512Mi
+            cpu: 1
+          limits:
+            memory: 1024Mi
+            cpu: 2
+        volumeMounts:
+          - name: gateway-basic-auth
+            readOnly: true
+            mountPath: "/etc/openfaas"
+      volumes:
+        - name: gateway-basic-auth
+          secret:
+            secretName: gateway-basic-auth
