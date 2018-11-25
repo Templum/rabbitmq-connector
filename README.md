@@ -11,7 +11,7 @@ The current implementation is only fire & forget, however this will be adjusted 
 ### General
  
 Environment Variables:
-* `basic_auth`: The basic auth secret for the OpenFaaS gateway
+* `basic_auth`: Toggle to activate or deactivate basic_auth (E.g `1` || `true`) 
 * `secret_mount_path`: The path to a file containing the basic auth secret for the OpenFaaS gateway
 * `OPEN_FAAS_GW_URL`: URL to the OpenFaaS gateway defaults to `http://gateway:8080`
 
@@ -31,10 +31,14 @@ Environment Variables:
 The project contains kubernetes files needed to deploy the OpenFaaS Rabbit MQ Connector. They are configured out of the box
 to work with the default setup of OpenFaaS. If your setup is customize you might want to adjust some values.
 
-## Contribution
-
-> Follows
 
 ## Bug Reporting & Feature Requests
 
 Please feel free to report any issues or Feature request on the [Issue Tab](https://github.com/Templum/rabbitmq-connector/issues). 
+
+## Local Setup
+
+1. Start an local Rabbit MQ Broker, this can be done with`/hack/development_env_setup.sh`.
+2. Expose the necessary environment variables, in GoLand this can be done as part of the configuration
+3. Deploy at least one function that listens to a topic: `$ faas-cli store deploy figlet --annotation topic="account"`
+4. Start a producer to generate messages 
