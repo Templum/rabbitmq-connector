@@ -13,22 +13,23 @@ services:
   producer:
     image: templum/sample-producer:latest
     environment:
-      MQ_HOST: "rabbitqueue"
-      MQ_PORT: "5672"
-      MQ_USER: "user"
-      MQ_PASS: "pass"
+      RMQ_HOST: "rabbitqueue"
+      RMQ_PORT: "5672"
+      RMQ_USER: "user"
+      RMQ_PASS: "pass"
     networks:
       - streaming
 
   connector:
-    image: templum/rabbitmq-connector:latest
+    image: templum/rabbitmq-connector:dev
     environment:
-      MQ_TOPICS: "billing,account"
-      MQ_HOST: "rabbitqueue"
-      MQ_PORT: "5672"
-      MQ_USER: "user"
-      MQ_PASS: "pass"
-      FAAS_GW_URL: "http://gateway:8080"
+      RMQ_TOPICS: "billing,account"
+      RMQ_HOST: "rabbitqueue"
+      RMQ_PORT: "5672"
+      RMQ_USER: "user"
+      RMQ_PASS: "pass"
+      OPEN_FAAS_GW_URL: "http://gateway:8080"
+      basic_auth: "true"
     networks:
       - func_functions
       - streaming
