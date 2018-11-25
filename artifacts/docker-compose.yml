@@ -1,4 +1,4 @@
-version: '3.2'
+version: '3.3'
 services:
   rabbitqueue:
     image: rabbitmq:3.7.4
@@ -30,14 +30,24 @@ services:
       RMQ_PASS: "pass"
       OPEN_FAAS_GW_URL: "http://gateway:8080"
       basic_auth: "true"
+      secret_mount_path: "/run/secrets/"
     networks:
       - func_functions
       - streaming
+    secrets:
+      - basic-auth-user
+      - basic-auth-password
 
 networks:
   streaming:
     driver: overlay
     attachable: true
   func_functions:
+    external: true
+
+secrets:
+  basic-auth-user:
+    external: true
+  basic-auth-password:
     external: true
 
