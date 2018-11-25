@@ -4,16 +4,17 @@ package main
 
 import (
 	"fmt"
-	"github.com/Templum/openfaas-rabbitmq-connector/pkg/version"
 	"log"
 
-	"github.com/Templum/openfaas-rabbitmq-connector/pkg/rabbitmq"
+	"github.com/Templum/rabbitmq-connector/pkg/rabbitmq"
+	"github.com/Templum/rabbitmq-connector/pkg/version"
 	"github.com/openfaas-incubator/connector-sdk/types"
 	"github.com/streadway/amqp"
 )
 
 func main() {
 	conf := rabbitmq.BuildConfig()
+	// Local creds := &auth.BasicAuthCredentials{User:"admin", Password: "8bd727b83ae1338d7af2b81ed87a02e053aa7351bb6598bb21196cd660c70098"}
 	creds := types.GetCredentials()
 
 	config := &types.ControllerConfig{
