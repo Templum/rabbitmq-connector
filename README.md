@@ -18,8 +18,8 @@ Environment Variables:
 * `RMQ_TOPICS`: Rabbit MQ Topics which are relevant in an comma separated list. E.g. `billing,account,support`
 * `RMQ_HOST`: Hostname/ip of Rabbit MQ 
 * `RMQ_PORT`: Port of Rabbit MQ
-* `RMQ_USER`: Default `guest`
-* `RMQ_PASS`: Default `guest`
+* `RMQ_USER`: Defaults to `guest`
+* `RMQ_PASS`: Defaults to `guest`
 * `RMQ_QUEUE`: Queue Name will default to `OpenFaasQueue`
 * `RMQ_EXCHANGE`: Exchange Name will default to `OpenFaasEx` 
 
@@ -28,9 +28,17 @@ Environment Variables:
 
 ### Kubernetes
 
-The project contains kubernetes files needed to deploy the OpenFaaS Rabbit MQ Connector. They are configured out of the box
-to work with the default setup of OpenFaaS. If your setup is customize you might want to adjust some values.
+The required files to deploy OpenFaaS RabbitMQ connector can be found under `artifacts`. It assumes that OpenFaaS was
+deployed as described [here](https://github.com/openfaas/faas-netes/blob/master/yaml/README.md). The default config is
+setup to work with OpenFaaS as described there. Further within [connector-cfg.yaml](./artifacts/connector-cfg.yaml) there
+are values that need to be override with your Rabbit MQ setup, they are marked with `replace_me`.
 
+### Docker
+
+The required file to deploy OpenFaaS RabbitMQ connector can be found under `artifacts`. It assumes that OpenFaaS was
+deployed using this [script](https://github.com/openfaas/faas/blob/master/deploy_stack.sh). The [docker-compose.yml](./artifacts/docker-compose.yml) ships with an 
+RabbitMQ node and an producer, you might want to remove them. If you want to use an existing Rabbit MQ setup make sure to
+override `RMQ` accordingly.
 
 ## Bug Reporting & Feature Requests
 
