@@ -1,8 +1,8 @@
 FROM golang:1.10
 
-RUN mkdir -p /go/src/github.com/Templum/openfaas-rabbitmq-connector/
+RUN mkdir -p /go/src/github.com/Templum/rabbitmq-connector/
 
-WORKDIR /go/src/github.com/Templum/openfaas-rabbitmq-connector
+WORKDIR /go/src/github.com/Templum/rabbitmq-connector
 
 COPY . .
 
@@ -22,7 +22,7 @@ RUN addgroup -S app \
 
 WORKDIR /home/app
 
-COPY --from=0 /go/src/github.com/Templum/openfaas-rabbitmq-connector/rmq-connector .
+COPY --from=0 /go/src/github.com/Templum/rabbitmq-connector/rmq-connector .
 
 RUN chown -R app:app ./
 
