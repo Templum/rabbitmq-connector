@@ -1,0 +1,26 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: rabbitmq-connector
+  namespace: openfaas
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: rabbitmq-connector
+    spec:
+      containers:
+      - name: connector
+        image: templum/rabbitmq-connector:latest
+        imagePullPolicy: Always
+        env:
+        - name: basic_auth
+          value: "true"
+        - name: secret_mount_path
+          value: "/etc/openfaas"
+        resources:
+          requests:
+            memory: 250Mi
+          limits:
+            memory: 250Mi   # Adjust to suit needs of deployment
