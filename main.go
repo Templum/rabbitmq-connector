@@ -4,9 +4,10 @@ package main
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/Templum/rabbitmq-connector/pkg/config"
 	"github.com/openfaas/faas-provider/auth"
-	"log"
 
 	"github.com/Templum/rabbitmq-connector/pkg/rabbitmq"
 	"github.com/Templum/rabbitmq-connector/pkg/version"
@@ -30,6 +31,7 @@ func main() {
 	fmt.Println(controller)
 	controller.BeginMapBuilder()
 
+	// TODO: Wait at least for the first map sync
 
 	connector := rabbitmq.MakeConnector(config.GenerateRabbitMQUrl(), controller)
 	connector.StartConnector()

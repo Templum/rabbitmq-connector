@@ -3,10 +3,11 @@
 package rabbitmq
 
 import (
-	"github.com/Templum/rabbitmq-connector/pkg/config"
-	"github.com/openfaas-incubator/connector-sdk/types"
 	"log"
 	"time"
+
+	"github.com/Templum/rabbitmq-connector/pkg/config"
+	"github.com/openfaas-incubator/connector-sdk/types"
 
 	"github.com/streadway/amqp"
 )
@@ -15,7 +16,7 @@ type connector struct {
 	uri    string
 	closed bool
 
-	con *amqp.Connection
+	con    *amqp.Connection
 	client *types.Controller
 
 	// Consumers
@@ -25,7 +26,7 @@ type connector struct {
 	errorChannel chan *amqp.Error
 }
 
-func MakeConnector(uri string, client *types.Controller) *connector  {
+func MakeConnector(uri string, client *types.Controller) *connector {
 	return &connector{
 		uri,
 		false,
@@ -38,18 +39,18 @@ func MakeConnector(uri string, client *types.Controller) *connector  {
 	}
 }
 
-func (c *connector) StartConnector()  {
+func (c *connector) StartConnector() {
 	log.Println("Starting Connector")
 
 	c.init()
 }
 
-func (c *connector) Close()  {
+func (c *connector) Close() {
 	log.Println("Shutting down Connector")
 	c.closed = true
 	defer c.con.Close()
 
-	for _, worker := range c.workers{
+	for _, worker := range c.workers {
 		worker.Close()
 	}
 }
@@ -71,7 +72,9 @@ func (c *connector) init() {
 	// Queues: 1 Topic === 1 Queue
 	topics := config.GetTopics()
 
+	// TODO: Spawn Workers based on CPU * 2 / TOPICS (Rounded up to next Int)
 	for _, topic := range topics {
+		// TODO: Maybe add Thread Lock here
 		log.Printf("Spawning a Worker for Topic: %s", topic)
 		worker := NewWorker(c.con, c.client, topic)
 		worker.Start()

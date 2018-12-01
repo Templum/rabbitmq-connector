@@ -30,11 +30,11 @@ type Config struct {
 	TopicMapRefreshTime   time.Duration
 }
 
-func GetOpenFaaSUrl() string  {
+func GetOpenFaaSUrl() string {
 	return readFromEnv(EnvFaaSGWUrl, "http://gateway:8080")
 }
 
-func GetExchangeName() string{
+func GetExchangeName() string {
 	return readFromEnv(EnvMQExchange, "OpenFaasEx")
 }
 

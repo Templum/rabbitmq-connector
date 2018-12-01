@@ -3,11 +3,12 @@
 package rabbitmq
 
 import (
+	"log"
+	"time"
+
 	"github.com/Templum/rabbitmq-connector/pkg/config"
 	"github.com/openfaas-incubator/connector-sdk/types"
 	"github.com/streadway/amqp"
-	"log"
-	"time"
 )
 
 type worker struct {
@@ -18,13 +19,13 @@ type worker struct {
 	client *types.Controller
 
 	queueName string
-	exchange string
-	topic    string
+	exchange  string
+	topic     string
 
-	closed   bool
+	closed bool
 }
 
-func NewWorker(con *amqp.Connection, client *types.Controller, topic string) *worker  {
+func NewWorker(con *amqp.Connection, client *types.Controller, topic string) *worker {
 	return &worker{
 		con,
 		nil,
@@ -40,8 +41,7 @@ func NewWorker(con *amqp.Connection, client *types.Controller, topic string) *wo
 	}
 }
 
-
-func (w *worker) Start(){
+func (w *worker) Start() {
 	log.Printf("Initializing Worker for Topic %s", w.topic)
 	w.init()
 }
@@ -52,7 +52,7 @@ func (w *worker) Close() {
 	w.channel.Close()
 }
 
-func (w *worker) init()  {
+func (w *worker) init() {
 	var err error
 	w.channel, err = openChannel(w.con, 3)
 
@@ -100,12 +100,11 @@ func (w *worker) init()  {
 	)
 
 	if err != nil {
-		log.Printf("Failed to Bind Queue %s to Exchange %s due to %s",  w.queueName, w.exchange, err)
+		log.Printf("Failed to Bind Queue %s to Exchange %s due to %s", w.queueName, w.exchange, err)
 		return
 	}
 
 	_ = w.channel.Qos(100, 0, false)
-
 
 	// TODO: Self Healing on Channel Level
 
@@ -117,7 +116,7 @@ func (w *worker) init()  {
 		false,
 		false,
 		nil,
-		)
+	)
 
 	if err != nil {
 		log.Printf("Worker is not able to consume messages for Topic %s due to %s", w.topic, err)
@@ -128,7 +127,7 @@ func (w *worker) init()  {
 	go w.handleMessages(deliveries)
 }
 
-func (w *worker) handleMessages(deliveries <- chan amqp.Delivery)  {
+func (w *worker) handleMessages(deliveries <-chan amqp.Delivery) {
 	for message := range deliveries {
 		log.Printf("Recieved message on Topic %s of Type %s", w.topic, message.ContentType)
 		go w.client.Invoker.Invoke(w.client.TopicMap, w.topic, &message.Body)
@@ -142,7 +141,7 @@ func openChannel(con *amqp.Connection, retries int) (*amqp.Channel, error) {
 	if err != nil && retries > 0 {
 		log.Printf("Worker was not able to open a channel. Recieved error %s. Retries left %d", err, retries)
 		time.Sleep(2 * time.Second)
-		return openChannel(con, retries - 1)
+		return openChannel(con, retries-1)
 	}
 	return channel, err
 }
