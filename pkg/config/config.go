@@ -17,18 +17,8 @@ const EnvMQPort = "RMQ_PORT"
 const EnvMQUser = "RMQ_USER"
 const EnvMQPass = "RMQ_PASS"
 const EnvMQExchange = "RMQ_EXCHANGE"
-const EnvReqTimeout = "REQ_TIMEOUT"
+const EnvMQQueue = "RMQ_QUEUE"
 const EnvTopicRefreshTime = "TOPIC_MAP_REFRESH_TIME"
-
-type Config struct {
-	GatewayURL            string
-	Topics                []string
-	RabbitMQConnectionURI string
-	ExchangeName          string
-	QueueName             string
-	RequestTimeout        time.Duration
-	TopicMapRefreshTime   time.Duration
-}
 
 func GetOpenFaaSUrl() string {
 	return readFromEnv(EnvFaaSGWUrl, "http://gateway:8080")
@@ -36,6 +26,10 @@ func GetOpenFaaSUrl() string {
 
 func GetExchangeName() string {
 	return readFromEnv(EnvMQExchange, "OpenFaasEx")
+}
+
+func GetQueueName() string {
+	return readFromEnv(EnvMQQueue, "OpenFaaSQueue")
 }
 
 func GetRefreshTime() time.Duration {
@@ -46,16 +40,6 @@ func GetRefreshTime() time.Duration {
 	}
 
 	return refreshTime
-}
-
-func GetRequestTimeout() time.Duration {
-	requestTimeout, err := time.ParseDuration(readFromEnv(EnvReqTimeout, "30s"))
-	if err != nil {
-		log.Println("Provided Request Timeout was not a valid Duration, like 30s or 60ms. Falling back to 30s")
-		requestTimeout, _ = time.ParseDuration("30s")
-	}
-
-	return requestTimeout
 }
 
 func GenerateRabbitMQUrl() string {
@@ -69,7 +53,13 @@ func GenerateRabbitMQUrl() string {
 
 func GetTopics() []string {
 	topicsString := readFromEnv(EnvMQTopics, "")
-	return strings.Split(topicsString, ",")
+	topics := strings.Split(topicsString, ",")
+
+	if len(topics) == 0 {
+		log.Panicf("No Topic was specified. Provide them via Env RMQ_TOPICS=account,billing,support")
+	}
+
+	return topics
 }
 
 // Helper Functions
