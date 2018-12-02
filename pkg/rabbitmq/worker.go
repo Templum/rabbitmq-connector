@@ -104,10 +104,10 @@ func (w *worker) init() {
 		return
 	}
 
-	// TODO: See if this makes any difference
-	_ = w.channel.Qos(100, 0, false)
-
-	// TODO: Self Healing on Channel Level
+	// Related to Self Healing
+	w.errorChannel = make(chan *amqp.Error)
+	w.channel.NotifyClose(w.errorChannel)
+	go w.handleError() // Leaking Go Routine ?
 
 	deliveries, err := w.channel.Consume(
 		w.queueName,
@@ -135,7 +135,16 @@ func (w *worker) handleMessages(deliveries <-chan amqp.Delivery) {
 			go w.client.Invoker.Invoke(w.client.TopicMap, w.topic, &message.Body)
 		}
 	}
-	log.Println("Channel was closed")
+	log.Printf("Message Channel in Worker for Topic %s was closed", w.topic)
+}
+
+func (w *worker) handleError (){
+	for {
+		err := <-w.errorChannel
+		if !w.closed {
+			log.Printf("Worker recieved the following error %s", err)
+		}
+	}
 }
 
 func openChannel(con *amqp.Connection, retries int) (*amqp.Channel, error) {
