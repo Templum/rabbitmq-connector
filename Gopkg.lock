@@ -38,6 +38,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/openfaas-incubator/connector-sdk/types",
+    "github.com/openfaas/faas-provider/auth",
     "github.com/streadway/amqp",
   ]
   solver-name = "gps-cdcl"
