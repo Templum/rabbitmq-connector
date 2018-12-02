@@ -4,11 +4,12 @@ package rabbitmq
 
 import (
 	"log"
+	"math"
+	"runtime"
 	"time"
 
 	"github.com/Templum/rabbitmq-connector/pkg/config"
 	"github.com/openfaas-incubator/connector-sdk/types"
-
 	"github.com/streadway/amqp"
 )
 
@@ -46,12 +47,15 @@ func (c *connector) StartConnector() {
 }
 
 func (c *connector) Close() {
-	log.Println("Shutting down Connector")
-	c.closed = true
-	defer c.con.Close()
+	if !c.closed {
+		log.Println("Shutting down Connector")
+		c.closed = true
+		defer c.con.Close()
 
-	for _, worker := range c.workers {
-		worker.Close()
+		for _, worker := range c.workers {
+			worker.Close()
+		}
+		c.workers = nil
 	}
 }
 
@@ -71,14 +75,17 @@ func (c *connector) init() {
 
 	// Queues: 1 Topic === 1 Queue
 	topics := config.GetTopics()
-
-	// TODO: Spawn Workers based on CPU * 2 / TOPICS (Rounded up to next Int)
+	amountOfTopics := len(topics)
 	for _, topic := range topics {
-		// TODO: Maybe add Thread Lock here
-		log.Printf("Spawning a Worker for Topic: %s", topic)
-		worker := NewWorker(c.con, c.client, topic)
-		worker.Start()
-		c.workers = append(c.workers, worker)
+		workerCount := int(math.Round(float64(runtime.NumCPU()*2)/float64(amountOfTopics))) + 1
+		log.Printf("Spawning %d Workers for Topic: %s", workerCount, topic)
+
+		for i := 0; i < workerCount; i++ {
+			worker := NewWorker(c.con, c.client, topic)
+			worker.Start()
+			// TODO: Maybe add Thread Lock here
+			c.workers = append(c.workers, worker)
+		}
 	}
 
 }

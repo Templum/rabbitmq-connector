@@ -33,7 +33,7 @@ func NewWorker(con *amqp.Connection, client *types.Controller, topic string) *wo
 
 		client,
 
-		topic,
+		config.GetQueueName(),
 		config.GetExchangeName(),
 		topic,
 
@@ -104,6 +104,7 @@ func (w *worker) init() {
 		return
 	}
 
+	// TODO: See if this makes any difference
 	_ = w.channel.Qos(100, 0, false)
 
 	// TODO: Self Healing on Channel Level
@@ -129,8 +130,10 @@ func (w *worker) init() {
 
 func (w *worker) handleMessages(deliveries <-chan amqp.Delivery) {
 	for message := range deliveries {
-		log.Printf("Recieved message on Topic %s of Type %s", w.topic, message.ContentType)
-		go w.client.Invoker.Invoke(w.client.TopicMap, w.topic, &message.Body)
+		if message.RoutingKey == w.topic {
+			log.Printf("Recieved message on Topic %s of Type %s", w.topic, message.ContentType)
+			go w.client.Invoker.Invoke(w.client.TopicMap, w.topic, &message.Body)
+		}
 	}
 	log.Println("Channel was closed")
 }
