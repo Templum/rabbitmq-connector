@@ -5,37 +5,54 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
+	"github.com/Templum/rabbitmq-connector/pkg/config"
 	"github.com/Templum/rabbitmq-connector/pkg/rabbitmq"
 	"github.com/Templum/rabbitmq-connector/pkg/version"
 	"github.com/openfaas-incubator/connector-sdk/types"
-	"github.com/streadway/amqp"
+	"github.com/openfaas/faas-provider/auth"
 )
 
 func main() {
-	conf := rabbitmq.BuildConfig()
-	// Local creds := &auth.BasicAuthCredentials{User:"admin", Password: "8bd727b83ae1338d7af2b81ed87a02e053aa7351bb6598bb21196cd660c70098"}
-	creds := types.GetCredentials()
-
-	config := &types.ControllerConfig{
-		RebuildInterval: conf.TopicMapRefreshTime,
-		GatewayURL:      conf.GatewayURL,
-		PrintResponse:   true,
-	}
-
-	controller := types.NewController(creds, config)
-	fmt.Println(controller)
-	controller.BeginMapBuilder()
-
 	commit, version := version.GetReleaseInfo()
 	log.Printf("OpenFaaS RabbitMQ Connector [Version: %s Commit: %s]", version, commit)
 
-	forever := make(chan bool)
+	creds := types.GetCredentials()
+	if version == "dev" {
+		creds = &auth.BasicAuthCredentials{User: "admin", Password: "b43c1de00d8a477d6af007a6516944e3d1b02692a190fe71f68616b678ac959a"} // Local
+	}
 
-	go rabbitmq.MakeConnector(&conf, func(delivery amqp.Delivery) {
-		log.Printf("Received Message [%s] on Topic [%s] of Type [%s]", delivery.Body, delivery.RoutingKey, delivery.ContentType)
-		controller.Invoker.Invoke(controller.TopicMap, delivery.RoutingKey, &delivery.Body)
-	})
+	controllerConf := &types.ControllerConfig{
+		RebuildInterval: config.GetRefreshTime(),
+		GatewayURL:      config.GetOpenFaaSUrl(),
+		PrintResponse:   false,
+	}
+
+	controller := types.NewController(creds, controllerConf)
+	fmt.Println(controller)
+	controller.BeginMapBuilder()
+
+	// TODO: Wait at least for the first map sync
+
+	connector := rabbitmq.MakeConnector(config.GenerateRabbitMQUrl(), controller)
+	connector.StartConnector()
+	defer connector.Close()
+
+	signalChannel := make(chan os.Signal, 2)
+	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
+
 	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-	<-forever
+
+	sig := <-signalChannel
+	switch sig {
+	case os.Interrupt:
+		log.Printf("Recieved SIGINT preparing for shutdown")
+		connector.Close()
+	case syscall.SIGTERM:
+		log.Printf("Recieved SIGTERM shutting down")
+		connector.Close()
+	}
 }
