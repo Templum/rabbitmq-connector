@@ -138,7 +138,7 @@ func (w *worker) handleMessages(deliveries <-chan amqp.Delivery) {
 	log.Printf("Message Channel in Worker for Topic %s was closed", w.topic)
 }
 
-func (w *worker) handleError (){
+func (w *worker) handleError() {
 	for {
 		err := <-w.errorChannel
 		if !w.closed {

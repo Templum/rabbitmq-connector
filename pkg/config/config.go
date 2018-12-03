@@ -21,7 +21,11 @@ const EnvMQQueue = "RMQ_QUEUE"
 const EnvTopicRefreshTime = "TOPIC_MAP_REFRESH_TIME"
 
 func GetOpenFaaSUrl() string {
-	return readFromEnv(EnvFaaSGWUrl, "http://gateway:8080")
+	url := readFromEnv(EnvFaaSGWUrl, "http://gateway:8080")
+	if !(strings.HasPrefix(url, "http://")) && !(strings.HasPrefix(url, "https://")) {
+		log.Panicf("Provide the full url including protocol. E.g. https://openfaas-gw:8080")
+	}
+	return url
 }
 
 func GetExchangeName() string {
@@ -55,7 +59,7 @@ func GetTopics() []string {
 	topicsString := readFromEnv(EnvMQTopics, "")
 	topics := strings.Split(topicsString, ",")
 
-	if len(topics) == 0 {
+	if topicsString == "" || len(topics) < 1 {
 		log.Panicf("No Topic was specified. Provide them via Env RMQ_TOPICS=account,billing,support")
 	}
 
