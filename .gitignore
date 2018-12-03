@@ -1,5 +1,8 @@
 *.exe
 # Windows
 \.idea/workspace\.xml
+\.idea/encodings\.xml
 # Linux
 /.idea/workspace.xml
+/.idea/encodings.xml
+

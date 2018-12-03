@@ -3,81 +3,124 @@
 package rabbitmq
 
 import (
-	"fmt"
 	"log"
+	"math"
+	"runtime"
+	"time"
 
+	"github.com/Templum/rabbitmq-connector/pkg/config"
+	"github.com/openfaas-incubator/connector-sdk/types"
 	"github.com/streadway/amqp"
 )
 
-func ensureSuccess(err error, msg string) {
-	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
-		panic(fmt.Sprintf("%s: %s", msg, err))
+type connector struct {
+	uri    string
+	closed bool
+
+	con    *amqp.Connection
+	client *types.Controller
+
+	// Consumers
+	workers []*worker
+
+	// Sig Channel
+	errorChannel chan *amqp.Error
+}
+
+func MakeConnector(uri string, client *types.Controller) *connector {
+	return &connector{
+		uri,
+		false,
+
+		nil,
+		client,
+
+		nil,
+		nil,
 	}
 }
 
-type IncomingMessageHandler func(delivery amqp.Delivery)
+func (c *connector) StartConnector() {
+	log.Println("Starting Connector")
 
-func MakeConnector(config *Config, handler IncomingMessageHandler) {
-	con, err := amqp.Dial(config.RabbitMQConnectionURI)
-	ensureSuccess(err, "Failed to create a connection")
-	defer con.Close()
+	c.init()
+}
 
-	ch, err := con.Channel()
-	ensureSuccess(err, "Failed to open a channel")
-	defer ch.Close()
+func (c *connector) Close() {
+	if !c.closed {
+		log.Println("Shutting down Connector")
+		c.closed = true
+		defer c.con.Close()
 
-	err = ch.ExchangeDeclare(
-		config.ExchangeName,
-		"topic",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	ensureSuccess(err, "Failed to declare an exchange")
+		for _, worker := range c.workers {
+			worker.Close()
+		}
+		c.workers = nil
+	}
+}
 
-	queue, err := ch.QueueDeclare(
-		config.QueueName,
-		false,
-		false,
-		true,
-		false,
-		nil,
-	)
-	ensureSuccess(err, "Failed to declare a queue")
-
-	for _, topic := range config.Topics {
-		log.Printf("Binding queue %s to exchange %s with Topic: %s", config.QueueName, config.ExchangeName, topic)
-		err = ch.QueueBind(
-			config.QueueName,
-			topic,
-			config.ExchangeName,
-			false,
-			nil,
-		)
-		ensureSuccess(err, fmt.Sprintf("Failed to bind %s", config.QueueName))
+func (c *connector) init() {
+	var err error
+	c.con, err = connectToRabbitMQ(c.uri, 3)
+	if err != nil {
+		log.Panicf("Failed to connect to %s, recieved %s", c.uri, err)
+	} else {
+		log.Printf("Successfully connected to %s", c.uri)
 	}
 
-	messages, err := ch.Consume(
-		queue.Name,
-		"OpenFaaS Consumer",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	ensureSuccess(err, "Failed to register OpenFaaS Consumer")
+	// Related to Self Healing
+	c.errorChannel = make(chan *amqp.Error)
+	c.con.NotifyClose(c.errorChannel)
+	go c.registerSelfHealer() // Leaking Go Routine ?
 
-	forever := make(chan bool)
+	// Queues: 1 Topic === 1 Queue
+	topics := config.GetTopics()
+	amountOfTopics := len(topics)
+	for _, topic := range topics {
+		workerCount := int(math.Round(float64(runtime.NumCPU()*2)/float64(amountOfTopics))) + 1
+		log.Printf("Spawning %d Workers for Topic: %s", workerCount, topic)
 
-	go func() {
-		for msg := range messages {
-			handler(msg)
+		for i := 0; i < workerCount; i++ {
+			worker := NewWorker(c.con, c.client, topic)
+			worker.Start()
+			// TODO: Maybe add Thread Lock here
+			c.workers = append(c.workers, worker)
 		}
-	}()
+	}
 
-	<-forever
+}
+
+func (c *connector) registerSelfHealer() {
+	for {
+		err := <-c.errorChannel
+		if !c.closed {
+			log.Printf("Recieved following error %s", err)
+
+			time.Sleep(30 * time.Second)
+			c.recover()
+		}
+	}
+}
+
+func (c *connector) recover() {
+	log.Printf("Performing a Recovery")
+
+	for _, topicQueue := range c.workers {
+		topicQueue.Close()
+	}
+	c.workers = nil
+
+	c.init()
+}
+
+func connectToRabbitMQ(uri string, retries int) (*amqp.Connection, error) {
+	con, err := amqp.Dial(uri)
+
+	if err != nil && retries > 0 {
+		log.Printf("Failed to connect to %s with error %s. Retries left %d", uri, err, retries)
+		time.Sleep(5 * time.Second)
+		return connectToRabbitMQ(uri, retries-1)
+	}
+
+	return con, err
 }
