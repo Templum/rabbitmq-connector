@@ -8,6 +8,7 @@ before_install:
 - dep ensure
 
 script:
+- go test -race -v ./...
 - go build
 
 after_success:
