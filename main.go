@@ -38,7 +38,7 @@ func main() {
 	// TODO: Wait at least for the first map sync
 
 	connector := rabbitmq.MakeConnector(config.GenerateRabbitMQUrl(), controller)
-	connector.StartConnector()
+	connector.Start()
 	defer connector.Close()
 
 	signalChannel := make(chan os.Signal, 2)

@@ -40,7 +40,7 @@ func MakeConnector(uri string, client *types.Controller) *connector {
 	}
 }
 
-func (c *connector) StartConnector() {
+func (c *connector) Start() {
 	log.Println("Starting Connector")
 
 	c.init()
