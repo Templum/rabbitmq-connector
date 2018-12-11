@@ -1,11 +1,12 @@
 package rabbitmq
 
 import (
-	"github.com/streadway/amqp"
 	"runtime"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/streadway/amqp"
 )
 
 // Mocks

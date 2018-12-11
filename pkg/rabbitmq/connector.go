@@ -68,6 +68,10 @@ func (c *connector) Start() {
 }
 
 func (c *connector) recover(receivedError *amqp.Error) {
+	if c.closed {
+		return
+	}
+
 	if receivedError.Recover {
 		log.Printf("Performing a recovery from following recoverable error: [Status: %d Reason: %s]", receivedError.Code, receivedError.Reason)
 	} else {
@@ -95,7 +99,7 @@ func (c *connector) Close() {
 func (c *connector) spawnWorkers(topics []string) {
 	amountOfTopics := len(topics)
 	workerCount := CalculateWorkerCount(amountOfTopics)
-	log.Printf("%d Topics are registered. Will be spawning %d per Topic. ", amountOfTopics, workerCount)
+	log.Printf("%d Topics are registered. Will be spawning %d Workers per Topic. ", amountOfTopics, workerCount)
 
 	for _, topic := range topics {
 		for i := 0; i < workerCount; i++ {
