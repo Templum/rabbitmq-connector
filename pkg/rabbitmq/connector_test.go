@@ -10,11 +10,16 @@ import (
 
 // Mocks
 type MockRecoverer struct {
-	Called bool
+	finishChannel  chan bool
+}
+
+func CreateRecoverer(finished chan bool) *MockRecoverer{
+	return & MockRecoverer{finished}
 }
 
 func (m *MockRecoverer) recover(receivedError *amqp.Error){
-	m.Called = true
+	m.finishChannel <- true
+	close(m.finishChannel)
 }
 
 
@@ -83,18 +88,19 @@ func TestCalculateWorkerCount(t *testing.T) {
 }
 
 func TestHealer(t *testing.T) {
-	mock := MockRecoverer{Called:false}
 	mockStream :=  make(chan *amqp.Error)
+	calledStream := make(chan bool)
 
-	go Healer(&mock, mockStream)
+	go Healer(CreateRecoverer(calledStream), mockStream)
 
 	// Simulate Error
 	mockStream <- &amqp.Error{Recover:false, Reason: "Expected Error", Server: false}
 	close(mockStream)
 
-	time.Sleep(31 * time.Second)
-
-	if !mock.Called {
-		t.Errorf("Healer should call recover(), but it did not after %d Seconds", 31)
+	select {
+	case called := <-calledStream:
+		if called {}
+	case <-time.After(31 * time.Second):
+		t.Errorf("Healer did not call recover() after %d Seconds", 31)
 	}
 }
