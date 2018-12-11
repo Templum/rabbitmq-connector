@@ -63,7 +63,7 @@ func (c *connector) Start() {
 	go Healer(c, oneTimeErrorChannel)
 
 	c.spawnWorkers(config.GetTopics())
-	
+
 	log.Println("Connector finished Init Process and is now running")
 }
 
@@ -92,11 +92,11 @@ func (c *connector) Close() {
 
 // spawnWorkers will spawn Workers per topic based on the available resources. Further it
 // assigns the newly created worker to the worker pool before starting them.
-func (c *connector) spawnWorkers(topics []string)  {
+func (c *connector) spawnWorkers(topics []string) {
 	amountOfTopics := len(topics)
 	workerCount := CalculateWorkerCount(amountOfTopics)
 	log.Printf("%d Topics are registered. Will be spawning %d per Topic. ", amountOfTopics, workerCount)
-	
+
 	for _, topic := range topics {
 		for i := 0; i < workerCount; i++ {
 			worker := NewWorker(c.con, c.client, topic)
@@ -107,13 +107,12 @@ func (c *connector) spawnWorkers(topics []string)  {
 }
 
 // clearWorkers will stop Workers from the worker pool and afterwards cleanup the references
-func (c *connector) clearWorkers(){
+func (c *connector) clearWorkers() {
 	for _, worker := range c.workers {
 		worker.Close()
 	}
 	c.workers = nil
 }
-
 
 // Helper Functions
 
@@ -132,8 +131,8 @@ func connectToRabbitMQ(uri string, retries int) (*amqp.Connection, error) {
 
 // Healer will take the reference to something "Recoverable"  along with an error channel for amqp errors.
 // The method is only meant for one time usage.
-func Healer(c Recoverer, errorStream chan *amqp.Error){
-	err := <- errorStream
+func Healer(c Recoverer, errorStream chan *amqp.Error) {
+	err := <-errorStream
 	// Give it some time before beginning recovering
 	time.Sleep(30 * time.Second)
 	c.recover(err)
@@ -141,11 +140,11 @@ func Healer(c Recoverer, errorStream chan *amqp.Error){
 
 // CalculateWorkerCount will calculate the amount of workers that will be spawned
 // based on the following formula: Available CPU's * 2 / Amount of Topics
-func CalculateWorkerCount(amountOfTopics int) int  {
+func CalculateWorkerCount(amountOfTopics int) int {
 	targetGoRoutines := float64(runtime.NumCPU() * 2)
 
 	if int(targetGoRoutines) < amountOfTopics {
-		return int(math.Floor(targetGoRoutines) / float64(amountOfTopics)) + 1
+		return int(math.Floor(targetGoRoutines)/float64(amountOfTopics)) + 1
 	} else {
 		return int(math.Floor(targetGoRoutines) / float64(amountOfTopics))
 	}
@@ -154,12 +153,12 @@ func CalculateWorkerCount(amountOfTopics int) int  {
 
 // SanitizeConnectionUri takes an uri in the format user:pass@domain and removes the sensitive credentials.
 // Prior it will perform a check for @, if it is not included it will return the unchanged uri
-func SanitizeConnectionUri(uri string)string{
+func SanitizeConnectionUri(uri string) string {
 	const SEPARATOR = "@"
 
 	if idx := strings.Index(uri, SEPARATOR); idx != -1 {
 		return strings.Split(uri, SEPARATOR)[1]
-	} else{
+	} else {
 		return uri
 	}
 }

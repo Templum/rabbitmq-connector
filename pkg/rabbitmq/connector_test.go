@@ -10,18 +10,17 @@ import (
 
 // Mocks
 type MockRecoverer struct {
-	finishChannel  chan bool
+	finishChannel chan bool
 }
 
-func CreateRecoverer(finished chan bool) *MockRecoverer{
-	return & MockRecoverer{finished}
+func CreateRecoverer(finished chan bool) *MockRecoverer {
+	return &MockRecoverer{finished}
 }
 
-func (m *MockRecoverer) recover(receivedError *amqp.Error){
+func (m *MockRecoverer) recover(receivedError *amqp.Error) {
 	m.finishChannel <- true
 	close(m.finishChannel)
 }
-
 
 // Tests
 
@@ -79,7 +78,7 @@ func TestCalculateWorkerCount(t *testing.T) {
 	t.Run("At least one worker", func(t *testing.T) {
 		target := 1
 
-		calculated := CalculateWorkerCount(runtime.NumCPU() * 2 + 2)
+		calculated := CalculateWorkerCount(runtime.NumCPU()*2 + 2)
 
 		if calculated != target {
 			t.Errorf("Expected %d recieved %d", target, calculated)
@@ -88,18 +87,19 @@ func TestCalculateWorkerCount(t *testing.T) {
 }
 
 func TestHealer(t *testing.T) {
-	mockStream :=  make(chan *amqp.Error)
+	mockStream := make(chan *amqp.Error)
 	calledStream := make(chan bool)
 
 	go Healer(CreateRecoverer(calledStream), mockStream)
 
 	// Simulate Error
-	mockStream <- &amqp.Error{Recover:false, Reason: "Expected Error", Server: false}
+	mockStream <- &amqp.Error{Recover: false, Reason: "Expected Error", Server: false}
 	close(mockStream)
 
 	select {
 	case called := <-calledStream:
-		if called {}
+		if called {
+		}
 	case <-time.After(31 * time.Second):
 		t.Errorf("Healer did not call recover() after %d Seconds", 31)
 	}
