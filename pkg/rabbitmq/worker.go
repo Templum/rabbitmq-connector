@@ -8,7 +8,6 @@ import (
 
 	"github.com/Templum/rabbitmq-connector/pkg/config"
 	Generator "github.com/docker/docker/pkg/namesgenerator"
-	"github.com/openfaas-incubator/connector-sdk/types"
 	"github.com/streadway/amqp"
 )
 
@@ -16,7 +15,7 @@ type worker struct {
 	con     *amqp.Connection
 	channel *amqp.Channel
 
-	client *types.Controller
+	client Invoker
 
 	name      string // Only for better debugging
 	queueName string
@@ -26,7 +25,7 @@ type worker struct {
 	closed bool
 }
 
-func NewWorker(con *amqp.Connection, client *types.Controller, topic string) *worker {
+func NewWorker(con *amqp.Connection, client Invoker, topic string) *worker {
 	return &worker{
 		con,
 		nil,
@@ -46,6 +45,7 @@ type Worker interface {
 	Start()
 	Close()
 	processMessage(deliveries <-chan amqp.Delivery)
+	isRunning() bool
 }
 
 func (w *worker) Start() {
@@ -153,18 +153,23 @@ func (w *worker) processMessage(deliveries <-chan amqp.Delivery) {
 	for message := range deliveries {
 		if message.RoutingKey == w.topic {
 			log.Printf("Recieved message for Topic %s on Type %s", w.topic, w.name)
-			go w.client.Invoker.Invoke(w.client.TopicMap, w.topic, &message.Body)
+			go w.client.Invoke(w.topic, &message.Body)
 		}
 	}
 	log.Printf("Message Channel of Worker %s was closed", w.name)
 }
 
+func (w *worker) isRunning() bool  {
+	return !w.closed
+}
+
 // handleError currently only prints the error if it is not nil.
-func handleError(_ Worker, errorStream chan *amqp.Error) {
+func handleError(w Worker, errorStream chan *amqp.Error) {
 	for {
 		err := <-errorStream
-		if err != nil {
+		if w.isRunning() && err != nil {
 			log.Printf("Worker recieved the following error %s", err)
+			w.Close()
 		}
 	}
 }
