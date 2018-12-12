@@ -14,6 +14,7 @@ before_install:
 
 script:
 - go test -race -v ./...
+- go test -integration=true -run TestMakeConnector ./...
 - go build
 
 after_script:
