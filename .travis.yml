@@ -1,15 +1,21 @@
 language: go
 
+services:
+  - docker
+
 go:
 - "1.10.x"
 
 before_install:
 - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 - dep ensure
+- docker pull rabbitmq:3.7.4
+- docker run -p 5672:5672 -e RABBITMQ_DEFAULT_USER="user" -e RABBITMQ_DEFAULT_PASS="pass" -d --restart always --name ci_rabbitmq rabbitmq:3.7.4
 
 script:
 - go test -race -v ./...
 - go build
 
-after_success:
-- bash <(curl -s https://codecov.io/bash)
+after_script:
+  - docker stop ci_rabbitmq
+  - docker rm ci_rabbitmq
