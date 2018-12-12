@@ -10,22 +10,22 @@ import (
 	"time"
 
 	"github.com/Templum/rabbitmq-connector/pkg/config"
-	"github.com/openfaas-incubator/connector-sdk/types"
 	"github.com/streadway/amqp"
 )
+
 
 type connector struct {
 	uri    string
 	closed bool
 
 	con    *amqp.Connection
-	client *types.Controller
+	client Invoker
 
 	// Consumers
 	workers []*worker
 }
 
-func MakeConnector(uri string, client *types.Controller) Connector {
+func MakeConnector(uri string, client Invoker) Connector {
 	return &connector{
 		uri,
 		false,
@@ -35,6 +35,12 @@ func MakeConnector(uri string, client *types.Controller) Connector {
 
 		nil,
 	}
+}
+
+// Invoker is the Interface used by the OpenFaaS Connector SDK to perform invocations
+// of Lambdas based on a provided topic and message
+type Invoker interface {
+	Invoke(topic string, message *[]byte)
 }
 
 type Recoverer interface {
@@ -85,7 +91,7 @@ func (c *connector) recover(receivedError *amqp.Error) {
 }
 
 func (c *connector) Close() {
-	if !c.closed {
+	if !c.closed && c.con != nil {
 		log.Println("Shutting down Connector")
 		c.closed = true
 		defer c.con.Close()
