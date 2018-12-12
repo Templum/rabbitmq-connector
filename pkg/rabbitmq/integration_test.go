@@ -41,22 +41,33 @@ func TestMakeConnector(t *testing.T) {
 
 	setupEnvironment(t)
 
+	t.Run("Failing Start", func(t *testing.T) {
+		target := MakeConnector("amqp://not:correct@localhost:5672/", CreateMock())
 
-	t.Run("Initialize without issues", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("Did not panic")
+			}
+			teardownTarget(t, target)
+		}()
+		target.Start()
+	})
+
+	t.Run("Successfull Start", func(t *testing.T) {
 		target := MakeConnector(TEST_URI, CreateMock())
 		target.Start()
 		time.Sleep(5 * time.Second)
 		teardownTarget(t, target)
 	})
 
-	t.Run("Should quick Stop", func(t *testing.T) {
+	t.Run("Quick Stop", func(t *testing.T) {
 		target := MakeConnector(TEST_URI, CreateMock())
 		target.Close()
 		time.Sleep(5 * time.Second)
 		teardownTarget(t, target)
 	})
 
-	t.Run("Should full Stop", func(t *testing.T) {
+	t.Run("Full Stop", func(t *testing.T) {
 		target := MakeConnector(TEST_URI, CreateMock())
 		target.Start()
 		time.Sleep(5 * time.Second)
