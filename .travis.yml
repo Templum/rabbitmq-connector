@@ -14,7 +14,9 @@ before_install:
 
 script:
 - go test -race -v ./...
-- go test -integration=true -run TestMakeConnector ./...
+- cd pkg && cd rabbitmq
+- go test -integration=true integration_test.go
+- cd .. && cd ..
 - go build
 
 after_script:
