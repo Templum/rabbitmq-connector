@@ -13,8 +13,4 @@
 
 [[constraint]]
   name = "github.com/docker/docker"
-  packages = [
-      "pkg/namesgenerator",
-      "pkg/random",
-  ]
   version = "v1.13.1"
