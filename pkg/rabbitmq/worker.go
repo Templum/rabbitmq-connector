@@ -7,17 +7,17 @@ import (
 	"time"
 
 	"github.com/Templum/rabbitmq-connector/pkg/config"
-	"github.com/openfaas-incubator/connector-sdk/types"
+	Generator "github.com/docker/docker/pkg/namesgenerator"
 	"github.com/streadway/amqp"
 )
 
 type worker struct {
-	con          *amqp.Connection
-	channel      *amqp.Channel
-	errorChannel chan *amqp.Error
+	con     *amqp.Connection
+	channel *amqp.Channel
 
-	client *types.Controller
+	client Invoker
 
+	name      string // Only for better debugging
 	queueName string
 	exchange  string
 	topic     string
@@ -25,14 +25,14 @@ type worker struct {
 	closed bool
 }
 
-func NewWorker(con *amqp.Connection, client *types.Controller, topic string) *worker {
+func NewWorker(con *amqp.Connection, client Invoker, topic string) *worker {
 	return &worker{
 		con,
-		nil,
 		nil,
 
 		client,
 
+		Generator.GetRandomName(2),
 		config.GetQueueName(),
 		config.GetExchangeName(),
 		topic,
@@ -41,24 +41,58 @@ func NewWorker(con *amqp.Connection, client *types.Controller, topic string) *wo
 	}
 }
 
+type Worker interface {
+	Start()
+	Close()
+	processMessage(deliveries <-chan amqp.Delivery)
+	isRunning() bool
+}
+
 func (w *worker) Start() {
-	log.Printf("Initializing Worker for Topic %s", w.topic)
-	w.init()
+	log.Printf("Starting Init Process of Worker %s for topic %s", w.name, w.topic)
+	err := w.initializeChannel()
+
+	if err != nil {
+		log.Printf("Init Process for Topic: %s failed with %s. Aborting Init Process for Worker %s", w.topic, err, w.name)
+		return
+	}
+
+	// Related to Self Healing
+	errorChannel := make(chan *amqp.Error)
+	w.channel.NotifyClose(errorChannel)
+	go handleError(w, errorChannel)
+
+	deliveries, err := w.startConsuming()
+
+	if err != nil {
+		log.Printf("Worker %s not able to consume messages", w.name)
+		return
+	} else {
+		log.Printf("Worker %s started consuming messages for %s", w.name, w.topic)
+	}
+	go w.processMessage(deliveries)
 }
 
 func (w *worker) Close() {
 	log.Printf("Stopping Worker for Topic %s", w.topic)
 	w.closed = true
-	w.channel.Close()
+	err := w.channel.Close()
+
+	if err != nil {
+		log.Printf("Recieved %s during channel closing", err)
+	}
 }
 
-func (w *worker) init() {
+// initializeChannel will create new channel using the stored connection. Further it performs
+// a variety of initialization tasks, including Exchange & Queue Declaration and also the binding.
+// It will return an error if the initialization failed.
+func (w *worker) initializeChannel() error {
 	var err error
 	w.channel, err = openChannel(w.con, 3)
 
 	if err != nil {
 		log.Printf("Failed to start Worker for Topic %s due to %s", w.topic, err)
-		return
+		return err
 	}
 
 	err = w.channel.ExchangeDeclare(
@@ -73,7 +107,6 @@ func (w *worker) init() {
 
 	if err != nil {
 		log.Printf("Failed during Exchange Declaration for Topic %s due to %s", w.topic, err)
-		return
 	}
 
 	_, err = w.channel.QueueDeclare(
@@ -87,7 +120,6 @@ func (w *worker) init() {
 
 	if err != nil {
 		log.Printf("Failed during Queue Declaration for Topic %s due to %s", w.topic, err)
-		return
 	}
 
 	log.Printf("Binding Queue %s to Exchange %s for Topic: %s", w.queueName, w.exchange, w.topic)
@@ -98,51 +130,46 @@ func (w *worker) init() {
 		false,
 		nil,
 	)
+	return err
+}
 
-	if err != nil {
-		log.Printf("Failed to Bind Queue %s to Exchange %s due to %s", w.queueName, w.exchange, err)
-		return
-	}
-
-	// Related to Self Healing
-	w.errorChannel = make(chan *amqp.Error)
-	w.channel.NotifyClose(w.errorChannel)
-	go w.handleError() // Leaking Go Routine ?
-
-	deliveries, err := w.channel.Consume(
+// startConsuming will start consuming messages on the specified queue. It returns a channel containing
+// the received messages or an error
+func (w *worker) startConsuming() (<-chan amqp.Delivery, error) {
+	return w.channel.Consume(
 		w.queueName,
-		"",
+		"", // Let Rabbit MQ Generate a Tag
 		true,
 		false,
 		false,
 		false,
 		nil,
 	)
-
-	if err != nil {
-		log.Printf("Worker is not able to consume messages for Topic %s due to %s", w.topic, err)
-		return
-	}
-
-	log.Printf("Successfully started Worker on Queue %s for Topic %s", w.queueName, w.topic)
-	go w.handleMessages(deliveries)
 }
 
-func (w *worker) handleMessages(deliveries <-chan amqp.Delivery) {
+// processMessage will listen on the provide channel indefinitely until the channel is closed.
+// Received messages will be filtered by RoutingKey and then forwarded to OpenFaaS
+func (w *worker) processMessage(deliveries <-chan amqp.Delivery) {
 	for message := range deliveries {
 		if message.RoutingKey == w.topic {
-			log.Printf("Recieved message on Topic %s of Type %s", w.topic, message.ContentType)
-			go w.client.Invoker.Invoke(w.client.TopicMap, w.topic, &message.Body)
+			log.Printf("Recieved message for Topic %s on Type %s", w.topic, w.name)
+			go w.client.Invoke(w.topic, &message.Body)
 		}
 	}
-	log.Printf("Message Channel in Worker for Topic %s was closed", w.topic)
+	log.Printf("Message Channel of Worker %s was closed", w.name)
 }
 
-func (w *worker) handleError() {
+func (w *worker) isRunning() bool  {
+	return !w.closed
+}
+
+// handleError currently only prints the error if it is not nil.
+func handleError(w Worker, errorStream chan *amqp.Error) {
 	for {
-		err := <-w.errorChannel
-		if !w.closed {
+		err := <-errorStream
+		if w.isRunning() && err != nil {
 			log.Printf("Worker recieved the following error %s", err)
+			w.Close()
 		}
 	}
 }
