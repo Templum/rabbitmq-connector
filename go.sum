@@ -1,0 +1,10 @@
+github.com/docker/docker v1.13.1 h1:IkZjBSIc8hBjLpqeAbeE5mca5mNgeatLHBy3GO78BWo=
+github.com/docker/docker v1.13.1/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
+github.com/openfaas-incubator/connector-sdk v0.0.0-20181118153837-bb7e84c27a54 h1:2kd22lpVlVrdURYdmMoCC4Mw6EGPSq73j8YJ/0RzAC4=
+github.com/openfaas-incubator/connector-sdk v0.0.0-20181118153837-bb7e84c27a54/go.mod h1:jHCtd1HCZwhuwdPy4OB8CQU7ZqzxBdWNhIhH/khCJqQ=
+github.com/openfaas/faas v0.0.0-20181114220221-78a4584019a2 h1:ChI6Z8JxsS/91DLF6De4/f9ZSz9NpasKwbSMZ7Em4IU=
+github.com/openfaas/faas v0.0.0-20181114220221-78a4584019a2/go.mod h1:E0m2rLup0Vvxg53BKxGgaYAGcZa3Xl+vvL7vSi5yQ14=
+github.com/openfaas/faas-provider v0.0.0-20181104131730-8b3147b013c6 h1:PGmPk5iR8IY2Gl4SlMd2+o4sUmeEFBGFy0SmJoxSIlU=
+github.com/openfaas/faas-provider v0.0.0-20181104131730-8b3147b013c6/go.mod h1:W4OIp33RUOpR7wW+omJB/7GhIydRmYXvKf/VqUKI4yM=
+github.com/streadway/amqp v0.0.0-20181107104731-27835f1a64e9 h1:xBuwuVDG/vbGv1b0Dn/06flcq0R6MITax8244EZYaKE=
+github.com/streadway/amqp v0.0.0-20181107104731-27835f1a64e9/go.mod h1:1WNBiOZtZQLpVAyu0iTduoJL9hEsMloAK5XWrtW0xdY=
