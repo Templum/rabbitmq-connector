@@ -159,7 +159,7 @@ func (w *worker) processMessage(deliveries <-chan amqp.Delivery) {
 	log.Printf("Message Channel of Worker %s was closed", w.name)
 }
 
-func (w *worker) isRunning() bool  {
+func (w *worker) isRunning() bool {
 	return !w.closed
 }
 

@@ -13,7 +13,6 @@ import (
 	"github.com/streadway/amqp"
 )
 
-
 type connector struct {
 	uri    string
 	closed bool
