@@ -11,11 +11,11 @@ RUN go mod download
 FROM base_builder as builder
 COPY . .
 
-RUN VERSION=$(git describe --all --exact-match `git rev-parse HEAD` | grep tags | sed 's/tags\///') && \
+RUN VERSION=$(git describe --tags $(git rev-list --tags --max-count=1)) && \
   GIT_COMMIT=$(git describe --always) && \
   CGO_ENABLED=0 GOOS=linux go build -ldflags "-s -w \
-  -X github.com/Templum/openfaas-rabbitmq-connector/pkg/version.Version=${VERSION} \
-  -X github.com/Templum/openfaas-rabbitmq-connector/pkg/version.GitCommit=${GIT_COMMIT}" \
+  -X github.com/Templum/rabbitmq-connector/pkg/version.Version=${VERSION} \
+  -X github.com/Templum/rabbitmq-connector/pkg/version.GitCommit=${GIT_COMMIT}" \
   -a -installsuffix cgo -o rmq-connector .
 
 FROM alpine:3.8
