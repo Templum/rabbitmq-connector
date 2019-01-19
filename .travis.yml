@@ -21,3 +21,7 @@ script:
 after_script:
   - docker stop ci_rabbitmq
   - docker rm ci_rabbitmq
+
+after_success:
+  - chmod +x ./hack/docker_build.sh
+  - ./hack/docker_build.sh
