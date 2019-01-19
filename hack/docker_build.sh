@@ -3,7 +3,9 @@
 echo "Logging into DockerHub"
 echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
 
-if [[ -z "$TRAVIS_TAG" ]]; then
+echo "PR: $TRAVIS_PULL_REQUEST Branch: $TRAVIS_TAG"
+
+if [[ -n "$TRAVIS_TAG" ]]; then
     docker build -t "templum/rabbitmq-connector:$TRAVIS_TAG" .
     docker push "templum/rabbitmq-connector:$TRAVIS_TAG"
 fi
