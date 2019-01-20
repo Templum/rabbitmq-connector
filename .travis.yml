@@ -13,14 +13,13 @@ before_install:
 
 script:
 - go test -race -v ./...
-- cd pkg && cd rabbitmq
-- go test -integration=true integration_test.go
-- cd .. && cd ..
 - go build
+- docker build --rm -t ci:latest .
 
 after_script:
   - docker stop ci_rabbitmq
   - docker rm ci_rabbitmq
+  - docker rmi ci:latest
 
 after_success:
   - chmod +x ./hack/docker_build.sh
