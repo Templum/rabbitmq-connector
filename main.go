@@ -3,7 +3,6 @@
 package main
 
 import (
-	"github.com/Templum/rabbitmq-connector/pkg/subscriber"
 	"log"
 	"os"
 	"os/signal"
@@ -11,17 +10,18 @@ import (
 
 	"github.com/Templum/rabbitmq-connector/pkg/config"
 	"github.com/Templum/rabbitmq-connector/pkg/rabbitmq"
+	"github.com/Templum/rabbitmq-connector/pkg/subscriber"
 	"github.com/Templum/rabbitmq-connector/pkg/version"
 	"github.com/openfaas-incubator/connector-sdk/types"
 	"github.com/openfaas/faas-provider/auth"
 )
 
 func main() {
-	commit, version := version.GetReleaseInfo()
-	log.Printf("OpenFaaS RabbitMQ Connector [Version: %s Commit: %s]", version, commit)
+	commit, tag := version.GetReleaseInfo()
+	log.Printf("OpenFaaS RabbitMQ Connector [Version: %s Commit: %s]", tag, commit)
 
 	var creds *auth.BasicAuthCredentials
-	if version == "dev" {
+	if tag == "dev" {
 		log.Printf("Connector is in local mode will use the debug credentials")
 		creds = &auth.BasicAuthCredentials{User: "admin", Password: "b43c1de00d8a477d6af007a6516944e3d1b02692a190fe71f68616b678ac959a"}
 	} else {

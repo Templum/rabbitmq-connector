@@ -1,6 +1,7 @@
 package subscriber
 
 import (
+	"github.com/Templum/rabbitmq-connector/pkg/rabbitmq"
 	"github.com/Templum/rabbitmq-connector/pkg/types"
 	"log"
 )
@@ -12,7 +13,7 @@ type subscriber struct {
 	name  string
 	topic string
 
-	consumer types.QueueConsumer
+	consumer rabbitmq.QueueConsumer
 	client   types.Invoker
 
 	active bool
@@ -25,7 +26,7 @@ type Subscriber interface {
 	IsRunning() bool
 }
 
-func NewSubscriber(name string, topic string, consumer types.QueueConsumer, client types.Invoker) *subscriber {
+func NewSubscriber(name string, topic string, consumer rabbitmq.QueueConsumer, client types.Invoker) *subscriber {
 	return &subscriber{
 		name:  name,
 		topic: topic,
@@ -40,15 +41,20 @@ func NewSubscriber(name string, topic string, consumer types.QueueConsumer, clie
 func (s *subscriber) Start() error {
 	invocations, err := s.consumer.Consume()
 	if err != nil {
-		println("Received %s during registering for messages on %s in Consumer[%s]", err, s.topic, s.name)
+		log.Printf("Received %s during registering for messages on %s in Consumer[%s]", err, s.topic, s.name)
 		return err
 	}
 
 	go func() {
 		for invocation := range invocations {
 			if s.topic == invocation.Topic {
-				s.client.Invoke(s.topic, invocation.Message)
-				invocation.Finished()
+				go func() {
+					s.client.Invoke(s.topic, invocation.Message)
+					invocation.Finished()
+					// TEMP
+					log.Printf("Message %s", invocation.Message)
+					log.Printf("Finished invocations of functions on topic %s", s.topic)
+				}()
 			}
 		}
 	}()
