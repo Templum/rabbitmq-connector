@@ -6,10 +6,9 @@ import (
 	"testing"
 )
 
-
 func TestNewConfig(t *testing.T) {
 	t.Run("With invalid Gateway Url", func(t *testing.T) {
-		os.Setenv("OPEN_FAAS_GW_URL", "gateway:8080");
+		os.Setenv("OPEN_FAAS_GW_URL", "gateway:8080")
 		defer os.Unsetenv("OPEN_FAAS_GW_URL")
 
 		var err error
@@ -19,7 +18,7 @@ func TestNewConfig(t *testing.T) {
 			t.Errorf("Did not throw new correct error. Recieved %s", err)
 		}
 
-		os.Setenv("OPEN_FAAS_GW_URL", "tcp://gateway:8080");
+		os.Setenv("OPEN_FAAS_GW_URL", "tcp://gateway:8080")
 		_, err = NewConfig()
 		if !strings.Contains(err.Error(), "does not include the protocol http / https") {
 			t.Errorf("Did not throw new correct error. Recieved %s", err)
@@ -27,7 +26,7 @@ func TestNewConfig(t *testing.T) {
 	})
 
 	t.Run("With invalid Rabbit MQ Port", func(t *testing.T) {
-		os.Setenv("RMQ_PORT", "is_string");
+		os.Setenv("RMQ_PORT", "is_string")
 		defer os.Unsetenv("RMQ_PORT")
 
 		var err error
@@ -37,13 +36,13 @@ func TestNewConfig(t *testing.T) {
 			t.Errorf("Did not throw new correct error. Recieved %s", err)
 		}
 
-		os.Setenv("RMQ_PORT", "-1");
+		os.Setenv("RMQ_PORT", "-1")
 		_, err = NewConfig()
 		if !strings.Contains(err.Error(), "is outside of the allowed port range") {
 			t.Errorf("Did not throw new correct error. Recieved %s", err)
 		}
 
-		os.Setenv("RMQ_PORT", "65536");
+		os.Setenv("RMQ_PORT", "65536")
 		_, err = NewConfig()
 		if !strings.Contains(err.Error(), "is outside of the allowed port range") {
 			t.Errorf("Did not throw new correct error. Recieved %s", err)
@@ -51,7 +50,7 @@ func TestNewConfig(t *testing.T) {
 	})
 
 	t.Run("Empty Topics", func(t *testing.T) {
-		os.Setenv("RMQ_TOPICS", "");
+		os.Setenv("RMQ_TOPICS", "")
 		defer os.Unsetenv("RMQ_TOPICS")
 
 		_, err := NewConfig()

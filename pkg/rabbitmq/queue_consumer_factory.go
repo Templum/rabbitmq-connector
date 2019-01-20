@@ -52,7 +52,7 @@ func (f *queueConsumerFactory) establishConnection(connectionUrl string, retries
 	con, err := amqp.Dial(connectionUrl)
 
 	if err != nil && retries > 0 {
-		log.Printf("Failed to establish connection due to %s. % tries left", err, retries)
+		log.Printf("Failed to establish connection due to %s. %d tries left", err, retries)
 		time.Sleep(5 * time.Second)
 		return f.establishConnection(connectionUrl, retries-1)
 	}

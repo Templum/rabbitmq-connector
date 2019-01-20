@@ -52,7 +52,7 @@ func (s *subscriber) Start() error {
 					s.client.Invoke(s.topic, invocation.Message)
 					invocation.Finished()
 					// TEMP
-					log.Printf("Message %s", invocation.Message)
+					log.Printf("Message %s", *invocation.Message)
 					log.Printf("Finished invocations of functions on topic %s", s.topic)
 				}()
 			}
