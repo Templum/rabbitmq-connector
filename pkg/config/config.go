@@ -72,7 +72,7 @@ const envRefreshTime = "TOPIC_MAP_REFRESH_TIME"
 func getOpenFaaSUrl() (string, error) {
 	url := readFromEnv(envFaaSGwUrl, "http://gateway:8080")
 	if !(strings.HasPrefix(url, "http://")) && !(strings.HasPrefix(url, "https://")) {
-		message := fmt.Sprintf("Provided url %s does not include the protocoll http / https", url)
+		message := fmt.Sprintf("Provided url %s does not include the protocol http / https", url)
 		return "", errors.New(message)
 	}
 	return url, nil
@@ -110,7 +110,7 @@ func getTopics() ([]string, error) {
 	topics := strings.Split(topicsString, ",")
 
 	if topicsString == "" || len(topics) < 1 {
-		return nil, errors.New("No Topic was specified. Provide them via Env RMQ_TOPICS=account,billing,support")
+		return nil, errors.New("No Topic was specified. Provide them via Env RMQ_TOPICS=account,billing,support.")
 	} else {
 		return topics, nil
 	}
