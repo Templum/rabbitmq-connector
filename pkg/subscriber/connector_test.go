@@ -11,23 +11,23 @@ import (
 
 //---- QueueConsumer Mock ----//
 
-type mockConsumer struct {
+type minimalQueueConsumer struct {
 	IsActive bool
 	Output chan *types.OpenFaaSInvocation
 }
 
-func (m *mockConsumer) Consume() (<-chan *types.OpenFaaSInvocation, error)  {
+func (m *minimalQueueConsumer) Consume() (<-chan *types.OpenFaaSInvocation, error)  {
 	m.IsActive = true
 	m.Output = make(chan *types.OpenFaaSInvocation)
 	return m.Output, nil
 }
 
-func (m *mockConsumer) Stop() {
+func (m *minimalQueueConsumer) Stop() {
 	m.IsActive = false
 	close(m.Output)
 }
 
-func (m *mockConsumer) ListenForErrors() <-chan error {
+func (m *minimalQueueConsumer) ListenForErrors() <-chan error {
 	return nil
 }
 
@@ -43,7 +43,7 @@ func (m *mockFactory) Build(topic string) (rabbitmq.QueueConsumer, error) {
 		return nil, errors.New("expected error")
 	} else {
 		m.Created += 1
-		return &mockConsumer{IsActive:false, Output:nil}, nil
+		return &minimalQueueConsumer{IsActive: false, Output:nil}, nil
 	}
 }
 
@@ -56,7 +56,7 @@ func getSubscribers(f Connector) {
 func TestConnector_Start(t *testing.T) {
 	cfg := config.Controller{Topics: []string {"Hello"}}
 
-	t.Run("Start with no faults", func(t *testing.T) {
+	t.Run("Start with no errors", func(t *testing.T) {
 		factory := mockFactory{Created: 0, faulty: false}
 		target := NewConnector(&cfg, nil, &factory)
 		target.Start()
@@ -76,7 +76,7 @@ func TestConnector_Start(t *testing.T) {
 		}
 	})
 
-	t.Run("Start with faults", func(t *testing.T) {
+	t.Run("Start with errors", func(t *testing.T) {
 		factory := mockFactory{Created: 0, faulty: true}
 		target := NewConnector(&cfg, nil, &factory)
 		target.Start()
