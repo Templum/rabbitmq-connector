@@ -1,3 +1,5 @@
+// Copyright (c) Simon Pelczer 2019. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 package subscriber
 
 import (
@@ -5,9 +7,6 @@ import (
 	"github.com/Templum/rabbitmq-connector/pkg/types"
 	"log"
 )
-
-// Copyright (c) Simon Pelczer 2019. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 type subscriber struct {
 	name  string
