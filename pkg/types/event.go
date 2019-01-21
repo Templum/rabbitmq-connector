@@ -14,11 +14,9 @@ type OpenFaaSInvocation struct {
 }
 
 func (o *OpenFaaSInvocation) Finished() {
-	if o.done != nil {
-		err := o.done.Ack(o.tag, false)
-		if err != nil {
-			fmt.Printf("Recieved %s during ack for tag %d", err, o.tag)
-		}
+	err := o.done.Ack(o.tag, false)
+	if err != nil {
+		fmt.Printf("Recieved %s during ack for tag %d", err, o.tag)
 	}
 }
 
