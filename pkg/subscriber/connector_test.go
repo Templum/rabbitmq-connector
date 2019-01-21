@@ -63,8 +63,8 @@ func TestConnector_Start(t *testing.T) {
 
 		connector, _ := target.(*connector)
 
-		if len(connector.subscribers) != 8 {
-			t.Errorf("Expected Connector to start 8 Worker instead he started %d", len(connector.subscribers))
+		if len(connector.subscribers) != CalculateWorkerCount(1) {
+			t.Errorf("Expected Connector to start %d Worker instead he started %d", CalculateWorkerCount(1), len(connector.subscribers))
 		}
 
 		for _, sub := range connector.subscribers {

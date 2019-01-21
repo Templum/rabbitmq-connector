@@ -6,6 +6,7 @@ import (
 	"github.com/Templum/rabbitmq-connector/pkg/types"
 	"sync"
 	"testing"
+	"time"
 )
 
 //---- QueueConsumer Mock ----//
@@ -129,6 +130,8 @@ func TestSubscriber_Stop(t *testing.T) {
 }
 
 func TestMessageReceived(t *testing.T) {
+	t.Parallel()
+
 	t.Run("With correct topic", func(t *testing.T) {
 		var wg sync.WaitGroup
 		message := []byte("Hello World")
@@ -145,20 +148,21 @@ func TestMessageReceived(t *testing.T) {
 				Topic: "Sample",
 				Message: &message,
 			}
+			time.Sleep(1 * time.Second)
 			wg.Done()
 		}()
 		wg.Wait()
 
 		if invoker.receivedTopic != "Sample" {
-			t.Error("Invoker was not called with the correct Topic Sample")
+			t.Errorf("Invoker was not called with the correct Topic Sample. %s", invoker.receivedTopic)
 		}
 
 		if !bytes.Equal(*invoker.receivedMessage, message) {
-			t.Error("Invoker was not called with the correct Message")
+			t.Error("Invoker was not called with the correct Message.")
 		}
 	})
 
-	t.Run("With correct topic", func(t *testing.T) {
+	t.Run("Without correct topic", func(t *testing.T) {
 		var wg sync.WaitGroup
 		message := []byte("Hello World")
 		consumer := fullQueueConsumer{faulty:false}
@@ -174,6 +178,7 @@ func TestMessageReceived(t *testing.T) {
 				Topic: "Other",
 				Message: &message,
 			}
+			time.Sleep(1 * time.Second)
 			wg.Done()
 		}()
 		wg.Wait()
