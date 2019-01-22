@@ -11,7 +11,7 @@ RUN go mod download
 FROM base_builder as builder
 COPY . .
 
-RUN VERSION=$(git describe --all --exact-match `git rev-parse HEAD` | grep tags | sed 's/tags\///') && \
+RUN VERSION=$(git describe --all --exact-match $(git rev-parse HEAD) | grep tags | sed 's/tags\///') && \
   GIT_COMMIT=$(git describe --always) && \
   echo "Git TAG: $VERSION GIT Commit: $GIT_COMMIT" && \
   CGO_ENABLED=0 GOOS=linux go build -ldflags "-s -w \
