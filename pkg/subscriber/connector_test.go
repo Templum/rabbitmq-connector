@@ -56,6 +56,8 @@ func getSubscribers(f Connector) {
 func TestConnector_Start(t *testing.T) {
 	cfg := config.Controller{Topics: []string {"Hello"}}
 
+	t.Parallel()
+
 	t.Run("Start with no errors", func(t *testing.T) {
 		factory := mockFactory{Created: 0, faulty: false}
 		target := NewConnector(&cfg, nil, &factory)
@@ -105,6 +107,8 @@ func TestConnector_End(t *testing.T) {
 }
 
 func TestCalculateWorkerCount(t *testing.T) {
+	t.Parallel()
+
 	t.Run("All Workers on one topic", func(t *testing.T) {
 		target := runtime.NumCPU() * 2
 

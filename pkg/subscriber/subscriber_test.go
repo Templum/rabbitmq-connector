@@ -39,15 +39,31 @@ func (m *fullQueueConsumer) ListenForErrors() <-chan error {
 type mockInvoker struct {
 	receivedTopic string
 	receivedMessage *[]byte
+	mutex sync.Mutex
 }
 
 func (m *mockInvoker) Invoke(topic string, message *[]byte)  {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	m.receivedTopic = topic
 	m.receivedMessage = message
 }
 
+func (m *mockInvoker) GetTopic () string {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	return m.receivedTopic
+}
+
+func (m *mockInvoker) GetMessage ()*[]byte {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	return m.receivedMessage
+}
 
 func TestSubscriber_Start(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Start without error", func(t *testing.T) {
 		mock := fullQueueConsumer{faulty:false}
 		target := NewSubscriber("Unit Test", "Sample", &mock, nil)
@@ -80,6 +96,8 @@ func TestSubscriber_Start(t *testing.T) {
 }
 
 func TestSubscriber_IsRunning(t *testing.T) {
+	t.Parallel()
+
 	t.Run("When running", func(t *testing.T) {
 		mock := fullQueueConsumer{faulty:false}
 		target := NewSubscriber("Unit Test", "Sample", &mock, nil)
@@ -105,6 +123,8 @@ func TestSubscriber_IsRunning(t *testing.T) {
 }
 
 func TestSubscriber_Stop(t *testing.T) {
+	t.Parallel()
+
 	t.Run("End without error", func(t *testing.T) {
 		mock := fullQueueConsumer{faulty:false}
 		target := NewSubscriber("Unit Test", "Sample", &mock, nil)
@@ -148,16 +168,16 @@ func TestMessageReceived(t *testing.T) {
 				Topic: "Sample",
 				Message: &message,
 			}
-			time.Sleep(1 * time.Second)
+			time.Sleep(500 * time.Millisecond)
 			wg.Done()
 		}()
 		wg.Wait()
 
-		if invoker.receivedTopic != "Sample" {
+		if invoker.GetTopic() != "Sample" {
 			t.Errorf("Invoker was not called with the correct Topic Sample. %s", invoker.receivedTopic)
 		}
 
-		if !bytes.Equal(*invoker.receivedMessage, message) {
+		if !bytes.Equal(*invoker.GetMessage(), message) {
 			t.Error("Invoker was not called with the correct Message.")
 		}
 	})
@@ -178,12 +198,12 @@ func TestMessageReceived(t *testing.T) {
 				Topic: "Other",
 				Message: &message,
 			}
-			time.Sleep(1 * time.Second)
+			time.Sleep(500 * time.Millisecond)
 			wg.Done()
 		}()
 		wg.Wait()
 
-		if invoker.receivedTopic == "Sample" {
+		if invoker.GetTopic() == "Sample" {
 			t.Error("Invoker should not be called for Other")
 		}
 	})
