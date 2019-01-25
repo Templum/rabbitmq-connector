@@ -45,15 +45,31 @@ func (s *subscriber) Start() error {
 	}
 
 	go func() {
+		errors := s.consumer.ListenForErrors()
+
+		for received := range errors {
+			if received.Recover {
+				log.Printf("Received non cirtical error %s. Will try to recover worker %s", received, s.name)
+				_ = s.Stop()
+				_ = s.Start()
+			} else {
+				log.Printf("Received critical error %s. Shutting down Consumer %s", received, s.name)
+				_ = s.Stop()
+			}
+		}
+	}()
+
+	go func() {
 		for invocation := range invocations {
 			if s.topic == invocation.Topic {
 				go func() {
 					s.client.Invoke(s.topic, invocation.Message)
-					invocation.Finished()
 					// TEMP
 					log.Printf("Message %s", *invocation.Message)
 					log.Printf("Finished invocations of functions on topic %s", s.topic)
 				}()
+			} else {
+				log.Printf("Should not happen")
 			}
 		}
 	}()
