@@ -12,7 +12,8 @@ before_install:
 - docker run -p 5672:5672 -e RABBITMQ_DEFAULT_USER="user" -e RABBITMQ_DEFAULT_PASS="pass" -d --restart always --name ci_rabbitmq rabbitmq:3.7.4
 
 script:
-- go test -race -coverprofile=coverage.txt -covermode=atomic -v ./...
+- go test -race ./...
+- go test -coverprofile=coverage.txt -covermode=atomic -v ./...
 - go build
 - docker build --rm -t ci:latest .
 
