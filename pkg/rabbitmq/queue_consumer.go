@@ -17,7 +17,7 @@ type queueConsumer struct {
 type QueueConsumer interface {
 	Consume() (<-chan *types.OpenFaaSInvocation, error)
 	Stop()
-	ListenForErrors() <-chan error
+	ListenForErrors() <-chan *amqp.Error
 }
 
 func NewQueueConsumer(channel *amqp.Channel) QueueConsumer {
@@ -28,7 +28,7 @@ func (c *queueConsumer) Consume() (<-chan *types.OpenFaaSInvocation, error) {
 	ch, err := c.channel.Consume(
 		c.queueName,
 		"", // Let Rabbit MQ Generate a Tag
-		false,
+		true,
 		false,
 		false,
 		false,
@@ -57,6 +57,9 @@ func (c *queueConsumer) Stop() {
 	}
 }
 
-func (c *queueConsumer) ListenForErrors() <-chan error {
-	return nil
+func (c *queueConsumer) ListenForErrors() <-chan *amqp.Error {
+	errors := make(chan *amqp.Error)
+	c.channel.NotifyClose(errors)
+
+	return errors
 }
