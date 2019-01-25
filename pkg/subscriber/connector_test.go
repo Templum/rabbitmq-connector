@@ -5,6 +5,7 @@ import (
 	"github.com/Templum/rabbitmq-connector/pkg/config"
 	"github.com/Templum/rabbitmq-connector/pkg/rabbitmq"
 	"github.com/Templum/rabbitmq-connector/pkg/types"
+	"github.com/streadway/amqp"
 	"runtime"
 	"testing"
 )
@@ -13,10 +14,10 @@ import (
 
 type minimalQueueConsumer struct {
 	IsActive bool
-	Output chan *types.OpenFaaSInvocation
+	Output   chan *types.OpenFaaSInvocation
 }
 
-func (m *minimalQueueConsumer) Consume() (<-chan *types.OpenFaaSInvocation, error)  {
+func (m *minimalQueueConsumer) Consume() (<-chan *types.OpenFaaSInvocation, error) {
 	m.IsActive = true
 	m.Output = make(chan *types.OpenFaaSInvocation)
 	return m.Output, nil
@@ -27,8 +28,8 @@ func (m *minimalQueueConsumer) Stop() {
 	close(m.Output)
 }
 
-func (m *minimalQueueConsumer) ListenForErrors() <-chan error {
-	return nil
+func (m *minimalQueueConsumer) ListenForErrors() <-chan *amqp.Error {
+	return make(chan *amqp.Error)
 }
 
 //---- Factory Mock ----//
@@ -43,18 +44,17 @@ func (m *mockFactory) Build(topic string) (rabbitmq.QueueConsumer, error) {
 		return nil, errors.New("expected error")
 	} else {
 		m.Created += 1
-		return &minimalQueueConsumer{IsActive: false, Output:nil}, nil
+		return &minimalQueueConsumer{IsActive: false, Output: nil}, nil
 	}
 }
 
 //---- Helper ----//
 func getSubscribers(f Connector) {
 
-
 }
 
 func TestConnector_Start(t *testing.T) {
-	cfg := config.Controller{Topics: []string {"Hello"}}
+	cfg := config.Controller{Topics: []string{"Hello"}}
 
 	t.Parallel()
 
@@ -92,7 +92,7 @@ func TestConnector_Start(t *testing.T) {
 }
 
 func TestConnector_End(t *testing.T) {
-	cfg := config.Controller{Topics: []string {"Hello"}}
+	cfg := config.Controller{Topics: []string{"Hello"}}
 
 	factory := mockFactory{Created: 0, faulty: false}
 	target := NewConnector(&cfg, nil, &factory)
