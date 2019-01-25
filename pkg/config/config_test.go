@@ -1,215 +1,152 @@
+// Copyright (c) Simon Pelczer 2019. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 package config
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"testing"
-	"time"
 )
 
-func TestGetOpenFaaSUrl(t *testing.T) {
-	t.Run("Read Valid URL", func(t *testing.T) {
-		const VALID_URL = "https://openfaas-gw:8080"
-		os.Setenv(EnvFaaSGWUrl, VALID_URL)
-		defer os.Unsetenv(EnvFaaSGWUrl)
+func TestNewConfig(t *testing.T) {
+	t.Run("With invalid Gateway Url", func(t *testing.T) {
+		os.Setenv("OPEN_FAAS_GW_URL", "gateway:8080")
+		defer os.Unsetenv("OPEN_FAAS_GW_URL")
 
-		result := GetOpenFaaSUrl()
+		var err error
 
-		if result != VALID_URL {
-			t.Errorf("Expected %s recieved %s", VALID_URL, result)
+		_, err = NewConfig()
+		if !strings.Contains(err.Error(), "does not include the protocol http / https") {
+			t.Errorf("Did not throw new correct error. Recieved %s", err)
+		}
+
+		os.Setenv("OPEN_FAAS_GW_URL", "tcp://gateway:8080")
+		_, err = NewConfig()
+		if !strings.Contains(err.Error(), "does not include the protocol http / https") {
+			t.Errorf("Did not throw new correct error. Recieved %s", err)
 		}
 	})
 
-	t.Run("Read Invalid URL", func(t *testing.T) {
-		const INVALID_URL = "openfaas-gw:8080"
-		os.Setenv(EnvFaaSGWUrl, INVALID_URL)
-		defer os.Unsetenv(EnvFaaSGWUrl)
-		defer func() {
-			if r := recover(); r == nil {
-				t.Error("Did not panic")
-			}
-		}()
-		GetOpenFaaSUrl()
-	})
+	t.Run("With invalid Rabbit MQ Port", func(t *testing.T) {
+		os.Setenv("RMQ_PORT", "is_string")
+		defer os.Unsetenv("RMQ_PORT")
 
-	t.Run("Read Default URL", func(t *testing.T) {
-		const DEFAULT_URL = "http://gateway:8080"
-		os.Unsetenv(EnvFaaSGWUrl)
+		var err error
 
-		result := GetOpenFaaSUrl()
-
-		if result != DEFAULT_URL {
-			t.Errorf("Expected %s recieved %s", DEFAULT_URL, result)
+		_, err = NewConfig()
+		if !strings.Contains(err.Error(), "is not a valid port") {
+			t.Errorf("Did not throw new correct error. Recieved %s", err)
 		}
-	})
-}
 
-func TestGetExchangeName(t *testing.T) {
-	t.Run("Read Exchange", func(t *testing.T) {
-		const EXCHANGE_NAME = "AwesomeExchange"
-		os.Setenv(EnvMQExchange, EXCHANGE_NAME)
-		defer os.Unsetenv(EnvMQExchange)
+		os.Setenv("RMQ_PORT", "-1")
+		_, err = NewConfig()
+		if !strings.Contains(err.Error(), "is outside of the allowed port range") {
+			t.Errorf("Did not throw new correct error. Recieved %s", err)
+		}
 
-		result := GetExchangeName()
-
-		if result != EXCHANGE_NAME {
-			t.Errorf("Expected %s recieved %s", EXCHANGE_NAME, result)
+		os.Setenv("RMQ_PORT", "65536")
+		_, err = NewConfig()
+		if !strings.Contains(err.Error(), "is outside of the allowed port range") {
+			t.Errorf("Did not throw new correct error. Recieved %s", err)
 		}
 	})
 
-	t.Run("Read Default", func(t *testing.T) {
-		const DEFAULT_NAME = "OpenFaasEx"
-		os.Unsetenv(EnvMQExchange)
+	t.Run("Empty Topics", func(t *testing.T) {
+		os.Setenv("RMQ_TOPICS", "")
+		defer os.Unsetenv("RMQ_TOPICS")
 
-		result := GetExchangeName()
-
-		if result != DEFAULT_NAME {
-			t.Errorf("Expected %s recieved %s", DEFAULT_NAME, result)
-		}
-	})
-}
-
-func TestGetQueueName(t *testing.T) {
-	t.Run("Read Queue", func(t *testing.T) {
-		const QUEUE_NAME = "MyAwesomeQueue"
-		os.Setenv(EnvMQQueue, QUEUE_NAME)
-		defer os.Unsetenv(EnvMQQueue)
-
-		result := GetQueueName()
-
-		if result != QUEUE_NAME {
-			t.Errorf("Expected %s recieved %s", QUEUE_NAME, result)
+		_, err := NewConfig()
+		if !strings.Contains(err.Error(), "No Topic was specified. Provide them via Env RMQ_TOPICS=account,billing,support.") {
+			t.Errorf("Did not throw new correct error. Recieved %s", err)
 		}
 	})
 
-	t.Run("Read Default", func(t *testing.T) {
-		const DEFAULT_NAME = "OpenFaaSQueue"
-		os.Unsetenv(EnvMQQueue)
+	t.Run("Default Config", func(t *testing.T) {
+		os.Setenv("RMQ_TOPICS", "test")
+		defer os.Unsetenv("RMQ_TOPICS")
 
-		result := GetQueueName()
-
-		if result != DEFAULT_NAME {
-			t.Errorf("Expected %s recieved %s", DEFAULT_NAME, result)
+		config, err := NewConfig()
+		if err != nil {
+			t.Error("Should not throw an error")
 		}
-	})
-}
 
-func TestGetRefreshTime(t *testing.T) {
-	t.Run("Read Valid Time", func(t *testing.T) {
-		const VALID_TIME = "1337s"
-		os.Setenv(EnvTopicRefreshTime, VALID_TIME)
-		defer os.Unsetenv(EnvTopicRefreshTime)
-
-		result := GetRefreshTime()
-
-		if expected, _ := time.ParseDuration(VALID_TIME); result != expected {
-			t.Errorf("Expected %s recieved %s", expected, result)
+		if config.GatewayUrl != "http://gateway:8080" {
+			t.Errorf("Expected http://gateway:8080 recieved %s", config.GatewayUrl)
 		}
-	})
 
-	t.Run("Read Invalid Time", func(t *testing.T) {
-		const INVALID_TIME = "asdasdasd"
-		os.Setenv(EnvTopicRefreshTime, INVALID_TIME)
-		defer os.Unsetenv(EnvTopicRefreshTime)
-
-		result := GetRefreshTime()
-
-		if expected, _ := time.ParseDuration("30s"); result != expected {
-			t.Errorf("Expected %s recieved %s", expected, result)
+		if config.RabbitConnectionUrl != "amqp://guest:guest@localhost:5672/" {
+			t.Errorf("Expected amqp://guest:guest@localhost:5672/ recieved %s", config.RabbitConnectionUrl)
 		}
-	})
 
-	t.Run("Read Default", func(t *testing.T) {
-		const DEFAULT_TIME = "30s"
-		os.Unsetenv(EnvTopicRefreshTime)
-
-		result := GetRefreshTime()
-
-		if expected, _ := time.ParseDuration(DEFAULT_TIME); result != expected {
-			t.Errorf("Expected %s recieved %s", expected, result)
+		if config.RabbitSanitizedUrl != "amqp://localhost:5672" {
+			t.Errorf("Expected amqp://localhost:5672 recieved %s", config.RabbitSanitizedUrl)
 		}
-	})
-}
 
-func TestGenerateRabbitMQUrl(t *testing.T) {
-	t.Run("Read Informations", func(t *testing.T) {
-		const RMQ_USER = "user"
-		const RMQ_PASS = "pass"
-		const RMQ_HOST = "rabbitmq-master"
-		const RMQ_PORT = "1337"
+		if config.ExchangeName != "OpenFaasEx" {
+			t.Errorf("Expected OpenFaasEx recieved %s", config.ExchangeName)
+		}
 
-		os.Setenv(EnvMQUser, RMQ_USER)
-		os.Setenv(EnvMQPass, RMQ_PASS)
-		os.Setenv(EnvMQHost, RMQ_HOST)
-		os.Setenv(EnvMQPort, RMQ_PORT)
+		if config.QueueName != "OpenFaaSQueue" {
+			t.Errorf("Expected OpenFaaSQueue recieved %s", config.QueueName)
+		}
 
-		defer os.Unsetenv(EnvMQUser)
-		defer os.Unsetenv(EnvMQPass)
-		defer os.Unsetenv(EnvMQHost)
-		defer os.Unsetenv(EnvMQPort)
+		if len(config.Topics) != 1 {
+			t.Errorf("Expected 1 Topic recieved %d Topic", len(config.Topics))
+		}
 
-		result := GenerateRabbitMQUrl()
-		expected := fmt.Sprintf("amqp://%s:%s@%s:%s/", RMQ_USER, RMQ_PASS, RMQ_HOST, RMQ_PORT)
-
-		if result != expected {
-			t.Errorf("Expected %s recieved %s", expected, result)
+		if config.TopicRefreshTime.Seconds() != 30 {
+			t.Errorf("Expected 30s recieved %fs", config.TopicRefreshTime.Seconds())
 		}
 	})
 
-	t.Run("Read Defaults", func(t *testing.T) {
-		const DEFAULT_USER = "guest"
-		const DEFAULT_PASS = "guest"
-		const DEFAULT_HOST = "localhost"
-		const DEFAULT_PORT = "5672"
+	t.Run("Override Config", func(t *testing.T) {
+		os.Setenv("RMQ_TOPICS", "test")
+		os.Setenv("RMQ_QUEUE", "Queue")
+		os.Setenv("RMQ_EXCHANGE", "Ex")
+		os.Setenv("RMQ_HOST", "rabbit")
+		os.Setenv("RMQ_PORT", "1337")
+		os.Setenv("RMQ_USER", "username")
+		os.Setenv("RMQ_PASS", "password")
+		os.Setenv("OPEN_FAAS_GW_URL", "https://gateway")
+		os.Setenv("TOPIC_MAP_REFRESH_TIME", "40s")
 
-		os.Unsetenv(EnvMQUser)
-		os.Unsetenv(EnvMQPass)
-		os.Unsetenv(EnvMQHost)
-		os.Unsetenv(EnvMQPort)
+		defer os.Unsetenv("RMQ_TOPICS")
+		defer os.Unsetenv("RMQ_QUEUE")
+		defer os.Unsetenv("RMQ_EXCHANGE")
+		defer os.Unsetenv("RMQ_HOST")
+		defer os.Unsetenv("RMQ_PORT")
+		defer os.Unsetenv("RMQ_USER")
+		defer os.Unsetenv("RMQ_PASS")
+		defer os.Unsetenv("OPEN_FAAS_GW_URL")
+		defer os.Unsetenv("TOPIC_MAP_REFRESH_TIME")
 
-		result := GenerateRabbitMQUrl()
-		expected := fmt.Sprintf("amqp://%s:%s@%s:%s/", DEFAULT_USER, DEFAULT_PASS, DEFAULT_HOST, DEFAULT_PORT)
-
-		if result != expected {
-			t.Errorf("Expected %s recieved %s", expected, result)
+		config, err := NewConfig()
+		if err != nil {
+			t.Error("Should not throw an error")
 		}
-	})
-}
 
-func TestGetTopics(t *testing.T) {
-	t.Run("Read Valid Topics", func(t *testing.T) {
-		const TOPICS = "awesome,sales,support"
-		os.Setenv(EnvMQTopics, TOPICS)
-		defer os.Unsetenv(EnvMQTopics)
-
-		result := GetTopics()
-
-		if strings.Join(result, ",") != TOPICS {
-			t.Errorf("Expected %s recieved %s", TOPICS, result)
+		if config.GatewayUrl != "https://gateway" {
+			t.Errorf("Expected https://gateway recieved %s", config.GatewayUrl)
 		}
-	})
 
-	t.Run("Empty Topic", func(t *testing.T) {
-		os.Setenv(EnvMQTopics, "")
-		defer os.Unsetenv(EnvMQTopics)
-		defer func() {
-			if r := recover(); r == nil {
-				t.Error("Did not panic")
-			}
-		}()
+		if config.RabbitConnectionUrl != "amqp://username:password@rabbit:1337/" {
+			t.Errorf("Expected amqp://username:password@rabbit:1337/ recieved %s", config.RabbitConnectionUrl)
+		}
 
-		GetTopics()
-	})
+		if config.RabbitSanitizedUrl != "amqp://rabbit:1337" {
+			t.Errorf("Expected amqp://rabbit:1337 recieved %s", config.RabbitSanitizedUrl)
+		}
 
-	t.Run("No Topic", func(t *testing.T) {
-		os.Unsetenv(EnvMQTopics)
-		defer func() {
-			if r := recover(); r == nil {
-				t.Error("Did not panic")
-			}
-		}()
+		if config.ExchangeName != "Ex" {
+			t.Errorf("Expected Ex recieved %s", config.ExchangeName)
+		}
 
-		GetTopics()
+		if config.QueueName != "Queue" {
+			t.Errorf("Expected Queue recieved %s", config.QueueName)
+		}
+
+		if config.TopicRefreshTime.Seconds() != 40 {
+			t.Errorf("Expected 40s recieved %fs", config.TopicRefreshTime.Seconds())
+		}
 	})
 }
