@@ -70,16 +70,16 @@ func TestNewConfig(t *testing.T) {
 			t.Error("Should not throw an error")
 		}
 
-		if config.GatewayUrl != "http://gateway:8080" {
-			t.Errorf("Expected http://gateway:8080 Received %s", config.GatewayUrl)
+		if config.GatewayURL != "http://gateway:8080" {
+			t.Errorf("Expected http://gateway:8080 Received %s", config.GatewayURL)
 		}
 
-		if config.RabbitConnectionUrl != "amqp://guest:guest@localhost:5672/" {
-			t.Errorf("Expected amqp://guest:guest@localhost:5672/ Received %s", config.RabbitConnectionUrl)
+		if config.RabbitConnectionURL != "amqp://guest:guest@localhost:5672/" {
+			t.Errorf("Expected amqp://guest:guest@localhost:5672/ Received %s", config.RabbitConnectionURL)
 		}
 
-		if config.RabbitSanitizedUrl != "amqp://localhost:5672" {
-			t.Errorf("Expected amqp://localhost:5672 Received %s", config.RabbitSanitizedUrl)
+		if config.RabbitSanitizedURL != "amqp://localhost:5672" {
+			t.Errorf("Expected amqp://localhost:5672 Received %s", config.RabbitSanitizedURL)
 		}
 
 		if config.ExchangeName != "OpenFaasEx" {
@@ -125,16 +125,16 @@ func TestNewConfig(t *testing.T) {
 			t.Error("Should not throw an error")
 		}
 
-		if config.GatewayUrl != "https://gateway" {
-			t.Errorf("Expected https://gateway Received %s", config.GatewayUrl)
+		if config.GatewayURL != "https://gateway" {
+			t.Errorf("Expected https://gateway Received %s", config.GatewayURL)
 		}
 
-		if config.RabbitConnectionUrl != "amqp://username:password@rabbit:1337/" {
-			t.Errorf("Expected amqp://username:password@rabbit:1337/ Received %s", config.RabbitConnectionUrl)
+		if config.RabbitConnectionURL != "amqp://username:password@rabbit:1337/" {
+			t.Errorf("Expected amqp://username:password@rabbit:1337/ Received %s", config.RabbitConnectionURL)
 		}
 
-		if config.RabbitSanitizedUrl != "amqp://rabbit:1337" {
-			t.Errorf("Expected amqp://rabbit:1337 Received %s", config.RabbitSanitizedUrl)
+		if config.RabbitSanitizedURL != "amqp://rabbit:1337" {
+			t.Errorf("Expected amqp://rabbit:1337 Received %s", config.RabbitSanitizedURL)
 		}
 
 		if config.ExchangeName != "Ex" {

@@ -42,10 +42,10 @@ type mockFactory struct {
 func (m *mockFactory) Build(topic string) (rabbitmq.QueueConsumer, error) {
 	if m.faulty {
 		return nil, errors.New("expected error")
-	} else {
-		m.Created += 1
-		return &minimalQueueConsumer{IsActive: false, Output: nil}, nil
 	}
+
+	m.Created++
+	return &minimalQueueConsumer{IsActive: false, Output: nil}, nil
 }
 
 //---- Helper ----//

@@ -1,6 +1,7 @@
+package config
+
 // Copyright (c) Simon Pelczer 2019. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-package config
 
 import (
 	"errors"
@@ -12,10 +13,11 @@ import (
 	"time"
 )
 
+// Controller is the config needed for the connector
 type Controller struct {
-	GatewayUrl          string
-	RabbitConnectionUrl string
-	RabbitSanitizedUrl  string
+	GatewayURL          string
+	RabbitConnectionURL string
+	RabbitSanitizedURL  string
 
 	ExchangeName string
 	QueueName    string
@@ -24,14 +26,16 @@ type Controller struct {
 	TopicRefreshTime time.Duration
 }
 
+// NewConfig reads the connector config from environment variables and further validates them,
+// in some cases it will leverage default values.
 func NewConfig() (*Controller, error) {
-	gatewayUrl, err := getOpenFaaSUrl()
+	gatewayURL, err := getOpenFaaSUrl()
 	if err != nil {
 		return nil, err
 	}
 
-	rabbitUrl, err := getRabbitMQConnectionUrl()
-	sanitizedUrl := getSanitizedRabbitMQUrl()
+	rabbitURL, err := getRabbitMQConnectionURL()
+	sanitizedURL := getSanitizedRabbitMQURL()
 	if err != nil {
 		return nil, err
 	}
@@ -45,9 +49,9 @@ func NewConfig() (*Controller, error) {
 	}
 
 	return &Controller{
-		GatewayUrl:          gatewayUrl,
-		RabbitConnectionUrl: rabbitUrl,
-		RabbitSanitizedUrl:  sanitizedUrl,
+		GatewayURL:          gatewayURL,
+		RabbitConnectionURL: rabbitURL,
+		RabbitSanitizedURL:  sanitizedURL,
 
 		ExchangeName: exchange,
 		QueueName:    queue,
@@ -57,7 +61,7 @@ func NewConfig() (*Controller, error) {
 	}, nil
 }
 
-const envFaaSGwUrl = "OPEN_FAAS_GW_URL"
+const envFaaSGwURL = "OPEN_FAAS_GW_URL"
 const envRabbitUser = "RMQ_USER"
 const envRabbitPass = "RMQ_PASS"
 const envRabbitHost = "RMQ_HOST"
@@ -70,7 +74,7 @@ const envRabbitQueue = "RMQ_QUEUE"
 const envRefreshTime = "TOPIC_MAP_REFRESH_TIME"
 
 func getOpenFaaSUrl() (string, error) {
-	url := readFromEnv(envFaaSGwUrl, "http://gateway:8080")
+	url := readFromEnv(envFaaSGwURL, "http://gateway:8080")
 	if !(strings.HasPrefix(url, "http://")) && !(strings.HasPrefix(url, "https://")) {
 		message := fmt.Sprintf("Provided url %s does not include the protocol http / https", url)
 		return "", errors.New(message)
@@ -78,7 +82,7 @@ func getOpenFaaSUrl() (string, error) {
 	return url, nil
 }
 
-func getRabbitMQConnectionUrl() (string, error) {
+func getRabbitMQConnectionURL() (string, error) {
 	user := readFromEnv(envRabbitUser, "guest")
 	pass := readFromEnv(envRabbitPass, "guest")
 	host := readFromEnv(envRabbitHost, "localhost")
@@ -99,7 +103,7 @@ func getRabbitMQConnectionUrl() (string, error) {
 	return fmt.Sprintf("amqp://%s:%s@%s:%s/", user, pass, host, port), nil
 }
 
-func getSanitizedRabbitMQUrl() string {
+func getSanitizedRabbitMQURL() string {
 	host := readFromEnv(envRabbitHost, "localhost")
 	port := readFromEnv(envRabbitPort, "5672")
 	return fmt.Sprintf("amqp://%s:%s", host, port)
@@ -110,10 +114,10 @@ func getTopics() ([]string, error) {
 	topics := strings.Split(topicsString, ",")
 
 	if topicsString == "" || len(topics) < 1 {
-		return nil, errors.New("No Topic was specified. Provide them via Env RMQ_TOPICS=account,billing,support.")
-	} else {
-		return topics, nil
+		return nil, errors.New("no Topic was specified. Provide them via Env RMQ_TOPICS=account,billing,support")
 	}
+
+	return topics, nil
 }
 
 func getRefreshTime() time.Duration {
@@ -130,7 +134,7 @@ func getRefreshTime() time.Duration {
 func readFromEnv(env string, fallback string) string {
 	if val, exists := os.LookupEnv(env); exists {
 		return val
-	} else {
-		return fallback
 	}
+
+	return fallback
 }

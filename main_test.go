@@ -18,7 +18,7 @@ import (
 var (
 	connector subscriber.Connector
 	mockClient *invokerMock
-	producerClient *producer
+	producerClient *Producer
 )
 
 type Invocation struct {
@@ -32,7 +32,7 @@ func NewInvocation(topic string, message *[]byte, receivedNo uint) *Invocation {
 }
 
 //---- Producer ----//
-type producer struct {
+type Producer struct {
 	channel *amqp.Channel
 	counter uint
 
@@ -42,15 +42,15 @@ type producer struct {
 	mutex           sync.Mutex
 }
 
-func NewProducer(cfg *config.Controller) (*producer, error) {
-	prod := &producer{}
+func NewProducer(cfg *config.Controller) (*Producer, error) {
+	prod := &Producer{}
 	err := prod.setup(cfg)
 	return prod, err
 }
 
-func (p *producer) setup(cfg *config.Controller) error {
+func (p *Producer) setup(cfg *config.Controller) error {
 	var err error
-	con, err := amqp.Dial(cfg.RabbitConnectionUrl)
+	con, err := amqp.Dial(cfg.RabbitConnectionURL)
 
 	channel, err := con.Channel()
 
@@ -66,15 +66,14 @@ func (p *producer) setup(cfg *config.Controller) error {
 
 	if err != nil{
 		return err
-	} else {
-		p.exchange = cfg.ExchangeName
-		p.topic = cfg.Topics[0]
-		p.channel = channel
-		return nil
 	}
+	p.exchange = cfg.ExchangeName
+	p.topic = cfg.Topics[0]
+	p.channel = channel
+	return nil
 }
 
-func (p *producer) SendMessage(body *[]byte) error {
+func (p *Producer) SendMessage(body *[]byte) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
@@ -107,7 +106,7 @@ func newInvokerMock() *invokerMock {
 func (m *invokerMock) Invoke(topic string, message *[]byte) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	m.counter += 1
+	m.counter++
 	invocation := NewInvocation(topic, message, m.counter)
 	m.invocations = append(m.invocations, invocation)
 }
@@ -171,7 +170,7 @@ func TestSystem(t *testing.T)  {
 
 			if err != nil{
 				log.Printf("Received error %s for message %d", err, i)
-				i -= 1
+				i--
 			}
 		}
 
@@ -194,7 +193,7 @@ func TestSystem(t *testing.T)  {
 
 			if err != nil{
 				log.Printf("Received error %s for message %d", err, i)
-				i -= 1
+				i--
 			}
 		}
 

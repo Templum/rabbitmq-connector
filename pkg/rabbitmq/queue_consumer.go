@@ -1,6 +1,7 @@
+package rabbitmq
+
 // Copyright (c) Simon Pelczer 2019. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-package rabbitmq
 
 import (
 	"log"
@@ -14,12 +15,14 @@ type queueConsumer struct {
 	channel   *amqp.Channel
 }
 
+// QueueConsumer is an Consumer that listens on a specified queue and forwards incoming messages.
 type QueueConsumer interface {
 	Consume() (<-chan *types.OpenFaaSInvocation, error)
 	Stop()
 	ListenForErrors() <-chan *amqp.Error
 }
 
+// NewQueueConsumer creates a new instance of QueueConsumer and assigns the passed channel to it.
 func NewQueueConsumer(channel *amqp.Channel) QueueConsumer {
 	return &queueConsumer{channel: channel}
 }

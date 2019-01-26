@@ -1,6 +1,7 @@
+package subscriber
+
 // Copyright (c) Simon Pelczer 2019. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-package subscriber
 
 import (
 	"github.com/Templum/rabbitmq-connector/pkg/rabbitmq"
@@ -18,6 +19,7 @@ type subscriber struct {
 	active bool
 }
 
+// Subscriber subscribes to an topic on Rabbit MQ. It can also be seen as a worker.
 type Subscriber interface {
 	Start() error
 	Stop() error
@@ -25,7 +27,8 @@ type Subscriber interface {
 	IsRunning() bool
 }
 
-func NewSubscriber(name string, topic string, consumer rabbitmq.QueueConsumer, client types.Invoker) *subscriber {
+// NewSubscriber setups a new subscriber for the given topic.
+func NewSubscriber(name string, topic string, consumer rabbitmq.QueueConsumer, client types.Invoker) Subscriber {
 	return &subscriber{
 		name:  name,
 		topic: topic,
