@@ -27,7 +27,7 @@ func NewQueueConsumerFactory(config *config.Controller) (QueueConsumerFactory, e
 
 	con, err := factory.establishConnection(config.RabbitConnectionUrl, 5)
 	if err != nil {
-		log.Printf("Failed to establish a connection to %s. Last recieved error is %s", config.RabbitSanitizedUrl, err)
+		log.Printf("Failed to establish a connection to %s. Last Received error is %s", config.RabbitSanitizedUrl, err)
 		return nil, err
 	} else {
 		factory.con = con
