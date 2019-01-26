@@ -72,11 +72,11 @@ func TestSubscriber_Start(t *testing.T) {
 		err := target.Start()
 
 		if err != nil {
-			t.Errorf("Expected no error, but recieved %s", err)
+			t.Errorf("Expected no error, but Received %s", err)
 		}
 
 		if target.IsRunning() != true {
-			t.Errorf("Expected true for isRunning recieved %t", target.IsRunning())
+			t.Errorf("Expected true for isRunning Received %t", target.IsRunning())
 		}
 	})
 
@@ -87,11 +87,11 @@ func TestSubscriber_Start(t *testing.T) {
 		err := target.Start()
 
 		if err.Error() != "expected" {
-			t.Errorf("Expected Error expected recieved %s", err)
+			t.Errorf("Expected Error expected Received %s", err)
 		}
 
 		if target.IsRunning() != false {
-			t.Errorf("Expected false for isRunning recieved %t", target.IsRunning())
+			t.Errorf("Expected false for isRunning Received %t", target.IsRunning())
 		}
 	})
 }
@@ -107,7 +107,7 @@ func TestSubscriber_IsRunning(t *testing.T) {
 		isRunning := target.IsRunning()
 
 		if isRunning != true {
-			t.Errorf("Expected true for isRunning recieved %t", isRunning)
+			t.Errorf("Expected true for isRunning Received %t", isRunning)
 		}
 	})
 
@@ -118,7 +118,7 @@ func TestSubscriber_IsRunning(t *testing.T) {
 		isRunning := target.IsRunning()
 
 		if isRunning != false {
-			t.Errorf("Expected false for isRunning recieved %t", isRunning)
+			t.Errorf("Expected false for isRunning Received %t", isRunning)
 		}
 	})
 }
@@ -134,7 +134,7 @@ func TestSubscriber_Stop(t *testing.T) {
 		err := target.Stop()
 
 		if err != nil {
-			t.Errorf("Expected no error, but recieved %s", err)
+			t.Errorf("Expected no error, but Received %s", err)
 		}
 	})
 
@@ -145,7 +145,7 @@ func TestSubscriber_Stop(t *testing.T) {
 		err := target.Stop()
 
 		if err != nil {
-			t.Errorf("Expected no error, but recieved %s", err)
+			t.Errorf("Expected no error, but Received %s", err)
 		}
 	})
 }
