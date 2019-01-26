@@ -38,7 +38,7 @@ func main() {
 	// Building SDK Specific Config
 	controllerCfg := &types.ControllerConfig{
 		RebuildInterval: connectorCfg.TopicRefreshTime,
-		GatewayURL:      connectorCfg.GatewayUrl,
+		GatewayURL:      connectorCfg.GatewayURL,
 		PrintResponse:   false,
 	}
 

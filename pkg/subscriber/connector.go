@@ -1,6 +1,7 @@
+package subscriber
+
 // Copyright (c) Simon Pelczer 2019. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-package subscriber
 
 import (
 	"log"
@@ -21,11 +22,13 @@ type connector struct {
 	subscribers []Subscriber
 }
 
+// Connector is the interface for the RabbitMQ Connector. Allowing for starting & stopping it.
 type Connector interface {
 	Start()
 	End()
 }
 
+// NewConnector generates a connector using the provided parameters.
 func NewConnector(config *config.Controller, client types.Invoker, factory rabbitmq.QueueConsumerFactory) Connector {
 	return &connector{
 		config:      config,
@@ -82,8 +85,7 @@ func CalculateWorkerCount(amountOfTopics int) int {
 
 	if int(targetGoRoutines) < amountOfTopics {
 		return int(math.Floor(targetGoRoutines)/float64(amountOfTopics)) + 1
-	} else {
-		return int(math.Floor(targetGoRoutines) / float64(amountOfTopics))
 	}
 
+	return int(math.Floor(targetGoRoutines) / float64(amountOfTopics))
 }

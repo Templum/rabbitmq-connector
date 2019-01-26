@@ -20,10 +20,10 @@ type fullQueueConsumer struct {
 func (m *fullQueueConsumer) Consume() (<-chan *types.OpenFaaSInvocation, error) {
 	if m.faulty {
 		return nil, errors.New("expected")
-	} else {
-		m.Output = make(chan *types.OpenFaaSInvocation)
-		return m.Output, nil
 	}
+
+	m.Output = make(chan *types.OpenFaaSInvocation)
+	return m.Output, nil
 }
 
 func (m *fullQueueConsumer) Stop() {

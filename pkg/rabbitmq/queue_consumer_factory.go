@@ -1,6 +1,7 @@
+package rabbitmq
+
 // Copyright (c) Simon Pelczer 2019. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-package rabbitmq
 
 import (
 	"log"
@@ -15,24 +16,26 @@ type queueConsumerFactory struct {
 	config *config.Controller
 }
 
+// QueueConsumerFactory will build QueueConsumer for the given topic.
 type QueueConsumerFactory interface {
 	Build(topic string) (QueueConsumer, error)
 }
 
+// NewQueueConsumerFactory Initializes a new factory using the provided config.
 func NewQueueConsumerFactory(config *config.Controller) (QueueConsumerFactory, error) {
 	factory := queueConsumerFactory{
 		con:    nil,
 		config: config,
 	}
 
-	con, err := factory.establishConnection(config.RabbitConnectionUrl, 5)
+	con, err := factory.establishConnection(config.RabbitConnectionURL, 5)
 	if err != nil {
-		log.Printf("Failed to establish a connection to %s. Last Received error is %s", config.RabbitSanitizedUrl, err)
+		log.Printf("Failed to establish a connection to %s. Last Received error is %s", config.RabbitSanitizedURL, err)
 		return nil, err
-	} else {
-		factory.con = con
-		return &factory, nil
 	}
+
+	factory.con = con
+	return &factory, nil
 }
 
 func (f *queueConsumerFactory) Build(topic string) (QueueConsumer, error) {
@@ -50,13 +53,13 @@ func (f *queueConsumerFactory) Build(topic string) (QueueConsumer, error) {
 	return NewQueueConsumer(ch), nil
 }
 
-func (f *queueConsumerFactory) establishConnection(connectionUrl string, retries uint) (*amqp.Connection, error) {
-	con, err := amqp.Dial(connectionUrl)
+func (f *queueConsumerFactory) establishConnection(connectionURL string, retries uint) (*amqp.Connection, error) {
+	con, err := amqp.Dial(connectionURL)
 
 	if err != nil && retries > 0 {
 		log.Printf("Failed to establish connection due to %s. %d tries left", err, retries)
 		time.Sleep(5 * time.Second)
-		return f.establishConnection(connectionUrl, retries-1)
+		return f.establishConnection(connectionURL, retries-1)
 	}
 
 	return con, err
@@ -114,8 +117,8 @@ func (f *queueConsumerFactory) declareTopology(c *amqp.Channel, topic string) er
 
 	if err != nil {
 		return err
-	} else {
-		log.Printf("Binding Queue %s to Exchange %s for Topic: %s", cfg.QueueName, cfg.ExchangeName, topic)
-		return nil
 	}
+
+	log.Printf("Binding Queue %s to Exchange %s for Topic: %s", cfg.QueueName, cfg.ExchangeName, topic)
+	return nil
 }
