@@ -56,7 +56,7 @@ func TestNewConfig(t *testing.T) {
 		defer os.Unsetenv("RMQ_TOPICS")
 
 		_, err := NewConfig()
-		if !strings.Contains(err.Error(), "No Topic was specified. Provide them via Env RMQ_TOPICS=account,billing,support.") {
+		if !strings.Contains(err.Error(), "no Topic was specified. Provide them via Env RMQ_TOPICS=account,billing,support") {
 			t.Errorf("Did not throw new correct error. Received %s", err)
 		}
 	})
