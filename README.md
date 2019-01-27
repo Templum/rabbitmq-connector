@@ -1,16 +1,23 @@
 # OpenFaaS RabbitMQ Connector
 
-This project is an connector for the OpenFaaS project. It enables the triggering of OpenFaaS functions
-based on Rabbit MQ topics (Routing Keys). During deployment of an OpenFaaS function a list of relevant 
-topics can be specified, that is used to determine which function should receive the message.
+[![Go Report Card](https://goreportcard.com/badge/github.com/Templum/rabbitmq-connector)](https://goreportcard.com/report/github.com/Templum/rabbitmq-connector)
+[![Build Status](https://travis-ci.org/Templum/rabbitmq-connector.svg?branch=develop)](https://travis-ci.org/Templum/rabbitmq-connector)
+[![codecov](https://codecov.io/gh/Templum/rabbitmq-connector/branch/develop/graph/badge.svg)](https://codecov.io/gh/Templum/rabbitmq-connector)
 
-The current implementation is only fire & forget, however this will be adjusted in the future.
+This project is an unofficial connector/trigger for OpenFaaS, which allows triggering deployed function from RabbitMQ.
+It leverages `Routing keys` for which OpenFaaS functions can be registered. More on the usage can be read [here](#Usage).
 
 ## Usage
 
-### General
- 
-Environment Variables:
+Using the [OpenFaaS CLI](https://github.com/openfaas/faas-cli) or [Rest API](https://github.com/openfaas/faas/tree/master/api-docs) 
+deploy a function which has an `annotation` named `topic`, this has to be a comma-separated string of the relevant topics. 
+E.g. `log,monitoring,billing`. Please also make sure to check out the official Rabbit MQ documentation [here](https://www.rabbitmq.com/production-checklist.html) and [here](https://www.rabbitmq.com/monitoring.html) 
+in order to avoid message dropping. The connector is configured to spawn workers per topic based on the available CPU's,
+however it will try to spawn at least 1 worker per topic. Currently, the connector operates on 1 exchange and leverage 1
+Queue. Information on the Topology of the Queue can be found [here](#Topology)
+
+### Configuration Options (via Environment Variables):
+
 * `basic_auth`: Toggle to activate or deactivate basic_auth (E.g `1` || `true`) 
 * `secret_mount_path`: The path to a file containing the basic auth secret for the OpenFaaS gateway
 * `OPEN_FAAS_GW_URL`: URL to the OpenFaaS gateway defaults to `http://gateway:8080`
@@ -26,6 +33,31 @@ Environment Variables:
 * `REQ_TIMEOUT`: Request Timeout for invocations of OpenFaaS functions defaults to `30s`
 * `TOPIC_MAP_REFRESH_TIME`: Refresh time for the topic map defaults to `60s`
 
+### Topology
+
+1 Exchange & 1 Topic, which can be set using `RMQ_QUEUE` & `RMQ_EXCHANGE`.
+
+**Exchange:**
+
+```
+    Kind: "direct",
+    Durable: true,
+    Auto Delete: false,
+    Internal: false,
+    No Wait: false
+```
+
+**Queue:**
+
+```
+    Durable: true,
+    Auto Delete: false,
+    Internal: false,
+    No Wait: false
+```
+
+## Deployment 
+
 ### Kubernetes
 
 The required files to deploy OpenFaaS RabbitMQ connector can be found under `artifacts`. It assumes that OpenFaaS was
@@ -40,13 +72,15 @@ deployed using this [script](https://github.com/openfaas/faas/blob/master/deploy
 RabbitMQ node and an producer, you might want to remove them. If you want to use an existing Rabbit MQ setup make sure to
 override `RMQ` accordingly.
 
-## Bug Reporting & Feature Requests
-
-Please feel free to report any issues or Feature request on the [Issue Tab](https://github.com/Templum/rabbitmq-connector/issues). 
-
-## Local Setup
+### Local
 
 1. Start an local Rabbit MQ Broker, this can be done with`/hack/development_env_setup.sh`.
 2. Expose the necessary environment variables, in GoLand this can be done as part of the configuration
 3. Deploy at least one function that listens to a topic: `$ faas-cli store deploy figlet --annotation topic="account"`
 4. Start a producer to generate messages 
+
+
+
+## Bug Reporting & Feature Requests
+
+Please feel free to report any issues or Feature request on the [Issue Tab](https://github.com/Templum/rabbitmq-connector/issues). 
