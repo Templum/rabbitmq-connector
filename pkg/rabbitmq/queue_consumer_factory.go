@@ -4,6 +4,7 @@ package rabbitmq
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -50,7 +51,7 @@ func (f *queueConsumerFactory) Build(topic string) (QueueConsumer, error) {
 		return nil, err
 	}
 
-	return NewQueueConsumer(ch), nil
+	return NewQueueConsumer(generateQueueName(topic), ch), nil
 }
 
 func (f *queueConsumerFactory) establishConnection(connectionURL string, retries uint) (*amqp.Connection, error) {
@@ -79,6 +80,7 @@ func (f *queueConsumerFactory) establishChannel(retries uint) (*amqp.Channel, er
 func (f *queueConsumerFactory) declareTopology(c *amqp.Channel, topic string) error {
 	var err error
 	cfg := f.config
+	queueName := generateQueueName(topic)
 
 	err = c.ExchangeDeclare(
 		cfg.ExchangeName,
@@ -95,7 +97,7 @@ func (f *queueConsumerFactory) declareTopology(c *amqp.Channel, topic string) er
 	}
 
 	_, err = c.QueueDeclare(
-		cfg.QueueName,
+		queueName,
 		true,
 		false,
 		false,
@@ -108,7 +110,7 @@ func (f *queueConsumerFactory) declareTopology(c *amqp.Channel, topic string) er
 	}
 
 	err = c.QueueBind(
-		cfg.QueueName,
+		queueName,
 		topic,
 		cfg.ExchangeName,
 		false,
@@ -119,6 +121,12 @@ func (f *queueConsumerFactory) declareTopology(c *amqp.Channel, topic string) er
 		return err
 	}
 
-	log.Printf("Binding Queue %s to Exchange %s for Topic: %s", cfg.QueueName, cfg.ExchangeName, topic)
+	log.Printf("Binding Queue %s to Exchange %s for Topic: %s", queueName, cfg.ExchangeName, topic)
 	return nil
+}
+
+// generateQueueName will return the QueueName which consists of a prefix and the topic
+func generateQueueName(topic string) string {
+	const PreFix = "OpenFaaS"
+	return fmt.Sprintf("%s_%s", PreFix, topic)
 }
