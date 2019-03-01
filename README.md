@@ -35,7 +35,7 @@ Queue. Information on the Topology of the Queue can be found [here](#Topology)
 
 ### Topology
 
-1 Exchange & 1 Topic, which can be set using `RMQ_QUEUE` & `RMQ_EXCHANGE`.
+1 Exchange (set via `RMQ_EXCHANGE`) & N Topic (set per topic with naming schema `OpenFaaS_TOPIC`)
 
 **Exchange:**
 

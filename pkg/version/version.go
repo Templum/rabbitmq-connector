@@ -11,7 +11,7 @@ var (
 	//DEVVersion string for the development version
 	DEVVersion = "dev"
 	// DEVCommit string for the development version
-	DEVCommit  = "local"
+	DEVCommit = "local"
 )
 
 // GetReleaseInfo returns commit hash and version tag (if available).

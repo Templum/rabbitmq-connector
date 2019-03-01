@@ -16,14 +16,14 @@ import (
 )
 
 var (
-	connector subscriber.Connector
-	mockClient *invokerMock
+	connector      subscriber.Connector
+	mockClient     *invokerMock
 	producerClient *Producer
 )
 
 type Invocation struct {
-	Topic string
-	Message *[]byte
+	Topic      string
+	Message    *[]byte
 	ReceivedNo uint
 }
 
@@ -37,9 +37,9 @@ type Producer struct {
 	counter uint
 
 	exchange string
-	topic string
+	topic    string
 
-	mutex           sync.Mutex
+	mutex sync.Mutex
 }
 
 func NewProducer(cfg *config.Controller) (*Producer, error) {
@@ -64,7 +64,7 @@ func (p *Producer) setup(cfg *config.Controller) error {
 		nil,
 	)
 
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	p.exchange = cfg.ExchangeName
@@ -80,27 +80,27 @@ func (p *Producer) SendMessage(body *[]byte) error {
 	err := p.channel.Publish(
 		p.exchange,
 		p.topic,
-			false,
-			false,
-			amqp.Publishing{
-				DeliveryMode: amqp.Persistent,
-				ContentType: "text/plain",
-				Body:        *body,
-				Timestamp: time.Now(),
-			})
+		false,
+		false,
+		amqp.Publishing{
+			DeliveryMode: amqp.Persistent,
+			ContentType:  "text/plain",
+			Body:         *body,
+			Timestamp:    time.Now(),
+		})
 
 	return err
 }
 
 //---- Invoker Mock ----//
 type invokerMock struct {
-	invocations		[]*Invocation
-	counter uint
-	mutex           sync.Mutex
+	invocations []*Invocation
+	counter     uint
+	mutex       sync.Mutex
 }
 
 func newInvokerMock() *invokerMock {
-	return &invokerMock{counter:0}
+	return &invokerMock{counter: 0}
 }
 
 func (m *invokerMock) Invoke(topic string, message *[]byte) {
@@ -116,13 +116,11 @@ func (m *invokerMock) GetInvocations() []*Invocation {
 	defer m.mutex.Unlock()
 	return m.invocations
 }
+
 //---- Invoker Mock ----//
 
-
-
-func TestMain(m *testing.M){
-	os.Setenv("RMQ_TOPICS", "unit_test")
-	os.Setenv("RMQ_QUEUE", "Queue")
+func TestMain(m *testing.M) {
+	os.Setenv("RMQ_TOPICS", "unit_test,another_topic")
 	os.Setenv("RMQ_EXCHANGE", "Ex")
 	os.Setenv("RMQ_HOST", "localhost")
 	os.Setenv("RMQ_PORT", "5672")
@@ -130,7 +128,6 @@ func TestMain(m *testing.M){
 	os.Setenv("RMQ_PASS", "pass")
 
 	defer os.Unsetenv("RMQ_TOPICS")
-	defer os.Unsetenv("RMQ_QUEUE")
 	defer os.Unsetenv("RMQ_EXCHANGE")
 	defer os.Unsetenv("RMQ_HOST")
 	defer os.Unsetenv("RMQ_PORT")
@@ -158,8 +155,7 @@ func TestMain(m *testing.M){
 	os.Exit(m.Run())
 }
 
-
-func TestSystem(t *testing.T)  {
+func TestSystem(t *testing.T) {
 	connector.Start()
 	time.Sleep(10 * time.Second)
 
@@ -168,7 +164,7 @@ func TestSystem(t *testing.T)  {
 			message := []byte(fmt.Sprintf("I'm Message %d", i))
 			err := producerClient.SendMessage(&message)
 
-			if err != nil{
+			if err != nil {
 				log.Printf("Received error %s for message %d", err, i)
 				i--
 			}
@@ -183,6 +179,7 @@ func TestSystem(t *testing.T)  {
 
 		mockClient.invocations = nil
 	})
+
 	connector.End()
 	time.Sleep(10 * time.Second)
 
@@ -191,7 +188,7 @@ func TestSystem(t *testing.T)  {
 			message := []byte(fmt.Sprintf("I'm Message %d send while beeing inactive", i))
 			err := producerClient.SendMessage(&message)
 
-			if err != nil{
+			if err != nil {
 				log.Printf("Received error %s for message %d", err, i)
 				i--
 			}
