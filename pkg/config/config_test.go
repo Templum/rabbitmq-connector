@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestNewConfig(t *testing.T) {
@@ -51,6 +52,27 @@ func TestNewConfig(t *testing.T) {
 		}
 	})
 
+	t.Run("With invalid RefreshTime", func(t *testing.T) {
+		os.Setenv("TOPIC_MAP_REFRESH_TIME", "is_string")
+		defer os.Unsetenv("TOPIC_MAP_REFRESH_TIME")
+
+		var duration time.Duration
+
+		duration = getRefreshTime()
+
+		if duration.Seconds() != 30 {
+			t.Errorf("Should fallback to 30s instead it was %f", duration.Seconds())
+		}
+
+		os.Setenv("TOPIC_MAP_REFRESH_TIME", "66,31h")
+
+		duration = getRefreshTime()
+
+		if duration.Seconds() != 30 {
+			t.Errorf("Should fallback to 30s instead it was %f", duration.Seconds())
+		}
+	})
+
 	t.Run("Empty Topics", func(t *testing.T) {
 		os.Setenv("RMQ_TOPICS", "")
 		defer os.Unsetenv("RMQ_TOPICS")
@@ -84,10 +106,6 @@ func TestNewConfig(t *testing.T) {
 
 		if config.ExchangeName != "OpenFaasEx" {
 			t.Errorf("Expected OpenFaasEx Received %s", config.ExchangeName)
-		}
-
-		if config.QueueName != "OpenFaaSQueue" {
-			t.Errorf("Expected OpenFaaSQueue Received %s", config.QueueName)
 		}
 
 		if len(config.Topics) != 1 {
@@ -139,10 +157,6 @@ func TestNewConfig(t *testing.T) {
 
 		if config.ExchangeName != "Ex" {
 			t.Errorf("Expected Ex Received %s", config.ExchangeName)
-		}
-
-		if config.QueueName != "Queue" {
-			t.Errorf("Expected Queue Received %s", config.QueueName)
 		}
 
 		if config.TopicRefreshTime.Seconds() != 40 {

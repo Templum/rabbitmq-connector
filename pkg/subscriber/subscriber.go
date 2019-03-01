@@ -52,7 +52,7 @@ func (s *subscriber) Start() error {
 
 		for received := range errors {
 			if received.Recover {
-				log.Printf("Received non cirtical error %s. Will try to recover worker %s", received, s.name)
+				log.Printf("Received non critical error %s. Will try to recover worker %s", received, s.name)
 				_ = s.Stop()
 				_ = s.Start()
 			} else {
@@ -67,8 +67,6 @@ func (s *subscriber) Start() error {
 			if s.topic == invocation.Topic {
 				go func() {
 					s.client.Invoke(s.topic, invocation.Message)
-					// TEMP
-					log.Printf("Message %s", *invocation.Message)
 					log.Printf("Finished invocations of functions on topic %s", s.topic)
 				}()
 			} else {

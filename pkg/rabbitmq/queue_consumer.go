@@ -23,8 +23,8 @@ type QueueConsumer interface {
 }
 
 // NewQueueConsumer creates a new instance of QueueConsumer and assigns the passed channel to it.
-func NewQueueConsumer(channel *amqp.Channel) QueueConsumer {
-	return &queueConsumer{channel: channel}
+func NewQueueConsumer(queueName string, channel *amqp.Channel) QueueConsumer {
+	return &queueConsumer{queueName: queueName, channel: channel}
 }
 
 func (c *queueConsumer) Consume() (<-chan *types.OpenFaaSInvocation, error) {
