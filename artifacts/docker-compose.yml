@@ -21,7 +21,7 @@ services:
       - streaming
 
   connector:
-    image: templum/rabbitmq-connector:dev
+    image: templum/rabbitmq-connector:develop
     environment:
       RMQ_TOPICS: "billing,account"
       RMQ_HOST: "rabbitqueue"

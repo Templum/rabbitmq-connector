@@ -12,7 +12,7 @@ spec:
     spec:
       containers:
       - name: connector
-        image: templum/rabbitmq-connector:dev
+        image: templum/rabbitmq-connector:develop
         imagePullPolicy: Always
         env:
         - name: basic_auth
