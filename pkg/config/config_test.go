@@ -115,6 +115,10 @@ func TestNewConfig(t *testing.T) {
 		if config.TopicRefreshTime.Seconds() != 30 {
 			t.Errorf("Expected 30s Received %fs", config.TopicRefreshTime.Seconds())
 		}
+
+		if config.InsecureSkipVerify != false {
+			t.Errorf("Expected false Received %t", config.InsecureSkipVerify)
+		}
 	})
 
 	t.Run("Override Config", func(t *testing.T) {
@@ -127,6 +131,7 @@ func TestNewConfig(t *testing.T) {
 		os.Setenv("RMQ_PASS", "password")
 		os.Setenv("OPEN_FAAS_GW_URL", "https://gateway")
 		os.Setenv("TOPIC_MAP_REFRESH_TIME", "40s")
+		os.Setenv("INSECURE_SKIP_VERIFY", "true")
 
 		defer os.Unsetenv("RMQ_TOPICS")
 		defer os.Unsetenv("RMQ_QUEUE")
@@ -137,6 +142,7 @@ func TestNewConfig(t *testing.T) {
 		defer os.Unsetenv("RMQ_PASS")
 		defer os.Unsetenv("OPEN_FAAS_GW_URL")
 		defer os.Unsetenv("TOPIC_MAP_REFRESH_TIME")
+		defer os.Unsetenv("INSECURE_SKIP_VERIFY")
 
 		config, err := NewConfig()
 		if err != nil {
@@ -161,6 +167,10 @@ func TestNewConfig(t *testing.T) {
 
 		if config.TopicRefreshTime.Seconds() != 40 {
 			t.Errorf("Expected 40s Received %fs", config.TopicRefreshTime.Seconds())
+		}
+
+		if config.InsecureSkipVerify != true {
+			t.Errorf("Expected true Received %t", config.InsecureSkipVerify)
 		}
 	})
 }

@@ -22,7 +22,8 @@ type Controller struct {
 	ExchangeName string
 	Topics       []string
 
-	TopicRefreshTime time.Duration
+	TopicRefreshTime   time.Duration
+	InsecureSkipVerify bool
 }
 
 // NewConfig reads the connector config from environment variables and further validates them,
@@ -46,13 +47,19 @@ func NewConfig() (*Controller, error) {
 		return nil, err
 	}
 
+	skipVerify, err := strconv.ParseBool(readFromEnv(envSkipVerify, "false"))
+	if err != nil {
+		return nil, err
+	}
+
 	return &Controller{
 		GatewayURL:          gatewayURL,
 		RabbitConnectionURL: rabbitURL,
 		RabbitSanitizedURL:  sanitizedURL,
 
-		ExchangeName: exchange,
-		Topics:       topics,
+		ExchangeName:       exchange,
+		Topics:             topics,
+		InsecureSkipVerify: skipVerify,
 
 		TopicRefreshTime: getRefreshTime(),
 	}, nil
@@ -68,6 +75,7 @@ const envRabbitTopics = "RMQ_TOPICS"
 const envRabbitExchange = "RMQ_EXCHANGE"
 
 const envRefreshTime = "TOPIC_MAP_REFRESH_TIME"
+const envSkipVerify = "INSECURE_SKIP_VERIFY"
 
 func getOpenFaaSUrl() (string, error) {
 	url := readFromEnv(envFaaSGwURL, "http://gateway:8080")

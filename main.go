@@ -11,6 +11,7 @@ import (
 	"github.com/Templum/rabbitmq-connector/pkg/config"
 	"github.com/Templum/rabbitmq-connector/pkg/rabbitmq"
 	"github.com/Templum/rabbitmq-connector/pkg/subscriber"
+	t "github.com/Templum/rabbitmq-connector/pkg/types"
 	"github.com/Templum/rabbitmq-connector/pkg/version"
 	"github.com/openfaas-incubator/connector-sdk/types"
 	"github.com/openfaas/faas-provider/auth"
@@ -44,6 +45,9 @@ func main() {
 
 	// Start SDK
 	controller := types.NewController(creds, controllerCfg)
+	// TODO: Remove work around (either by pushing it to the connector) or maybe by upgrading connector sdk
+	controller.Invoker.Client = t.MakeHTTPClient(connectorCfg.InsecureSkipVerify, controllerCfg.UpstreamTimeout)
+
 	controller.BeginMapBuilder()
 	log.Printf("Started Map Building. Be Aware it will take %s until the first map is avaliable.", connectorCfg.TopicRefreshTime)
 
