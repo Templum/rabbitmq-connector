@@ -32,6 +32,7 @@ Queue. Information on the Topology of the Queue can be found [here](#Topology)
 
 * `REQ_TIMEOUT`: Request Timeout for invocations of OpenFaaS functions defaults to `30s`
 * `TOPIC_MAP_REFRESH_TIME`: Refresh time for the topic map defaults to `60s`
+* `INSECURE_SKIP_VERIFY`: Allows to skip verification of HTTP Cert for Communication Connector <=> OpenFaaS default is `false`. It is recommended to keep false, as enabling it opens up the possibility of a man in the middle attack.
 
 ### Topology
 
