@@ -7,3 +7,5 @@ require (
 	github.com/openfaas/faas-provider v0.0.0-20181104131730-8b3147b013c6
 	github.com/streadway/amqp v0.0.0-20181107104731-27835f1a64e9
 )
+
+go 1.13
