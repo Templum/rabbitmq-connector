@@ -49,7 +49,7 @@ func main() {
 
 	factory, err := rabbitmq.NewQueueConsumerFactory(connectorCfg)
 	if err != nil {
-		log.Fatalf("Connector could not be started Received %s", err)
+		log.Fatalf("Connector could not be started Recieved %s", err)
 	}
 
 	connector := subscriber.NewConnector(connectorCfg, controller, factory)
@@ -63,10 +63,10 @@ func main() {
 	sig := <-signalChannel
 	switch sig {
 	case os.Interrupt:
-		log.Printf("Received SIGINT preparing for shutdown")
+		log.Printf("Recieved SIGINT preparing for shutdown")
 		connector.End()
 	case syscall.SIGTERM:
-		log.Printf("Received SIGTERM shutting down")
+		log.Printf("Recieved SIGTERM shutting down")
 		connector.End()
 	}
 }

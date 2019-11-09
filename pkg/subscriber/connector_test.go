@@ -115,7 +115,7 @@ func TestCalculateWorkerCount(t *testing.T) {
 		calculated := CalculateWorkerCount(1)
 
 		if calculated != target {
-			t.Errorf("Expected %d Received %d", target, calculated)
+			t.Errorf("Expected %d Recieved %d", target, calculated)
 		}
 	})
 
@@ -125,7 +125,7 @@ func TestCalculateWorkerCount(t *testing.T) {
 		calculated := CalculateWorkerCount(2)
 
 		if calculated != target {
-			t.Errorf("Expected %d Received %d", target, calculated)
+			t.Errorf("Expected %d Recieved %d", target, calculated)
 		}
 	})
 
@@ -135,7 +135,7 @@ func TestCalculateWorkerCount(t *testing.T) {
 		calculated := CalculateWorkerCount(runtime.NumCPU() * 2)
 
 		if calculated != target {
-			t.Errorf("Expected %d Received %d", target, calculated)
+			t.Errorf("Expected %d Recieved %d", target, calculated)
 		}
 	})
 
@@ -145,7 +145,7 @@ func TestCalculateWorkerCount(t *testing.T) {
 		calculated := CalculateWorkerCount(runtime.NumCPU()*2 + 2)
 
 		if calculated != target {
-			t.Errorf("Expected %d Received %d", target, calculated)
+			t.Errorf("Expected %d Recieved %d", target, calculated)
 		}
 	})
 }

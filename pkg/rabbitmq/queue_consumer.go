@@ -56,7 +56,7 @@ func (c *queueConsumer) Consume() (<-chan *types.OpenFaaSInvocation, error) {
 func (c *queueConsumer) Stop() {
 	err := c.channel.Close()
 	if err != nil {
-		log.Printf("Received %s during close", err)
+		log.Printf("Recieved %s during close", err)
 	}
 }
 

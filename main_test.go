@@ -136,17 +136,17 @@ func TestMain(m *testing.M) {
 
 	connectorCfg, err := config.NewConfig()
 	if err != nil {
-		log.Printf("Received %s during config building", err)
+		log.Printf("Recieved %s during config building", err)
 		os.Exit(1)
 	}
 	factory, err := rabbitmq.NewQueueConsumerFactory(connectorCfg)
 	if err != nil {
-		log.Printf("Received %s during factory creation", err)
+		log.Printf("Recieved %s during factory creation", err)
 		os.Exit(1)
 	}
 	producerClient, err = NewProducer(connectorCfg)
 	if err != nil {
-		log.Printf("Received %s during producer creation", err)
+		log.Printf("Recieved %s during producer creation", err)
 		os.Exit(1)
 	}
 	mockClient = newInvokerMock()
@@ -165,7 +165,7 @@ func TestSystem(t *testing.T) {
 			err := producerClient.SendMessage(&message)
 
 			if err != nil {
-				log.Printf("Received error %s for message %d", err, i)
+				log.Printf("Recieved error %s for message %d", err, i)
 				i--
 			}
 		}
@@ -189,7 +189,7 @@ func TestSystem(t *testing.T) {
 			err := producerClient.SendMessage(&message)
 
 			if err != nil {
-				log.Printf("Received error %s for message %d", err, i)
+				log.Printf("Recieved error %s for message %d", err, i)
 				i--
 			}
 		}

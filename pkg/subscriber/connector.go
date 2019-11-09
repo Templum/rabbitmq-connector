@@ -60,7 +60,7 @@ func (m *connector) spawnWorkers(topics []string) {
 		for i := 0; i < workerCount; i++ {
 			consumer, err := m.factory.Build(topic)
 			if err != nil {
-				log.Printf("Failed to setup a worker for %s. Received %s", topic, err)
+				log.Printf("Failed to setup a worker for %s. Recieved %s", topic, err)
 			} else {
 				subscriber := NewSubscriber(Generator.GetRandomName(3), topic, consumer, m.client)
 				m.subscribers = append(m.subscribers, subscriber)

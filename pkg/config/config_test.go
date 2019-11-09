@@ -18,13 +18,13 @@ func TestNewConfig(t *testing.T) {
 
 		_, err = NewConfig()
 		if !strings.Contains(err.Error(), "does not include the protocol http / https") {
-			t.Errorf("Did not throw new correct error. Received %s", err)
+			t.Errorf("Did not throw new correct error. Recieved %s", err)
 		}
 
 		os.Setenv("OPEN_FAAS_GW_URL", "tcp://gateway:8080")
 		_, err = NewConfig()
 		if !strings.Contains(err.Error(), "does not include the protocol http / https") {
-			t.Errorf("Did not throw new correct error. Received %s", err)
+			t.Errorf("Did not throw new correct error. Recieved %s", err)
 		}
 	})
 
@@ -36,19 +36,19 @@ func TestNewConfig(t *testing.T) {
 
 		_, err = NewConfig()
 		if !strings.Contains(err.Error(), "is not a valid port") {
-			t.Errorf("Did not throw new correct error. Received %s", err)
+			t.Errorf("Did not throw new correct error. Recieved %s", err)
 		}
 
 		os.Setenv("RMQ_PORT", "-1")
 		_, err = NewConfig()
 		if !strings.Contains(err.Error(), "is outside of the allowed port range") {
-			t.Errorf("Did not throw new correct error. Received %s", err)
+			t.Errorf("Did not throw new correct error. Recieved %s", err)
 		}
 
 		os.Setenv("RMQ_PORT", "65536")
 		_, err = NewConfig()
 		if !strings.Contains(err.Error(), "is outside of the allowed port range") {
-			t.Errorf("Did not throw new correct error. Received %s", err)
+			t.Errorf("Did not throw new correct error. Recieved %s", err)
 		}
 	})
 
@@ -79,7 +79,7 @@ func TestNewConfig(t *testing.T) {
 
 		_, err := NewConfig()
 		if !strings.Contains(err.Error(), "no Topic was specified. Provide them via Env RMQ_TOPICS=account,billing,support") {
-			t.Errorf("Did not throw new correct error. Received %s", err)
+			t.Errorf("Did not throw new correct error. Recieved %s", err)
 		}
 	})
 
@@ -93,27 +93,27 @@ func TestNewConfig(t *testing.T) {
 		}
 
 		if config.GatewayURL != "http://gateway:8080" {
-			t.Errorf("Expected http://gateway:8080 Received %s", config.GatewayURL)
+			t.Errorf("Expected http://gateway:8080 Recieved %s", config.GatewayURL)
 		}
 
 		if config.RabbitConnectionURL != "amqp://guest:guest@localhost:5672/" {
-			t.Errorf("Expected amqp://guest:guest@localhost:5672/ Received %s", config.RabbitConnectionURL)
+			t.Errorf("Expected amqp://guest:guest@localhost:5672/ Recieved %s", config.RabbitConnectionURL)
 		}
 
 		if config.RabbitSanitizedURL != "amqp://localhost:5672" {
-			t.Errorf("Expected amqp://localhost:5672 Received %s", config.RabbitSanitizedURL)
+			t.Errorf("Expected amqp://localhost:5672 Recieved %s", config.RabbitSanitizedURL)
 		}
 
 		if config.ExchangeName != "OpenFaasEx" {
-			t.Errorf("Expected OpenFaasEx Received %s", config.ExchangeName)
+			t.Errorf("Expected OpenFaasEx Recieved %s", config.ExchangeName)
 		}
 
 		if len(config.Topics) != 1 {
-			t.Errorf("Expected 1 Topic Received %d Topic", len(config.Topics))
+			t.Errorf("Expected 1 Topic Recieved %d Topic", len(config.Topics))
 		}
 
 		if config.TopicRefreshTime.Seconds() != 30 {
-			t.Errorf("Expected 30s Received %fs", config.TopicRefreshTime.Seconds())
+			t.Errorf("Expected 30s Recieved %fs", config.TopicRefreshTime.Seconds())
 		}
 	})
 
@@ -144,23 +144,23 @@ func TestNewConfig(t *testing.T) {
 		}
 
 		if config.GatewayURL != "https://gateway" {
-			t.Errorf("Expected https://gateway Received %s", config.GatewayURL)
+			t.Errorf("Expected https://gateway Recieved %s", config.GatewayURL)
 		}
 
 		if config.RabbitConnectionURL != "amqp://username:password@rabbit:1337/" {
-			t.Errorf("Expected amqp://username:password@rabbit:1337/ Received %s", config.RabbitConnectionURL)
+			t.Errorf("Expected amqp://username:password@rabbit:1337/ Recieved %s", config.RabbitConnectionURL)
 		}
 
 		if config.RabbitSanitizedURL != "amqp://rabbit:1337" {
-			t.Errorf("Expected amqp://rabbit:1337 Received %s", config.RabbitSanitizedURL)
+			t.Errorf("Expected amqp://rabbit:1337 Recieved %s", config.RabbitSanitizedURL)
 		}
 
 		if config.ExchangeName != "Ex" {
-			t.Errorf("Expected Ex Received %s", config.ExchangeName)
+			t.Errorf("Expected Ex Recieved %s", config.ExchangeName)
 		}
 
 		if config.TopicRefreshTime.Seconds() != 40 {
-			t.Errorf("Expected 40s Received %fs", config.TopicRefreshTime.Seconds())
+			t.Errorf("Expected 40s Recieved %fs", config.TopicRefreshTime.Seconds())
 		}
 	})
 }
