@@ -2,29 +2,43 @@ package openfaas
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
-	"time"
 )
 
 func TestClient_Invoke(t *testing.T) {
 
-	restClient := &http.Client{Transport: &http.Transport{
-		MaxIdleConns:       10,
-		IdleConnTimeout:    30 * time.Second,
-		DisableCompression: true,
-	}}
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/function/exists":
+			w.WriteHeader(200)
+			fmt.Fprintln(w, "Hello World")
+			break
+		case "/function/nonexisting":
+			w.WriteHeader(404)
+			fmt.Fprintln(w, "Not Found")
+			break
+		default:
+			w.WriteHeader(500)
+			fmt.Fprintln(w, "Internal Server Error")
+			break
+		}
+
+	}))
+	defer server.Close()
 
 	openfaasClient := Client{
-		url:    "http://localhost:8080",
-		Client: restClient,
+		url:    server.URL,
+		Client: server.Client(),
 	}
 
 	t.Parallel()
 
 	t.Run("Should invoke the specified function", func(t *testing.T) {
 		payload := []byte("Test")
-		resp, err := openfaasClient.Invoke(context.Background(), "figlet", payload)
+		resp, err := openfaasClient.Invoke(context.Background(), "exists", payload)
 
 		if err != nil {
 			t.Errorf("Recieved unexpected error %s", err)
@@ -54,20 +68,28 @@ func TestClient_Invoke(t *testing.T) {
 func BenchmarkClient_Invoke(b *testing.B) {
 	var r []byte
 
-	restClient := &http.Client{Transport: &http.Transport{
-		MaxIdleConns:       10,
-		IdleConnTimeout:    30 * time.Second,
-		DisableCompression: true,
-	}}
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/function/exists":
+			w.WriteHeader(200)
+			fmt.Fprintln(w, "Hello World")
+			break
+		default:
+			w.WriteHeader(500)
+			fmt.Fprintln(w, "Internal Server Error")
+			break
+		}
 
+	}))
+	defer server.Close()
 	openfaasClient := Client{
-		url:    "http://localhost:8080",
-		Client: restClient,
+		url:    server.URL,
+		Client: server.Client(),
 	}
 
 	for n := 0; n < b.N; n++ {
-		payload := []byte("Test")
-		resp, _ := openfaasClient.Invoke(context.Background(), "figlet", payload)
+		payload := []byte("afsdasdfgfghsgdfhdfghdghfdghfdghdfghdfghdfghf")
+		resp, _ := openfaasClient.Invoke(context.Background(), "exists", payload)
 		r = resp
 	}
 
