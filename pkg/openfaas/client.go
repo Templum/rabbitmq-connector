@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"net/http"
 
 	types "github.com/Templum/rabbitmq-connector/pkg/types"
@@ -38,19 +38,11 @@ func (c *Client) Invoke(ctx context.Context, name string, payload []byte) ([]byt
 
 	if res.Body != nil {
 		defer res.Body.Close()
-
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to read response of function %s", name)
-		}
-
-		buf := bytes.NewBuffer(payload)
-		io.Copy(buf, res.Body)
+		output, _ := ioutil.ReadAll(res.Body)
 
 		switch res.StatusCode {
 		case 200:
-			return buf.Bytes(), nil
-		case 202:
-			return buf.Bytes(), nil
+			return output, nil
 		case 401:
 			return nil, errors.New("OpenFaaS Credentials are invalid")
 		case 404:
