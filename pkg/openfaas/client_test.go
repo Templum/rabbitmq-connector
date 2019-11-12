@@ -209,6 +209,42 @@ func TestClient_InvokeAsync(t *testing.T) {
 	})
 }
 
+func TestClient_HasNamespaceSupport(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer server.Close()
+
+	openfaasClient := Client{
+		url:    "http://localhost:8080",
+		Client: server.Client(),
+	}
+
+	t.Run("Should", func(t *testing.T) {
+		ok, _ := openfaasClient.HasNamespaceSupport(context.Background())
+
+		if ok {
+			t.Errorf("Expected %t but received %t", false, ok)
+		}
+	})
+}
+
+func TestClient_GetFunctions(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer server.Close()
+
+	openfaasClient := Client{
+		url:    "http://localhost:8080",
+		Client: server.Client(),
+	}
+
+	t.Run("Should", func(t *testing.T) {
+		functions, _ := openfaasClient.GetFunctions(context.Background(), "")
+
+		if len(functions) != 1 {
+			t.Errorf("Expected %d but received %d", 1, len(functions))
+		}
+	})
+}
+
 func BenchmarkClient_Invoke(b *testing.B) {
 	var r []byte
 

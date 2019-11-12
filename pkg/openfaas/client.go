@@ -3,18 +3,20 @@ package openfaas
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 
-	types "github.com/Templum/rabbitmq-connector/pkg/types"
+	internal "github.com/Templum/rabbitmq-connector/pkg/types"
+	external "github.com/openfaas/faas-provider/types"
 	"github.com/pkg/errors"
 )
 
 // Client is used for interacting with Open FaaS
 type Client struct {
 	Client      *http.Client
-	credentials *types.Credentials
+	credentials *internal.Credentials
 	url         string
 }
 
@@ -87,4 +89,70 @@ func (c *Client) InvokeAsync(ctx context.Context, name string, payload []byte) (
 	default:
 		return false, errors.New(fmt.Sprintf("Received unexpected Status Code %d", res.StatusCode))
 	}
+}
+
+// HasNamespaceSupport TODO:
+func (c *Client) HasNamespaceSupport(ctx context.Context) (bool, error) {
+	getNamespaces := fmt.Sprintf("%s/system/namespaces", c.url)
+
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, getNamespaces, nil)
+	if c.credentials != nil {
+		req.SetBasicAuth(c.credentials.User, c.credentials.Password)
+	}
+
+	res, err := c.Client.Do(req)
+	if err != nil {
+		return false, errors.Wrapf(err, "unable to determine namespace support")
+	}
+
+	if res.Body != nil {
+		defer res.Body.Close()
+	}
+
+	switch res.StatusCode {
+	case 200:
+		return true, nil
+	case 401:
+		return false, errors.New("OpenFaaS Credentials are invalid")
+	default:
+		return false, nil
+	}
+}
+
+// GetFunctions TODO:
+func (c *Client) GetFunctions(ctx context.Context, namespace string) ([]external.FunctionStatus, error) {
+	getFunctions := fmt.Sprintf("%s/system/functions", c.url)
+
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, getFunctions, nil)
+	if c.credentials != nil {
+		req.SetBasicAuth(c.credentials.User, c.credentials.Password)
+	}
+
+	if len(namespace) > 0 {
+		q := req.URL.Query()
+		q.Add("namespace", namespace)
+		req.URL.RawQuery = q.Encode()
+	}
+
+	res, err := c.Client.Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to obtain functions")
+	}
+
+	if res.Body != nil {
+		defer res.Body.Close()
+	}
+
+	resp, _ := ioutil.ReadAll(res.Body)
+	functions := []external.FunctionStatus{}
+	err = json.Unmarshal(resp, &functions)
+
+	if err != nil {
+		if res.StatusCode == 401 {
+			return nil, errors.New("OpenFaaS Credentials are invalid")
+		}
+		return nil, errors.Wrapf(err, "Received during obtaining function along with status code %d", res.StatusCode)
+	}
+
+	return functions, nil
 }
