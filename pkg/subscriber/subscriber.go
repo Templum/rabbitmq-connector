@@ -4,9 +4,10 @@ package subscriber
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 import (
+	"log"
+
 	"github.com/Templum/rabbitmq-connector/pkg/rabbitmq"
 	"github.com/Templum/rabbitmq-connector/pkg/types"
-	"log"
 )
 
 type subscriber struct {
@@ -43,7 +44,7 @@ func NewSubscriber(name string, topic string, consumer rabbitmq.QueueConsumer, c
 func (s *subscriber) Start() error {
 	invocations, err := s.consumer.Consume()
 	if err != nil {
-		log.Printf("Recieved %s during registering for messages on %s in Consumer[%s]", err, s.topic, s.name)
+		log.Printf("Received %s during registering for messages on %s in Consumer[%s]", err, s.topic, s.name)
 		return err
 	}
 
@@ -52,11 +53,11 @@ func (s *subscriber) Start() error {
 
 		for received := range errors {
 			if received.Recover {
-				log.Printf("Recieved non critical error %s. Will try to recover worker %s", received, s.name)
+				log.Printf("Received non critical error %s. Will try to recover worker %s", received, s.name)
 				_ = s.Stop()
 				_ = s.Start()
 			} else {
-				log.Printf("Recieved critical error %s. Shutting down Consumer %s", received, s.name)
+				log.Printf("Received critical error %s. Shutting down Consumer %s", received, s.name)
 				_ = s.Stop()
 			}
 		}
