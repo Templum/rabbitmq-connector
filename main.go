@@ -13,21 +13,16 @@ import (
 	"github.com/Templum/rabbitmq-connector/pkg/subscriber"
 	"github.com/Templum/rabbitmq-connector/pkg/version"
 	"github.com/openfaas-incubator/connector-sdk/types"
-	"github.com/openfaas/faas-provider/auth"
 )
 
 func main() {
 	commit, tag := version.GetReleaseInfo()
 	log.Printf("OpenFaaS RabbitMQ Connector [Version: %s Commit: %s]", tag, commit)
 
-	var creds *auth.BasicAuthCredentials
-	if tag == "dev" {
-		log.Printf("Connector is in local mode will use the debug credentials")
-		creds = &auth.BasicAuthCredentials{User: "admin", Password: "b43c1de00d8a477d6af007a6516944e3d1b02692a190fe71f68616b678ac959a"}
-	} else {
-		log.Printf("Connector is in productive mode will read credentials from path")
-		creds = types.GetCredentials()
+	if path, ok := os.LookupEnv("secret_mount_path"); ok {
+		log.Printf("Will read basic64 secret from path %s which was set via 'secret_mount_path'", path)
 	}
+	creds := types.GetCredentials()
 
 	// Building Connector Specific Config
 	connectorCfg, err := config.NewConfig()
