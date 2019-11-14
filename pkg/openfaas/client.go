@@ -1,5 +1,8 @@
 package openfaas
 
+// Copyright (c) Simon Pelczer 2019. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 import (
 	"bytes"
 	"context"
@@ -8,16 +11,43 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	internal "github.com/Templum/rabbitmq-connector/pkg/types"
-	external "github.com/openfaas/faas-provider/types"
+	"github.com/openfaas/faas-provider/auth"
+	"github.com/openfaas/faas-provider/types"
 	"github.com/pkg/errors"
 )
 
+// Invoker defines interfaces that invoke deployed OpenFaaS Functions.
+type Invoker interface {
+	InvokeSync(ctx context.Context, name string, payload []byte) ([]byte, error)
+	InvokeAsync(ctx context.Context, name string, payload []byte) (bool, error)
+}
+
+// NamespaceFetcher defines interfaces to explore namespaces of an OpenFaaS installation.
+type NamespaceFetcher interface {
+	HasNamespaceSupport(ctx context.Context) (bool, error)
+	GetNamespaces(ctx context.Context) ([]string, error)
+}
+
+// FunctionFetcher defines interface to explore deployed function of an OpenFaaS installation.
+type FunctionFetcher interface {
+	GetFunctions(ctx context.Context, namespace string) ([]types.FunctionStatus, error)
+}
+
 // Client is used for interacting with Open FaaS
 type Client struct {
-	Client      *http.Client
-	credentials *internal.Credentials
+	client      *http.Client
+	credentials *auth.BasicAuthCredentials
 	url         string
+}
+
+// NewClient creates a new instance of an OpenFaaS Client using
+// the provided informations
+func NewClient(client *http.Client, creds *auth.BasicAuthCredentials, gatewayURL string) *Client {
+	return &Client{
+		client:      client,
+		credentials: creds,
+		url:         gatewayURL,
+	}
 }
 
 // InvokeSync TODO:
@@ -33,7 +63,7 @@ func (c *Client) InvokeSync(ctx context.Context, name string, payload []byte) ([
 		defer req.Body.Close()
 	}
 
-	res, err := c.Client.Do(req)
+	res, err := c.client.Do(req)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to invoke function %s", name)
 	}
@@ -70,7 +100,7 @@ func (c *Client) InvokeAsync(ctx context.Context, name string, payload []byte) (
 		defer req.Body.Close()
 	}
 
-	res, err := c.Client.Do(req)
+	res, err := c.client.Do(req)
 	if err != nil {
 		return false, errors.Wrapf(err, "unable to invoke function %s", name)
 	}
@@ -100,7 +130,7 @@ func (c *Client) HasNamespaceSupport(ctx context.Context) (bool, error) {
 		req.SetBasicAuth(c.credentials.User, c.credentials.Password)
 	}
 
-	res, err := c.Client.Do(req)
+	res, err := c.client.Do(req)
 	if err != nil {
 		return false, errors.Wrapf(err, "unable to determine namespace support")
 	}
@@ -119,8 +149,40 @@ func (c *Client) HasNamespaceSupport(ctx context.Context) (bool, error) {
 	}
 }
 
+// GetNamespaces TODO:
+func (c *Client) GetNamespaces(ctx context.Context) ([]string, error) {
+	getNamespaces := fmt.Sprintf("%s/system/namespaces", c.url)
+
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, getNamespaces, nil)
+	if c.credentials != nil {
+		req.SetBasicAuth(c.credentials.User, c.credentials.Password)
+	}
+
+	res, err := c.client.Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to obtain namespaces")
+	}
+
+	if res.Body != nil {
+		defer res.Body.Close()
+	}
+
+	resp, _ := ioutil.ReadAll(res.Body)
+	var namespaces []string
+	err = json.Unmarshal(resp, &namespaces)
+
+	if err != nil {
+		if res.StatusCode == 401 {
+			return nil, errors.New("OpenFaaS Credentials are invalid")
+		}
+		return namespaces, nil
+	}
+
+	return namespaces, nil
+}
+
 // GetFunctions TODO:
-func (c *Client) GetFunctions(ctx context.Context, namespace string) ([]external.FunctionStatus, error) {
+func (c *Client) GetFunctions(ctx context.Context, namespace string) ([]types.FunctionStatus, error) {
 	getFunctions := fmt.Sprintf("%s/system/functions", c.url)
 
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, getFunctions, nil)
@@ -134,7 +196,7 @@ func (c *Client) GetFunctions(ctx context.Context, namespace string) ([]external
 		req.URL.RawQuery = q.Encode()
 	}
 
-	res, err := c.Client.Do(req)
+	res, err := c.client.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to obtain functions")
 	}
@@ -144,14 +206,14 @@ func (c *Client) GetFunctions(ctx context.Context, namespace string) ([]external
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
-	functions := []external.FunctionStatus{}
+	functions := []types.FunctionStatus{}
 	err = json.Unmarshal(resp, &functions)
 
 	if err != nil {
 		if res.StatusCode == 401 {
 			return nil, errors.New("OpenFaaS Credentials are invalid")
 		}
-		return nil, errors.Wrapf(err, "Received during obtaining function along with status code %d", res.StatusCode)
+		return nil, errors.New(fmt.Sprintf("Received unexpected Status Code %d", res.StatusCode))
 	}
 
 	return functions, nil
