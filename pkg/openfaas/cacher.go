@@ -45,8 +45,7 @@ func (c *Controller) Invoke(topic string, message []byte) {
 	functions := c.cache.GetCachedValues(topic)
 
 	for _, fn := range functions {
-		ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
-		go c.client.InvokeSync(ctx, fn, message)
+		go c.client.InvokeSync(context.Background(), fn, message)
 	}
 }
 

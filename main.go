@@ -38,6 +38,7 @@ func main() {
 
 	// Setup Application Context to ensure gracefully shutdowns
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	// Setup OpenFaaS Controller which is used for querying and more
 	httpClient := types.MakeHTTPClient(false, 60*time.Second)
