@@ -1,6 +1,9 @@
 package openfaas
 
-import "testing"
+import (
+	"gotest.tools/assert"
+	"testing"
+)
 
 func TestFunctionMapBuilder_Append(t *testing.T) {
 	t.Parallel()
@@ -13,9 +16,7 @@ func TestFunctionMapBuilder_Append(t *testing.T) {
 
 		build := target.Build()
 
-		if len(build) != 0 {
-			t.Errorf("Expected map to be empty instead it contained %d elements", len(build))
-		}
+		assert.Check(t, len(build) == 0, "Expected to skip empty/whitespace topic")
 	})
 
 	t.Run("Should append to existing entries", func(t *testing.T) {
@@ -25,13 +26,8 @@ func TestFunctionMapBuilder_Append(t *testing.T) {
 		target.Append("Billing", "NotifyLogistic")
 		build := target.Build()
 
-		if build["Billing"] == nil {
-			t.Error("Expected map to contain entry for billing")
-		}
-
-		if len(build["Billing"]) != 2 {
-			t.Errorf("Expected two entry for billing but received %d entries", len(build["Billing"]))
-		}
+		assert.Check(t, build["Billing"] != nil, "Expected added Topic to be present")
+		assert.Check(t, len(build["Billing"]) == 2, "Expected two entries")
 	})
 }
 
@@ -42,9 +38,7 @@ func TestFunctionMapBuilder_Build(t *testing.T) {
 		target := NewFunctionMapBuilder()
 		build := target.Build()
 
-		if len(build) != 0 {
-			t.Errorf("Expected map to be empty instead it contained %d elements", len(build))
-		}
+		assert.Check(t, len(build) == 0, "Expected empty map when nothing was appended")
 	})
 
 	t.Run("Should return a map based on previous append", func(t *testing.T) {
@@ -53,12 +47,7 @@ func TestFunctionMapBuilder_Build(t *testing.T) {
 		target.Append("Billing", "CalcTax")
 		build := target.Build()
 
-		if build["Billing"] == nil {
-			t.Error("Expected map to contain entry for billing")
-		}
-
-		if len(build["Billing"]) != 1 {
-			t.Errorf("Expected one entry for billing but received %d entries", len(build["Billing"]))
-		}
+		assert.Check(t, build["Billing"] != nil, "Expected added Topic to be present")
+		assert.Check(t, len(build["Billing"]) == 1, "Expected one entry")
 	})
 }

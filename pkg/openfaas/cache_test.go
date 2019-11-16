@@ -1,6 +1,9 @@
 package openfaas
 
-import "testing"
+import (
+	"gotest.tools/assert"
+	"testing"
+)
 
 func TestTopicMap(t *testing.T) {
 	t.Parallel()
@@ -14,9 +17,7 @@ func TestTopicMap(t *testing.T) {
 		cache.Refresh(update)
 		after := len(cache.topicMap)
 
-		if before == after {
-			t.Errorf("Expected cache content to be different after update")
-		}
+		assert.Check(t, before != after, "Expected that the update overrides the initial value")
 	})
 
 	t.Run("Should return all found functions for topic", func(t *testing.T) {
@@ -26,19 +27,13 @@ func TestTopicMap(t *testing.T) {
 		cache.Refresh(update)
 
 		found := cache.GetCachedValues("billing")
-
-		if len(found) != 2 {
-			t.Errorf("Expected 2 entries for billing but received %d entries", len(found))
-		}
+		assert.Check(t, len(found) == 2, "Expected 2 entries for billing")
 	})
 
 	t.Run("Should return empty list if topic does not exist", func(t *testing.T) {
 		cache := NewTopicFunctionCache()
 
 		found := cache.GetCachedValues("billing")
-
-		if len(found) > 0 {
-			t.Errorf("Expected empty list but received list with %d entries", len(found))
-		}
+		assert.Check(t, len(found) == 0, "Expected empty list for non existing topic")
 	})
 }

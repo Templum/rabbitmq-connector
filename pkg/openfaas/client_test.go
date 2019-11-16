@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -57,51 +58,35 @@ func TestClient_InvokeSync(t *testing.T) {
 		payload := []byte("Test")
 		resp, err := openfaasClient.InvokeSync(context.Background(), "exists", payload)
 
-		if err != nil {
-			t.Errorf("Received unexpected error %s", err)
-		}
-
-		if string(resp) != expectedResponse {
-			t.Errorf("Expected response to be %s but received %s", expectedResponse, string(resp))
-		}
+		assert.NilError(t, err, "Should not fail")
+		assert.Equal(t, string(resp), expectedResponse, "Did not receive expected response")
 	})
 
 	t.Run("Should except nil as body", func(t *testing.T) {
 		resp, err := openfaasClient.InvokeSync(context.Background(), "exists", nil)
 
-		if err != nil {
-			t.Errorf("Received unexpected error %s", err)
-		}
-
-		if string(resp) != expectedResponse {
-			t.Errorf("Expected response to be %s but received %s", expectedResponse, string(resp))
-		}
+		assert.NilError(t, err, "Should not fail")
+		assert.Equal(t, string(resp), expectedResponse, "Did not receive expected response")
 	})
 
 	t.Run("Should throw error if function does not exist", func(t *testing.T) {
 		payload := []byte("Test")
 		_, err := openfaasClient.InvokeSync(context.Background(), "nonexisting", payload)
 
-		if err.Error() != "Function nonexisting is not deployed" {
-			t.Errorf("Expected not deployed error but received %s", err)
-		}
+		assert.Error(t, err, "Function nonexisting is not deployed", "Did receive unexpected error")
 	})
 
 	t.Run("Should throw error if unauthorized", func(t *testing.T) {
 		_, err := authenticatedOpenFaaSClient.InvokeSync(context.Background(), "exists", nil)
 
-		if err.Error() != "OpenFaaS Credentials are invalid" {
-			t.Errorf("Expected invalid credentials error but received %s", err)
-		}
+		assert.Error(t, err, "OpenFaaS Credentials are invalid", "Did receive unexpected error")
 	})
 
 	t.Run("Should throw error on unexpected status code", func(t *testing.T) {
 		payload := []byte("Test")
 		_, err := openfaasClient.InvokeSync(context.Background(), "internal", payload)
 
-		if err.Error() != "Received unexpected Status Code 500" {
-			t.Errorf("Expected not unexpected status code error but received %s", err)
-		}
+		assert.Error(t, err, "Received unexpected Status Code 500", "Did receive unexpected error")
 	})
 }
 
@@ -149,51 +134,35 @@ func TestClient_InvokeAsync(t *testing.T) {
 		payload := []byte("Test")
 		ok, err := openfaasClient.InvokeAsync(context.Background(), "exists", payload)
 
-		if err != nil {
-			t.Errorf("Received unexpected error %s", err)
-		}
-
-		if !ok {
-			t.Errorf("Expected %t but received %t", true, ok)
-		}
+		assert.NilError(t, err, "Should not fail")
+		assert.Equal(t, ok, true, "Did not receive expected response")
 	})
 
 	t.Run("Should except nil as body", func(t *testing.T) {
 		ok, err := openfaasClient.InvokeAsync(context.Background(), "exists", nil)
 
-		if err != nil {
-			t.Errorf("Received unexpected error %s", err)
-		}
-
-		if !ok {
-			t.Errorf("Expected %t but received %t", true, ok)
-		}
+		assert.NilError(t, err, "Should not fail")
+		assert.Equal(t, ok, true, "Did not receive expected response")
 	})
 
 	t.Run("Should throw error if function does not exist", func(t *testing.T) {
 		payload := []byte("Test")
 		_, err := openfaasClient.InvokeAsync(context.Background(), "nonexisting", payload)
 
-		if err.Error() != "Function nonexisting is not deployed" {
-			t.Errorf("Expected not deployed error but received %s", err)
-		}
+		assert.Error(t, err, "Function nonexisting is not deployed", "Did receive unexpected error")
 	})
 
 	t.Run("Should throw error if unauthorized", func(t *testing.T) {
 		_, err := authenticatedOpenFaaSClient.InvokeAsync(context.Background(), "exists", nil)
 
-		if err.Error() != "OpenFaaS Credentials are invalid" {
-			t.Errorf("Received unexpected error %s", err)
-		}
+		assert.Error(t, err, "OpenFaaS Credentials are invalid", "Did receive unexpected error")
 	})
 
 	t.Run("Should throw error on unexpected status code", func(t *testing.T) {
 		payload := []byte("Test")
 		_, err := openfaasClient.InvokeAsync(context.Background(), "internal", payload)
 
-		if err.Error() != "Received unexpected Status Code 500" {
-			t.Errorf("Expected unexpected status code error but received %s", err)
-		}
+		assert.Error(t, err, "Received unexpected Status Code 500", "Did receive unexpected error")
 	})
 }
 
@@ -231,27 +200,23 @@ func TestClient_HasNamespaceSupport(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Should return true if namespaces endpoint available", func(t *testing.T) {
-		ok, _ := openfaasClient.HasNamespaceSupport(context.Background())
+		ok, err := openfaasClient.HasNamespaceSupport(context.Background())
 
-		if !ok {
-			t.Errorf("Expected %t but received %t", false, ok)
-		}
+		assert.NilError(t, err, "Should not fail")
+		assert.Equal(t, ok, true, "Did not receive expected response")
 	})
 
 	t.Run("Should return false if namespace endpoint is not available", func(t *testing.T) {
-		ok, _ := failingOpenFaaSClient.HasNamespaceSupport(context.Background())
+		ok, err := failingOpenFaaSClient.HasNamespaceSupport(context.Background())
 
-		if ok {
-			t.Errorf("Expected %t but received %t", true, ok)
-		}
+		assert.NilError(t, err, "Should not fail")
+		assert.Equal(t, ok, false, "Did not receive expected response")
 	})
 
 	t.Run("Should throw error if unauthorized", func(t *testing.T) {
 		_, err := authenticatedOpenFaaSClient.HasNamespaceSupport(context.Background())
 
-		if err.Error() != "OpenFaaS Credentials are invalid" {
-			t.Errorf("Received unexpected error %s", err)
-		}
+		assert.Error(t, err, "OpenFaaS Credentials are invalid", "Did receive unexpected error")
 	})
 }
 
@@ -353,33 +318,26 @@ func TestClient_GetFunctions(t *testing.T) {
 	})
 
 	t.Run("Should return all functions currently deployed in the specified namespace", func(t *testing.T) {
-		functions, _ := openfaasClient.GetFunctions(context.Background(), "special")
+		functions, err := openfaasClient.GetFunctions(context.Background(), "special")
 
-		if len(functions) != 1 {
-			t.Errorf("Expected %d functions but received %d function(s)", 1, len(functions))
-		}
+		assert.NilError(t, err, "Should not fail")
+		assert.Check(t, len(functions) == 1, "Did not receive expected response")
 
 		for _, fn := range functions {
-			if fn.Namespace != "special" {
-				t.Errorf("Expected namespace to be %s but received %s", "special", fn.Namespace)
-			}
+			assert.Equal(t, fn.Namespace, "special", "Received wrong namespace")
 		}
 	})
 
 	t.Run("Should throw error if unauthorized", func(t *testing.T) {
 		_, err := authenticatedOpenFaaSClient.GetFunctions(context.Background(), "")
 
-		if err.Error() != "OpenFaaS Credentials are invalid" {
-			t.Errorf("Received unexpected error %s", err)
-		}
+		assert.Error(t, err, "OpenFaaS Credentials are invalid", "Did receive unexpected error")
 	})
 
 	t.Run("Should throw error on unexpected status code", func(t *testing.T) {
 		_, err := openfaasClient.GetFunctions(context.Background(), "what")
 
-		if err.Error() != "Received unexpected Status Code 500" {
-			t.Errorf("Expected not unexpected status code error but received %s", err)
-		}
+		assert.Error(t, err, "Received unexpected Status Code 500", "Did receive unexpected error")
 	})
 }
 
@@ -424,26 +382,22 @@ func TestClient_GetNamespaces(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Should return a list of all namespaces", func(t *testing.T) {
-		namespaces, _ := openfaasClient.GetNamespaces(context.Background())
+		namespaces, err := openfaasClient.GetNamespaces(context.Background())
 
-		if len(namespaces) != 3 {
-			t.Errorf("Expected %d namespaces but received %d namespaces", 3, len(namespaces))
-		}
+		assert.NilError(t, err, "Should not fail")
+		assert.Check(t, len(namespaces) == 3, "Did not receive expected response")
 	})
 
 	t.Run("Should return empty list if unexpected response was received", func(t *testing.T) {
-		namespaces, _ := failingOpenFaaSClient.GetNamespaces(context.Background())
+		namespaces, err := failingOpenFaaSClient.GetNamespaces(context.Background())
 
-		if len(namespaces) > 0 {
-			t.Errorf("Expected namespaces to be empty but received %d namespaces", len(namespaces))
-		}
+		assert.NilError(t, err, "Should not fail")
+		assert.Check(t, len(namespaces) == 0, "Did not receive expected response")
 	})
 
 	t.Run("Should throw error if unauthorized", func(t *testing.T) {
 		_, err := authenticatedOpenFaaSClient.GetNamespaces(context.Background())
 
-		if err.Error() != "OpenFaaS Credentials are invalid" {
-			t.Errorf("Received unexpected error %s", err)
-		}
+		assert.Error(t, err, "OpenFaaS Credentials are invalid", "Did receive unexpected error")
 	})
 }
