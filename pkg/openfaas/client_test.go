@@ -44,19 +44,12 @@ func TestClient_InvokeSync(t *testing.T) {
 	}))
 	defer server.Close()
 
-	openfaasClient := Client{
-		url:    server.URL,
-		client: server.Client(),
-	}
+	openfaasClient := NewClient(server.Client(), nil, server.URL)
 
-	authenticatedOpenFaaSClient := Client{
-		url:    server.URL,
-		client: server.Client(),
-		credentials: &auth.BasicAuthCredentials{
-			User:     "User",
-			Password: "Invalid",
-		},
-	}
+	authenticatedOpenFaaSClient := NewClient(server.Client(), &auth.BasicAuthCredentials{
+		User:     "User",
+		Password: "Invalid",
+	}, server.URL)
 
 	t.Parallel()
 
@@ -143,19 +136,12 @@ func TestClient_InvokeAsync(t *testing.T) {
 	}))
 	defer server.Close()
 
-	openfaasClient := Client{
-		url:    server.URL,
-		client: server.Client(),
-	}
+	openfaasClient := NewClient(server.Client(), nil, server.URL)
 
-	authenticatedOpenFaaSClient := Client{
-		url:    server.URL,
-		client: server.Client(),
-		credentials: &auth.BasicAuthCredentials{
-			User:     "User",
-			Password: "Invalid",
-		},
-	}
+	authenticatedOpenFaaSClient := NewClient(server.Client(), &auth.BasicAuthCredentials{
+		User:     "User",
+		Password: "Invalid",
+	}, server.URL)
 
 	t.Parallel()
 
@@ -230,28 +216,17 @@ func TestClient_HasNamespaceSupport(t *testing.T) {
 	}))
 	defer server.Close()
 
-	openfaasClient := Client{
-		url:    server.URL,
-		client: server.Client(),
-	}
+	openfaasClient := NewClient(server.Client(), nil, server.URL)
 
-	authenticatedOpenFaaSClient := Client{
-		url:    server.URL,
-		client: server.Client(),
-		credentials: &auth.BasicAuthCredentials{
-			User:     "User",
-			Password: "Invalid",
-		},
-	}
+	authenticatedOpenFaaSClient := NewClient(server.Client(), &auth.BasicAuthCredentials{
+		User:     "User",
+		Password: "Invalid",
+	}, server.URL)
 
-	failingOpenFaaSClient := Client{
-		url:    server.URL,
-		client: server.Client(),
-		credentials: &auth.BasicAuthCredentials{
-			User:     "User",
-			Password: "Pass",
-		},
-	}
+	failingOpenFaaSClient := NewClient(server.Client(), &auth.BasicAuthCredentials{
+		User:     "User",
+		Password: "Pass",
+	}, server.URL)
 
 	t.Parallel()
 
@@ -354,19 +329,12 @@ func TestClient_GetFunctions(t *testing.T) {
 	}))
 	defer server.Close()
 
-	openfaasClient := Client{
-		url:    server.URL,
-		client: server.Client(),
-	}
+	openfaasClient := NewClient(server.Client(), nil, server.URL)
 
-	authenticatedOpenFaaSClient := Client{
-		url:    server.URL,
-		client: server.Client(),
-		credentials: &auth.BasicAuthCredentials{
-			User:     "User",
-			Password: "Invalid",
-		},
-	}
+	authenticatedOpenFaaSClient := NewClient(server.Client(), &auth.BasicAuthCredentials{
+		User:     "User",
+		Password: "Invalid",
+	}, server.URL)
 
 	t.Parallel()
 
@@ -441,28 +409,17 @@ func TestClient_GetNamespaces(t *testing.T) {
 	}))
 	defer server.Close()
 
-	openfaasClient := Client{
-		url:    server.URL,
-		client: server.Client(),
-	}
+	openfaasClient := NewClient(server.Client(), nil, server.URL)
 
-	authenticatedOpenFaaSClient := Client{
-		url:    server.URL,
-		client: server.Client(),
-		credentials: &auth.BasicAuthCredentials{
-			User:     "User",
-			Password: "Invalid",
-		},
-	}
+	authenticatedOpenFaaSClient := NewClient(server.Client(), &auth.BasicAuthCredentials{
+		User:     "User",
+		Password: "Invalid",
+	}, server.URL)
 
-	failingOpenFaaSClient := Client{
-		url:    server.URL,
-		client: server.Client(),
-		credentials: &auth.BasicAuthCredentials{
-			User:     "User",
-			Password: "Pass",
-		},
-	}
+	failingOpenFaaSClient := NewClient(server.Client(), &auth.BasicAuthCredentials{
+		User:     "User",
+		Password: "Pass",
+	}, server.URL)
 
 	t.Parallel()
 

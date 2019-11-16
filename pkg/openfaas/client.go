@@ -33,6 +33,12 @@ type FunctionFetcher interface {
 	GetFunctions(ctx context.Context, namespace string) ([]types.FunctionStatus, error)
 }
 
+// FunctionCrawler defines interfaces required to crawl OpenFaaS for functions
+type FunctionCrawler interface {
+	NamespaceFetcher
+	FunctionFetcher
+}
+
 // Client is used for interacting with Open FaaS
 type Client struct {
 	client      *http.Client
