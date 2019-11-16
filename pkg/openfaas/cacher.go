@@ -36,7 +36,8 @@ func (c *Controller) Start(ctx context.Context) {
 	hasNamespaceSupport, _ := c.client.HasNamespaceSupport(ctx)
 	timer := time.NewTicker(c.conf.TopicRefreshTime)
 
-	// TODO: We might want to fetch an initial cache
+	// Initial populating
+	c.refreshTick(ctx, hasNamespaceSupport)
 	go c.refresh(ctx, timer, hasNamespaceSupport)
 }
 
@@ -50,21 +51,11 @@ func (c *Controller) Invoke(topic string, message []byte) {
 }
 
 func (c *Controller) refresh(ctx context.Context, ticker *time.Ticker, hasNamespaceSupport bool) {
-	builder := NewFunctionMapBuilder()
-
 loop:
 	for {
 		select {
 		case <-ticker.C:
-			if hasNamespaceSupport {
-				log.Println("Crawling namespaces for functions")
-				c.crawlNamespaces(ctx, builder)
-			} else {
-				log.Println("Crawling for functions")
-				c.crawlAllFunctions(ctx, builder)
-			}
-			log.Println("Crawling finished will now refresh the cache")
-			c.cache.Refresh(builder.Build())
+			c.refreshTick(ctx, hasNamespaceSupport)
 			break
 		case <-ctx.Done():
 			log.Println("Received done via context will stop refreshing cache")
@@ -73,13 +64,30 @@ loop:
 	}
 }
 
-func (c *Controller) crawlNamespaces(ctx context.Context, builder TopicMapBuilder) {
-	namespaces, err := c.client.GetNamespaces(ctx)
-	if err != nil {
-		log.Printf("Received the following error during fetching namespaces %s", err)
-		namespaces = []string{}
+func (c *Controller) refreshTick(ctx context.Context, hasNamespaceSupport bool) {
+	builder := NewFunctionMapBuilder()
+	var namespaces []string
+	var err error
+
+	if hasNamespaceSupport {
+		log.Println("Crawling namespaces for functions")
+		namespaces, err = c.client.GetNamespaces(ctx)
+		if err != nil {
+			log.Printf("Received the following error during fetching namespaces %s", err)
+			namespaces = []string{}
+		}
+	} else {
+		namespaces = []string{""}
 	}
 
+	log.Println("Crawling for functions")
+	c.crawlFunctions(ctx, namespaces, builder)
+
+	log.Println("Crawling finished will now refresh the cache")
+	c.cache.Refresh(builder.Build())
+}
+
+func (c *Controller) crawlFunctions(ctx context.Context, namespaces []string, builder TopicMapBuilder) {
 	for _, ns := range namespaces {
 		found, err := c.client.GetFunctions(ctx, ns)
 		if err != nil {
@@ -93,22 +101,6 @@ func (c *Controller) crawlNamespaces(ctx context.Context, builder TopicMapBuilde
 			for _, topic := range topics {
 				builder.Append(topic, fn.Name)
 			}
-		}
-	}
-}
-
-func (c *Controller) crawlAllFunctions(ctx context.Context, builder TopicMapBuilder) {
-	found, err := c.client.GetFunctions(ctx, "")
-	if err != nil {
-		log.Printf("Received %s while fetching functions", err)
-		found = []types.FunctionStatus{}
-	}
-
-	for _, fn := range found {
-		topics := c.extractTopicsFromAnnotations(fn)
-
-		for _, topic := range topics {
-			builder.Append(topic, fn.Name)
 		}
 	}
 }
