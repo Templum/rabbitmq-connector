@@ -3,32 +3,42 @@ package openfaas
 import (
 	"context"
 	"encoding/json"
-	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
+
+	"gotest.tools/assert"
 
 	"github.com/Templum/rabbitmq-connector/pkg/config"
 	"github.com/openfaas/faas-provider/types"
 )
 
 type SpyTopicMap struct {
+	lock        sync.RWMutex
 	original    TopicMap
 	refreshCall int
 }
 
 func (s *SpyTopicMap) GetCachedValues(name string) []string {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	return s.original.GetCachedValues(name)
 }
 
 func (s *SpyTopicMap) Refresh(update map[string][]string) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	s.refreshCall++
 	s.original.Refresh(update)
 }
 
 func newSpy(original TopicMap) *SpyTopicMap {
 	return &SpyTopicMap{
+		lock:        sync.RWMutex{},
 		original:    original,
 		refreshCall: 0,
 	}
