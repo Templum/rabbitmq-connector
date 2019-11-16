@@ -1,4 +1,4 @@
-FROM golang:1.11-alpine as base_builder
+FROM golang:1.13-alpine as base_builder
 
 RUN apk add ca-certificates git
 
@@ -22,8 +22,8 @@ RUN VERSION=$(git describe --all --exact-match $(git rev-parse HEAD) | grep tags
 FROM alpine:3.8
 
 RUN addgroup -S app \
-    && adduser -S -g app app \
-    && apk --no-cache add ca-certificates
+  && adduser -S -g app app \
+  && apk --no-cache add ca-certificates
 
 WORKDIR /home/app
 
