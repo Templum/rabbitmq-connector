@@ -1,6 +1,6 @@
 FROM golang:1.13-alpine as base_builder
 
-RUN apk add ca-certificates git
+RUN apk --no-cache add ca-certificates git
 
 WORKDIR /go/src/github.com/Templum/rabbitmq-connector/
 ENV GO111MODULE=on
