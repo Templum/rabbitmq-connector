@@ -19,7 +19,7 @@ RUN VERSION=$(git describe --all --exact-match $(git rev-parse HEAD) | grep tags
   -X github.com/Templum/rabbitmq-connector/pkg/version.GitCommit=${GIT_COMMIT}" \
   -a -installsuffix cgo -o rmq-connector .
 
-FROM alpine:3.8
+FROM alpine:3.10
 
 RUN addgroup -S app \
   && adduser -S -g app app \
