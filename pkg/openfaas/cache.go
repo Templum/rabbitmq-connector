@@ -2,12 +2,14 @@ package openfaas
 
 import "sync"
 
+import "log"
+
 // Copyright (c) Simon Pelczer 2019. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // TopicMap defines a interface for a topic map
 type TopicMap interface {
-	GetFunctionsFor(name string) []string
+	GetCachedValues(name string) []string
 	Refresh(update map[string][]string)
 }
 
@@ -25,8 +27,8 @@ func NewTopicFunctionCache() *TopicFunctionCache {
 	}
 }
 
-// GetFunctionsFor TODO:
-func (m *TopicFunctionCache) GetFunctionsFor(name string) []string {
+// GetCachedValues TODO:
+func (m *TopicFunctionCache) GetCachedValues(name string) []string {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 
@@ -46,5 +48,6 @@ func (m *TopicFunctionCache) Refresh(update map[string][]string) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 
+	log.Printf("Update cache with %d entries", len(update))
 	m.topicMap = update
 }

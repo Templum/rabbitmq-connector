@@ -25,7 +25,7 @@ func TestTopicMap(t *testing.T) {
 		update["billing"] = []string{"taxes", "notify"}
 		cache.Refresh(update)
 
-		found := cache.GetFunctionsFor("billing")
+		found := cache.GetCachedValues("billing")
 
 		if len(found) != 2 {
 			t.Errorf("Expected 2 entries for billing but received %d entries", len(found))
@@ -35,7 +35,7 @@ func TestTopicMap(t *testing.T) {
 	t.Run("Should return empty list if topic does not exist", func(t *testing.T) {
 		cache := NewTopicFunctionCache()
 
-		found := cache.GetFunctionsFor("billing")
+		found := cache.GetCachedValues("billing")
 
 		if len(found) > 0 {
 			t.Errorf("Expected empty list but received list with %d entries", len(found))
