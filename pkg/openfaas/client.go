@@ -37,6 +37,7 @@ type FunctionFetcher interface {
 type FunctionCrawler interface {
 	NamespaceFetcher
 	FunctionFetcher
+	Invoker
 }
 
 // Client is used for interacting with Open FaaS

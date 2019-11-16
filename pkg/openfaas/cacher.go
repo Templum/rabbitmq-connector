@@ -13,18 +13,18 @@ import (
 // Copyright (c) Simon Pelczer 2019. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-// Cacher is responsible for building up and maintaining a
+// Controller is responsible for building up and maintaining a
 // Cache with all of the deployed OpenFaaS Functions across
 // all namespaces
-type Cacher struct {
+type Controller struct {
 	conf   *config.Controller
 	client FunctionCrawler
 	cache  TopicMap
 }
 
-// NewCacher returns a new instance
-func NewCacher(conf *config.Controller, client FunctionCrawler) *Cacher {
-	return &Cacher{
+// NewController returns a new instance
+func NewController(conf *config.Controller, client FunctionCrawler) *Controller {
+	return &Controller{
 		conf:   conf,
 		client: client,
 		cache:  NewTopicFunctionCache(),
@@ -32,14 +32,25 @@ func NewCacher(conf *config.Controller, client FunctionCrawler) *Cacher {
 }
 
 // Start setups the cache and starts continous caching
-func (c *Cacher) Start(ctx context.Context) {
+func (c *Controller) Start(ctx context.Context) {
 	hasNamespaceSupport, _ := c.client.HasNamespaceSupport(ctx)
 	timer := time.NewTicker(c.conf.TopicRefreshTime)
 
+	// TODO: We might want to fetch an initial cache
 	go c.refresh(ctx, timer, hasNamespaceSupport)
 }
 
-func (c *Cacher) refresh(ctx context.Context, ticker *time.Ticker, hasNamespaceSupport bool) {
+// Invoke triggers a call to all functions registered to the specified topic
+func (c *Controller) Invoke(topic string, message []byte) {
+	functions := c.cache.GetCachedValues(topic)
+
+	for _, fn := range functions {
+		ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+		go c.client.InvokeSync(ctx, fn, message)
+	}
+}
+
+func (c *Controller) refresh(ctx context.Context, ticker *time.Ticker, hasNamespaceSupport bool) {
 	builder := NewFunctionMapBuilder()
 
 loop:
@@ -47,23 +58,23 @@ loop:
 		select {
 		case <-ticker.C:
 			if hasNamespaceSupport {
-				println("Crawling namespaces for functions")
+				log.Println("Crawling namespaces for functions")
 				c.crawlNamespaces(ctx, builder)
 			} else {
-				println("Crawling for functions")
+				log.Println("Crawling for functions")
 				c.crawlAllFunctions(ctx, builder)
 			}
-			println("Crawling finished will now refresh the cache")
+			log.Println("Crawling finished will now refresh the cache")
 			c.cache.Refresh(builder.Build())
 			break
 		case <-ctx.Done():
-			println("Received done via context will stop refreshing cache")
+			log.Println("Received done via context will stop refreshing cache")
 			break loop
 		}
 	}
 }
 
-func (c *Cacher) crawlNamespaces(ctx context.Context, builder TopicMapBuilder) {
+func (c *Controller) crawlNamespaces(ctx context.Context, builder TopicMapBuilder) {
 	namespaces, err := c.client.GetNamespaces(ctx)
 	if err != nil {
 		log.Printf("Received the following error during fetching namespaces %s", err)
@@ -87,7 +98,7 @@ func (c *Cacher) crawlNamespaces(ctx context.Context, builder TopicMapBuilder) {
 	}
 }
 
-func (c *Cacher) crawlAllFunctions(ctx context.Context, builder TopicMapBuilder) {
+func (c *Controller) crawlAllFunctions(ctx context.Context, builder TopicMapBuilder) {
 	found, err := c.client.GetFunctions(ctx, "")
 	if err != nil {
 		log.Printf("Received %s while fetching functions", err)
@@ -103,7 +114,7 @@ func (c *Cacher) crawlAllFunctions(ctx context.Context, builder TopicMapBuilder)
 	}
 }
 
-func (c *Cacher) extractTopicsFromAnnotations(fn types.FunctionStatus) []string {
+func (c *Controller) extractTopicsFromAnnotations(fn types.FunctionStatus) []string {
 	topics := []string{}
 
 	if fn.Annotations != nil {

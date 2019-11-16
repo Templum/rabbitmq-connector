@@ -43,11 +43,11 @@ type mockInvoker struct {
 	mutex           sync.Mutex
 }
 
-func (m *mockInvoker) Invoke(topic string, message *[]byte) {
+func (m *mockInvoker) Invoke(topic string, message []byte) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	m.receivedTopic = topic
-	m.receivedMessage = message
+	m.receivedMessage = &message
 }
 
 func (m *mockInvoker) GetTopic() string {
