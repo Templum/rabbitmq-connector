@@ -15,20 +15,26 @@ import (
 	"github.com/openfaas/faas-provider/types"
 )
 
-type SpyTopicMap struct {
+type MockTopicMap struct {
 	lock        sync.RWMutex
 	original    TopicMap
 	refreshCall int
 }
 
-func (s *SpyTopicMap) GetCachedValues(name string) []string {
+func (s *MockTopicMap) CalledNTimes() int {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.refreshCall
+}
+
+func (s *MockTopicMap) GetCachedValues(name string) []string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
 	return s.original.GetCachedValues(name)
 }
 
-func (s *SpyTopicMap) Refresh(update map[string][]string) {
+func (s *MockTopicMap) Refresh(update map[string][]string) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
@@ -36,11 +42,59 @@ func (s *SpyTopicMap) Refresh(update map[string][]string) {
 	s.original.Refresh(update)
 }
 
-func newSpy(original TopicMap) *SpyTopicMap {
-	return &SpyTopicMap{
+func newTopicMapMock(original TopicMap) *MockTopicMap {
+	return &MockTopicMap{
 		lock:        sync.RWMutex{},
 		original:    original,
 		refreshCall: 0,
+	}
+}
+
+func populateWithFunctionsForBillingTopic(target TopicMap) {
+	cachedvalues := make(map[string][]string)
+	cachedvalues["Billing"] = []string{"SendBill", "Transport", "Notifier"}
+	target.Refresh(cachedvalues)
+}
+
+type MockOFClient struct {
+	lock       sync.RWMutex
+	invocation int
+}
+
+func (m *MockOFClient) InvokeCalledNTimes() int {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+	return m.invocation
+}
+
+func (m *MockOFClient) InvokeAsync(ctx context.Context, name string, payload []byte) (bool, error) {
+	return true, nil
+}
+
+func (m *MockOFClient) InvokeSync(ctx context.Context, name string, payload []byte) ([]byte, error) {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+
+	m.invocation++
+	return nil, nil
+}
+
+func (m *MockOFClient) HasNamespaceSupport(ctx context.Context) (bool, error) {
+	return true, nil
+}
+
+func (m *MockOFClient) GetNamespaces(ctx context.Context) ([]string, error) {
+	return []string{}, nil
+}
+
+func (m *MockOFClient) GetFunctions(ctx context.Context, namespace string) ([]types.FunctionStatus, error) {
+	return []types.FunctionStatus{}, nil
+}
+
+func newOFClientMock() *MockOFClient {
+	return &MockOFClient{
+		lock:       sync.RWMutex{},
+		invocation: 0,
 	}
 }
 
@@ -122,26 +176,26 @@ func TestCacher_Start_WithNs(t *testing.T) {
 
 	t.Run("Should perform a initial population of the map", func(t *testing.T) {
 		cacher := NewController(conf, client)
-		spy := newSpy(cacher.cache)
-		cacher.cache = spy
+		mock := newTopicMapMock(cacher.cache)
+		cacher.cache = mock
 		ctx, cancel := context.WithCancel(context.TODO())
 		defer cancel()
 
 		cacher.Start(ctx)
-		assert.Equal(t, spy.refreshCall, 1, "Expected an inital sync")
+		assert.Equal(t, mock.CalledNTimes(), 1, "Expected an inital sync")
 	})
 
 	t.Run("Should sync every 3 seconds", func(t *testing.T) {
 		cacher := NewController(conf, client)
-		spy := newSpy(cacher.cache)
-		cacher.cache = spy
+		mock := newTopicMapMock(cacher.cache)
+		cacher.cache = mock
 		ctx, cancel := context.WithCancel(context.TODO())
 		defer cancel()
 
 		cacher.Start(ctx)
-		assert.Equal(t, spy.refreshCall, 1, "Expected an inital sync")
+		assert.Equal(t, mock.CalledNTimes(), 1, "Expected an inital sync")
 		time.Sleep(4 * time.Second)
-		assert.Equal(t, spy.refreshCall, 2, "Expected a new sync")
+		assert.Equal(t, mock.CalledNTimes(), 2, "Expected a new sync")
 	})
 }
 
@@ -195,25 +249,47 @@ func TestCacher_Start_Normal(t *testing.T) {
 
 	t.Run("Should perform a initial population of the map", func(t *testing.T) {
 		cacher := NewController(conf, client)
-		spy := newSpy(cacher.cache)
-		cacher.cache = spy
+		mock := newTopicMapMock(cacher.cache)
+		cacher.cache = mock
 		ctx, cancel := context.WithCancel(context.TODO())
 		defer cancel()
 
 		cacher.Start(ctx)
-		assert.Equal(t, spy.refreshCall, 1, "Expected an inital sync")
+		assert.Equal(t, mock.CalledNTimes(), 1, "Expected an inital sync")
 	})
 
 	t.Run("Should sync every 3 seconds", func(t *testing.T) {
 		cacher := NewController(conf, client)
-		spy := newSpy(cacher.cache)
-		cacher.cache = spy
+		mock := newTopicMapMock(cacher.cache)
+		cacher.cache = mock
 		ctx, cancel := context.WithCancel(context.TODO())
 		defer cancel()
 
 		cacher.Start(ctx)
-		assert.Equal(t, spy.refreshCall, 1, "Expected an inital sync")
+		assert.Equal(t, mock.CalledNTimes(), 1, "Expected an inital sync")
 		time.Sleep(4 * time.Second)
-		assert.Equal(t, spy.refreshCall, 2, "Expected a new sync")
+		assert.Equal(t, mock.CalledNTimes(), 2, "Expected a new sync")
+	})
+}
+
+func TestCacher_Invoke(t *testing.T) {
+
+	t.Run("Should invoke all functions for specified Topic", func(t *testing.T) {
+		mock := newOFClientMock()
+		cacher := NewController(nil, mock)
+		populateWithFunctionsForBillingTopic(cacher.cache)
+
+		cacher.Invoke("Billing", nil)
+		time.Sleep(2 * time.Second) // Dirty trick as we don't really wait for go routines
+		assert.Equal(t, mock.InvokeCalledNTimes(), 3)
+	})
+
+	t.Run("Should not invoke if there is no function for specified Topic", func(t *testing.T) {
+		mock := newOFClientMock()
+		cacher := NewController(nil, mock)
+		populateWithFunctionsForBillingTopic(cacher.cache)
+
+		cacher.Invoke("Security", nil)
+		assert.Equal(t, mock.InvokeCalledNTimes(), 0)
 	})
 }
