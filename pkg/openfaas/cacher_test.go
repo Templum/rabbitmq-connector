@@ -63,7 +63,7 @@ type MockOFClient struct {
 
 func (m *MockOFClient) InvokeCalledNTimes() int {
 	m.lock.RLock()
-	defer m.lock.Unlock()
+	defer m.lock.RUnlock()
 	return m.invocation
 }
 
