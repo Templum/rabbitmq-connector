@@ -2,9 +2,6 @@ package openfaas
 
 import (
 	"context"
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
 	"sync"
 	"testing"
 	"time"
@@ -13,6 +10,7 @@ import (
 
 	"github.com/Templum/rabbitmq-connector/pkg/config"
 	"github.com/openfaas/faas-provider/types"
+	"github.com/pkg/errors"
 )
 
 type MockTopicMap struct {
@@ -59,6 +57,10 @@ func populateWithFunctionsForBillingTopic(target TopicMap) {
 type MockOFClient struct {
 	lock       sync.RWMutex
 	invocation int
+	err        error
+	namespace  []string
+	functions  []types.FunctionStatus
+	hasNS      bool
 }
 
 func (m *MockOFClient) InvokeCalledNTimes() int {
@@ -80,202 +82,203 @@ func (m *MockOFClient) InvokeSync(ctx context.Context, name string, payload []by
 }
 
 func (m *MockOFClient) HasNamespaceSupport(ctx context.Context) (bool, error) {
-	return true, nil
+	return m.hasNS, m.err
 }
 
 func (m *MockOFClient) GetNamespaces(ctx context.Context) ([]string, error) {
-	return []string{}, nil
+	if len(m.namespace) > 0 {
+		return m.namespace, nil
+	}
+	return m.namespace, m.err
 }
 
 func (m *MockOFClient) GetFunctions(ctx context.Context, namespace string) ([]types.FunctionStatus, error) {
-	return []types.FunctionStatus{}, nil
+
+	return m.functions, m.err
 }
 
-func newOFClientMock() *MockOFClient {
+func newOFClientMock(namespace []string, functions []types.FunctionStatus, err error, hasNS bool) *MockOFClient {
 	return &MockOFClient{
 		lock:       sync.RWMutex{},
 		invocation: 0,
+		err:        err,
+		hasNS:      hasNS,
+		namespace:  namespace,
+		functions:  functions,
 	}
 }
 
 func TestCacher_Start_WithNs(t *testing.T) {
-	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/system/namespaces" {
-			namespaces := []string{
-				"faas",
-				"special",
-				"namespace",
-			}
+	namespaces := []string{
+		"faas",
+		"special",
+		"namespace",
+	}
 
-			w.WriteHeader(200)
-			out, _ := json.Marshal(namespaces)
-			w.Write(out)
-			return
-		}
-		if r.URL.Path == "/system/functions" {
-			annotations := map[string]string{}
-			annotations["topic"] = "billing,secret,transport"
-			namespace := r.URL.Query().Get("namespace")
+	annotations := map[string]string{}
+	annotations["topic"] = "billing,secret,transport"
 
-			if len(namespace) > 0 {
-				functions := []types.FunctionStatus{
-					types.FunctionStatus{
-						Name:              "wrencher",
-						Image:             "docker:image",
-						InvocationCount:   0,
-						Replicas:          1,
-						EnvProcess:        "",
-						AvailableReplicas: 1,
-						Labels:            nil,
-						Annotations:       &annotations,
-						Namespace:         namespace,
-					},
-				}
-
-				w.WriteHeader(200)
-				out, _ := json.Marshal(functions)
-				w.Write(out)
-				return
-			}
-			functions := []types.FunctionStatus{
-				types.FunctionStatus{
-					Name:              "function-name",
-					Image:             "docker:image",
-					InvocationCount:   0,
-					Replicas:          1,
-					EnvProcess:        "",
-					AvailableReplicas: 1,
-					Labels:            nil,
-					Annotations:       &annotations,
-					Namespace:         "faas",
-				},
-				types.FunctionStatus{
-					Name:              "wrencher",
-					Image:             "docker:image",
-					InvocationCount:   0,
-					Replicas:          1,
-					EnvProcess:        "",
-					AvailableReplicas: 1,
-					Labels:            nil,
-					Annotations:       &annotations,
-					Namespace:         "special",
-				},
-			}
-			w.WriteHeader(200)
-			out, _ := json.Marshal(functions)
-			w.Write(out)
-			return
-		}
-	}))
-	defer server.Close()
+	functions := []types.FunctionStatus{
+		types.FunctionStatus{
+			Name:              "biller",
+			Image:             "docker:image",
+			InvocationCount:   0,
+			Replicas:          1,
+			EnvProcess:        "",
+			AvailableReplicas: 1,
+			Labels:            nil,
+			Annotations:       &annotations,
+			Namespace:         "billing",
+		},
+		types.FunctionStatus{
+			Name:              "secrter",
+			Image:             "docker:image",
+			InvocationCount:   0,
+			Replicas:          1,
+			EnvProcess:        "",
+			AvailableReplicas: 1,
+			Labels:            nil,
+			Annotations:       &annotations,
+			Namespace:         "secret",
+		},
+		types.FunctionStatus{
+			Name:              "transporter",
+			Image:             "docker:image",
+			InvocationCount:   0,
+			Replicas:          1,
+			EnvProcess:        "",
+			AvailableReplicas: 1,
+			Labels:            nil,
+			Annotations:       &annotations,
+			Namespace:         "transport",
+		},
+	}
 
 	conf := &config.Controller{TopicRefreshTime: 3 * time.Second}
-	client := NewClient(server.Client(), nil, server.URL)
 
 	t.Parallel()
 
 	t.Run("Should perform a initial population of the map", func(t *testing.T) {
-		cacher := NewController(conf, client)
-		mock := newTopicMapMock(cacher.cache)
-		cacher.cache = mock
+		clientMock := newOFClientMock(namespaces, functions, nil, true)
+		cacher := NewController(conf, clientMock)
+		topicMock := newTopicMapMock(cacher.cache)
+		cacher.cache = topicMock
 		ctx, cancel := context.WithCancel(context.TODO())
 		defer cancel()
 
 		cacher.Start(ctx)
-		assert.Equal(t, mock.CalledNTimes(), 1, "Expected an inital sync")
+		assert.Equal(t, topicMock.CalledNTimes(), 1, "Expected an inital sync")
 	})
 
 	t.Run("Should sync every 3 seconds", func(t *testing.T) {
-		cacher := NewController(conf, client)
-		mock := newTopicMapMock(cacher.cache)
-		cacher.cache = mock
+		clientMock := newOFClientMock(namespaces, functions, nil, true)
+		cacher := NewController(conf, clientMock)
+		topicMock := newTopicMapMock(cacher.cache)
+		cacher.cache = topicMock
 		ctx, cancel := context.WithCancel(context.TODO())
 		defer cancel()
 
 		cacher.Start(ctx)
-		assert.Equal(t, mock.CalledNTimes(), 1, "Expected an inital sync")
+		assert.Equal(t, topicMock.CalledNTimes(), 1, "Expected an inital sync")
 		time.Sleep(4 * time.Second)
-		assert.Equal(t, mock.CalledNTimes(), 2, "Expected a new sync")
+		assert.Equal(t, topicMock.CalledNTimes(), 2, "Expected a new sync")
 	})
 }
 
 func TestCacher_Start_Normal(t *testing.T) {
-	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/system/namespaces" {
-			w.WriteHeader(502)
-			w.Write(nil)
-			return
-		}
-		if r.URL.Path == "/system/functions" {
-			annotations := map[string]string{}
-			annotations["topic"] = "billing,secret,transport"
+	annotations := map[string]string{}
+	annotations["topic"] = "billing,secret,transport"
 
-			functions := []types.FunctionStatus{
-				types.FunctionStatus{
-					Name:              "function-name",
-					Image:             "docker:image",
-					InvocationCount:   0,
-					Replicas:          1,
-					EnvProcess:        "",
-					AvailableReplicas: 1,
-					Labels:            nil,
-					Annotations:       &annotations,
-					Namespace:         "faas",
-				},
-				types.FunctionStatus{
-					Name:              "wrencher",
-					Image:             "docker:image",
-					InvocationCount:   0,
-					Replicas:          1,
-					EnvProcess:        "",
-					AvailableReplicas: 1,
-					Labels:            nil,
-					Annotations:       &annotations,
-					Namespace:         "special",
-				},
-			}
-			w.WriteHeader(200)
-			out, _ := json.Marshal(functions)
-			w.Write(out)
-			return
-		}
-	}))
-	defer server.Close()
+	functions := []types.FunctionStatus{
+		types.FunctionStatus{
+			Name:              "function-name",
+			Image:             "docker:image",
+			InvocationCount:   0,
+			Replicas:          1,
+			EnvProcess:        "",
+			AvailableReplicas: 1,
+			Labels:            nil,
+			Annotations:       &annotations,
+			Namespace:         "faas",
+		},
+		types.FunctionStatus{
+			Name:              "wrencher",
+			Image:             "docker:image",
+			InvocationCount:   0,
+			Replicas:          1,
+			EnvProcess:        "",
+			AvailableReplicas: 1,
+			Labels:            nil,
+			Annotations:       &annotations,
+			Namespace:         "special",
+		},
+	}
 
 	conf := &config.Controller{TopicRefreshTime: 3 * time.Second}
-	client := NewClient(server.Client(), nil, server.URL)
 
 	t.Parallel()
 
 	t.Run("Should perform a initial population of the map", func(t *testing.T) {
-		cacher := NewController(conf, client)
-		mock := newTopicMapMock(cacher.cache)
-		cacher.cache = mock
+		clientMock := newOFClientMock(nil, functions, nil, false)
+		cacher := NewController(conf, clientMock)
+		topicMock := newTopicMapMock(cacher.cache)
+		cacher.cache = topicMock
 		ctx, cancel := context.WithCancel(context.TODO())
 		defer cancel()
 
 		cacher.Start(ctx)
-		assert.Equal(t, mock.CalledNTimes(), 1, "Expected an inital sync")
+		assert.Equal(t, topicMock.CalledNTimes(), 1, "Expected an inital sync")
 	})
 
 	t.Run("Should sync every 3 seconds", func(t *testing.T) {
-		cacher := NewController(conf, client)
-		mock := newTopicMapMock(cacher.cache)
-		cacher.cache = mock
+		clientMock := newOFClientMock(nil, functions, nil, false)
+		cacher := NewController(conf, clientMock)
+		topicMock := newTopicMapMock(cacher.cache)
+		cacher.cache = topicMock
 		ctx, cancel := context.WithCancel(context.TODO())
 		defer cancel()
 
 		cacher.Start(ctx)
-		assert.Equal(t, mock.CalledNTimes(), 1, "Expected an inital sync")
+		assert.Equal(t, topicMock.CalledNTimes(), 1, "Expected an inital sync")
 		time.Sleep(4 * time.Second)
-		assert.Equal(t, mock.CalledNTimes(), 2, "Expected a new sync")
+		assert.Equal(t, topicMock.CalledNTimes(), 2, "Expected a new sync")
+	})
+}
+
+func TestCacher_Start_WithFailures(t *testing.T) {
+	conf := &config.Controller{TopicRefreshTime: 3 * time.Second}
+
+	t.Parallel()
+
+	t.Run("Should swallow errors received during get namespace", func(t *testing.T) {
+		clientMock := newOFClientMock(nil, nil, errors.New("Swallow me"), true)
+		cacher := NewController(conf, clientMock)
+		topicMock := newTopicMapMock(cacher.cache)
+		cacher.cache = topicMock
+		ctx, cancel := context.WithCancel(context.TODO())
+		defer cancel()
+
+		cacher.Start(ctx)
+		assert.Equal(t, topicMock.CalledNTimes(), 1, "Expected an inital sync")
+	})
+
+	t.Run("Should swallow errors received during get functions", func(t *testing.T) {
+		clientMock := newOFClientMock([]string{"faas"}, nil, errors.New("Swallow me"), true)
+		cacher := NewController(conf, clientMock)
+		topicMock := newTopicMapMock(cacher.cache)
+		cacher.cache = topicMock
+		ctx, cancel := context.WithCancel(context.TODO())
+		defer cancel()
+
+		cacher.Start(ctx)
+		assert.Equal(t, topicMock.CalledNTimes(), 1, "Expected an inital sync")
 	})
 }
 
 func TestCacher_Invoke(t *testing.T) {
 
 	t.Run("Should invoke all functions for specified Topic", func(t *testing.T) {
-		mock := newOFClientMock()
+		mock := newOFClientMock(nil, nil, nil, false)
 		cacher := NewController(nil, mock)
 		populateWithFunctionsForBillingTopic(cacher.cache)
 
@@ -285,7 +288,7 @@ func TestCacher_Invoke(t *testing.T) {
 	})
 
 	t.Run("Should not invoke if there is no function for specified Topic", func(t *testing.T) {
-		mock := newOFClientMock()
+		mock := newOFClientMock(nil, nil, nil, false)
 		cacher := NewController(nil, mock)
 		populateWithFunctionsForBillingTopic(cacher.cache)
 
