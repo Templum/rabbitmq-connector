@@ -35,8 +35,8 @@ func (s *MockTopicMap) GetCachedValues(name string) []string {
 }
 
 func (s *MockTopicMap) Refresh(update map[string][]string) {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
 	s.refreshCall++
 	s.original.Refresh(update)
@@ -63,7 +63,7 @@ type MockOFClient struct {
 
 func (m *MockOFClient) InvokeCalledNTimes() int {
 	m.lock.RLock()
-	defer m.lock.RUnlock()
+	defer m.lock.Unlock()
 	return m.invocation
 }
 
@@ -72,8 +72,8 @@ func (m *MockOFClient) InvokeAsync(ctx context.Context, name string, payload []b
 }
 
 func (m *MockOFClient) InvokeSync(ctx context.Context, name string, payload []byte) ([]byte, error) {
-	m.lock.RLock()
-	defer m.lock.RUnlock()
+	m.lock.Lock()
+	defer m.lock.Unlock()
 
 	m.invocation++
 	return nil, nil
