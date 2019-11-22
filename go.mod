@@ -2,8 +2,12 @@ module github.com/Templum/rabbitmq-connector
 
 require (
 	github.com/docker/docker v1.13.1
-	github.com/openfaas-incubator/connector-sdk v0.0.0-20181118153837-bb7e84c27a54
-	github.com/openfaas/faas v0.0.0-20181114220221-78a4584019a2 // indirect
-	github.com/openfaas/faas-provider v0.0.0-20181104131730-8b3147b013c6
-	github.com/streadway/amqp v0.0.0-20181107104731-27835f1a64e9
+	github.com/google/go-cmp v0.3.1 // indirect
+	github.com/openfaas-incubator/connector-sdk v0.0.0-20191019094425-193b73292e32
+	github.com/openfaas/faas-provider v0.0.0-20191030180248-7677057e416b
+	github.com/pkg/errors v0.8.1
+	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271
+	gotest.tools v2.2.0+incompatible
 )
+
+go 1.13

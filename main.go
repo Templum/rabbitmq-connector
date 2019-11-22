@@ -3,70 +3,72 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/Templum/rabbitmq-connector/pkg/config"
+	"github.com/Templum/rabbitmq-connector/pkg/openfaas"
 	"github.com/Templum/rabbitmq-connector/pkg/rabbitmq"
 	"github.com/Templum/rabbitmq-connector/pkg/subscriber"
+	"github.com/Templum/rabbitmq-connector/pkg/types"
 	"github.com/Templum/rabbitmq-connector/pkg/version"
-	"github.com/openfaas-incubator/connector-sdk/types"
-	"github.com/openfaas/faas-provider/auth"
 )
 
 func main() {
 	commit, tag := version.GetReleaseInfo()
 	log.Printf("OpenFaaS RabbitMQ Connector [Version: %s Commit: %s]", tag, commit)
 
-	var creds *auth.BasicAuthCredentials
-	if tag == "dev" {
-		log.Printf("Connector is in local mode will use the debug credentials")
-		creds = &auth.BasicAuthCredentials{User: "admin", Password: "b43c1de00d8a477d6af007a6516944e3d1b02692a190fe71f68616b678ac959a"}
-	} else {
-		log.Printf("Connector is in productive mode will read credentials from path")
-		creds = types.GetCredentials()
+	if rawValue, ok := os.LookupEnv("basic_auth"); ok {
+		active, _ := strconv.ParseBool(rawValue)
+		if path, ok := os.LookupEnv("secret_mount_path"); ok && active {
+			log.Printf("Will read basic64 secret from path %s which was set via 'secret_mount_path'", path)
+		}
 	}
 
-	// Building Connector Specific Config
-	connectorCfg, err := config.NewConfig()
+	// Building our Config from envs
+	conf, err := config.NewConfig()
 	if err != nil {
 		log.Fatalf("During Config validation %s occured.", err)
 	}
 
-	// Building SDK Specific Config
-	controllerCfg := &types.ControllerConfig{
-		RebuildInterval: connectorCfg.TopicRefreshTime,
-		GatewayURL:      connectorCfg.GatewayURL,
-		PrintResponse:   false,
-	}
+	// Setup Application Context to ensure gracefully shutdowns
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	// Start SDK
-	controller := types.NewController(creds, controllerCfg)
-	controller.BeginMapBuilder()
-	log.Printf("Started Map Building. Be Aware it will take %s until the first map is avaliable.", connectorCfg.TopicRefreshTime)
+	// Setup OpenFaaS Controller which is used for querying and more
+	httpClient := types.MakeHTTPClient(false, 60*time.Second)
+	ofSDK := openfaas.NewController(conf, openfaas.NewClient(httpClient, conf.BasicAuth, conf.GatewayURL))
+	go ofSDK.Start(ctx)
+	log.Printf("Started Cache Task which populates the topic map")
 
-	factory, err := rabbitmq.NewQueueConsumerFactory(connectorCfg)
+	factory, err := rabbitmq.NewQueueConsumerFactory(conf)
 	if err != nil {
 		log.Fatalf("Connector could not be started Received %s", err)
 	}
 
-	connector := subscriber.NewConnector(connectorCfg, controller, factory)
+	connector := subscriber.NewConnector(conf, ofSDK, factory)
 	connector.Start()
+	log.Printf("Started RabbitMQ Connector")
 
 	signalChannel := make(chan os.Signal, 2)
 	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
-
 	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
 
 	sig := <-signalChannel
 	switch sig {
 	case os.Interrupt:
 		log.Printf("Received SIGINT preparing for shutdown")
+
 		connector.End()
+		cancel()
 	case syscall.SIGTERM:
 		log.Printf("Received SIGTERM shutting down")
 		connector.End()
+		cancel()
 	}
 }

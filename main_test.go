@@ -4,15 +4,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/Templum/rabbitmq-connector/pkg/config"
-	"github.com/Templum/rabbitmq-connector/pkg/rabbitmq"
-	"github.com/Templum/rabbitmq-connector/pkg/subscriber"
-	"github.com/streadway/amqp"
 	"log"
 	"os"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/Templum/rabbitmq-connector/pkg/config"
+	"github.com/Templum/rabbitmq-connector/pkg/rabbitmq"
+	"github.com/Templum/rabbitmq-connector/pkg/subscriber"
+	"github.com/streadway/amqp"
 )
 
 var (
@@ -103,11 +104,11 @@ func newInvokerMock() *invokerMock {
 	return &invokerMock{counter: 0}
 }
 
-func (m *invokerMock) Invoke(topic string, message *[]byte) {
+func (m *invokerMock) Invoke(topic string, message []byte) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	m.counter++
-	invocation := NewInvocation(topic, message, m.counter)
+	invocation := NewInvocation(topic, &message, m.counter)
 	m.invocations = append(m.invocations, invocation)
 }
 

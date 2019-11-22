@@ -11,6 +11,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openfaas-incubator/connector-sdk/types"
+	"github.com/openfaas/faas-provider/auth"
 )
 
 // Controller is the config needed for the connector
@@ -23,6 +26,7 @@ type Controller struct {
 	Topics       []string
 
 	TopicRefreshTime time.Duration
+	BasicAuth        *auth.BasicAuthCredentials
 }
 
 // NewConfig reads the connector config from environment variables and further validates them,
@@ -47,7 +51,9 @@ func NewConfig() (*Controller, error) {
 	}
 
 	return &Controller{
-		GatewayURL:          gatewayURL,
+		GatewayURL: gatewayURL,
+		BasicAuth:  types.GetCredentials(),
+
 		RabbitConnectionURL: rabbitURL,
 		RabbitSanitizedURL:  sanitizedURL,
 
@@ -58,16 +64,18 @@ func NewConfig() (*Controller, error) {
 	}, nil
 }
 
-const envFaaSGwURL = "OPEN_FAAS_GW_URL"
-const envRabbitUser = "RMQ_USER"
-const envRabbitPass = "RMQ_PASS"
-const envRabbitHost = "RMQ_HOST"
-const envRabbitPort = "RMQ_PORT"
+const (
+	envFaaSGwURL = "OPEN_FAAS_GW_URL"
 
-const envRabbitTopics = "RMQ_TOPICS"
-const envRabbitExchange = "RMQ_EXCHANGE"
+	envRabbitUser = "RMQ_USER"
+	envRabbitPass = "RMQ_PASS"
+	envRabbitHost = "RMQ_HOST"
+	envRabbitPort = "RMQ_PORT"
 
-const envRefreshTime = "TOPIC_MAP_REFRESH_TIME"
+	envRabbitTopics   = "RMQ_TOPICS"
+	envRabbitExchange = "RMQ_EXCHANGE"
+	envRefreshTime    = "TOPIC_MAP_REFRESH_TIME"
+)
 
 func getOpenFaaSUrl() (string, error) {
 	url := readFromEnv(envFaaSGwURL, "http://gateway:8080")
