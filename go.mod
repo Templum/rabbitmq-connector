@@ -7,6 +7,7 @@ require (
 	github.com/openfaas/faas-provider v0.0.0-20191030180248-7677057e416b
 	github.com/pkg/errors v0.8.1
 	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271
+	github.com/stretchr/testify v1.4.0
 	gotest.tools v2.2.0+incompatible
 )
 

@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/openfaas/faas-provider/auth"
 	"github.com/openfaas/faas-provider/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestClient_InvokeSync(t *testing.T) {
@@ -58,14 +58,14 @@ func TestClient_InvokeSync(t *testing.T) {
 		payload := []byte("Test")
 		resp, err := openfaasClient.InvokeSync(context.Background(), "exists", payload)
 
-		assert.NilError(t, err, "Should not fail")
+		assert.Nil(t, err, "Should not fail")
 		assert.Equal(t, string(resp), expectedResponse, "Did not receive expected response")
 	})
 
 	t.Run("Should except nil as body", func(t *testing.T) {
 		resp, err := openfaasClient.InvokeSync(context.Background(), "exists", nil)
 
-		assert.NilError(t, err, "Should not fail")
+		assert.Nil(t, err, "Should not fail")
 		assert.Equal(t, string(resp), expectedResponse, "Did not receive expected response")
 	})
 
@@ -134,14 +134,14 @@ func TestClient_InvokeAsync(t *testing.T) {
 		payload := []byte("Test")
 		ok, err := openfaasClient.InvokeAsync(context.Background(), "exists", payload)
 
-		assert.NilError(t, err, "Should not fail")
+		assert.Nil(t, err, "Should not fail")
 		assert.Equal(t, ok, true, "Did not receive expected response")
 	})
 
 	t.Run("Should except nil as body", func(t *testing.T) {
 		ok, err := openfaasClient.InvokeAsync(context.Background(), "exists", nil)
 
-		assert.NilError(t, err, "Should not fail")
+		assert.Nil(t, err, "Should not fail")
 		assert.Equal(t, ok, true, "Did not receive expected response")
 	})
 
@@ -202,14 +202,14 @@ func TestClient_HasNamespaceSupport(t *testing.T) {
 	t.Run("Should return true if namespaces endpoint available", func(t *testing.T) {
 		ok, err := openfaasClient.HasNamespaceSupport(context.Background())
 
-		assert.NilError(t, err, "Should not fail")
+		assert.Nil(t, err, "Should not fail")
 		assert.Equal(t, ok, true, "Did not receive expected response")
 	})
 
 	t.Run("Should return false if namespace endpoint is not available", func(t *testing.T) {
 		ok, err := failingOpenFaaSClient.HasNamespaceSupport(context.Background())
 
-		assert.NilError(t, err, "Should not fail")
+		assert.Nil(t, err, "Should not fail")
 		assert.Equal(t, ok, false, "Did not receive expected response")
 	})
 
@@ -320,8 +320,8 @@ func TestClient_GetFunctions(t *testing.T) {
 	t.Run("Should return all functions currently deployed in the specified namespace", func(t *testing.T) {
 		functions, err := openfaasClient.GetFunctions(context.Background(), "special")
 
-		assert.NilError(t, err, "Should not fail")
-		assert.Check(t, len(functions) == 1, "Did not receive expected response")
+		assert.Nil(t, err, "Should not fail")
+		assert.Len(t, functions, 1, "Did not receive expected response")
 
 		for _, fn := range functions {
 			assert.Equal(t, fn.Namespace, "special", "Received wrong namespace")
@@ -384,15 +384,15 @@ func TestClient_GetNamespaces(t *testing.T) {
 	t.Run("Should return a list of all namespaces", func(t *testing.T) {
 		namespaces, err := openfaasClient.GetNamespaces(context.Background())
 
-		assert.NilError(t, err, "Should not fail")
-		assert.Check(t, len(namespaces) == 3, "Did not receive expected response")
+		assert.Nil(t, err, "Should not fail")
+		assert.Len(t, namespaces, 3, "Did not receive expected response")
 	})
 
 	t.Run("Should return empty list if unexpected response was received", func(t *testing.T) {
 		namespaces, err := failingOpenFaaSClient.GetNamespaces(context.Background())
 
-		assert.NilError(t, err, "Should not fail")
-		assert.Check(t, len(namespaces) == 0, "Did not receive expected response")
+		assert.Nil(t, err, "Should not fail")
+		assert.Len(t, namespaces, 0, "Did not receive expected response")
 	})
 
 	t.Run("Should throw error if unauthorized", func(t *testing.T) {
