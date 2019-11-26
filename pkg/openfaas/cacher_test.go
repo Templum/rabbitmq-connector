@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"gotest.tools/assert"
-
 	"github.com/Templum/rabbitmq-connector/pkg/config"
 	"github.com/openfaas/faas-provider/types"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 type MockTopicMap struct {
@@ -49,9 +49,41 @@ func newTopicMapMock(original TopicMap) *MockTopicMap {
 }
 
 func populateWithFunctionsForBillingTopic(target TopicMap) {
-	cachedvalues := make(map[string][]string)
-	cachedvalues["Billing"] = []string{"SendBill", "Transport", "Notifier"}
+	cachedvalues := map[string][]string{"Billing": []string{"SendBill", "Transport", "Notifier"}}
 	target.Refresh(cachedvalues)
+}
+
+type MockOpenFaaSClient struct {
+	mock.Mock
+	lock       sync.RWMutex
+	invocation int
+}
+
+func (m *MockOpenFaaSClient) InvokeAsync(ctx context.Context, name string, payload []byte) (bool, error) {
+	return true, nil
+}
+
+func (m *MockOpenFaaSClient) InvokeSync(ctx context.Context, name string, payload []byte) ([]byte, error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	m.invocation++
+	return nil, nil
+}
+
+func (m *MockOpenFaaSClient) HasNamespaceSupport(ctx context.Context) (bool, error) {
+	args := m.Called(ctx)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockOpenFaaSClient) GetNamespaces(ctx context.Context) ([]string, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]string), args.Error(1)
+}
+
+func (m *MockOpenFaaSClient) GetFunctions(ctx context.Context, namespace string) ([]types.FunctionStatus, error) {
+	args := m.Called(namespace)
+	return args.Get(0).([]types.FunctionStatus), args.Error(1)
 }
 
 type MockOFClient struct {
@@ -112,13 +144,12 @@ func TestCacher_Start_WithNs(t *testing.T) {
 	namespaces := []string{
 		"faas",
 		"special",
-		"namespace",
+		"test",
 	}
 
-	annotations := map[string]string{}
-	annotations["topic"] = "billing,secret,transport"
+	annotations := map[string]string{"topic": "billing,secret,transport"}
 
-	functions := []types.FunctionStatus{
+	fnFaaSNs := []types.FunctionStatus{
 		types.FunctionStatus{
 			Name:              "biller",
 			Image:             "docker:image",
@@ -128,7 +159,7 @@ func TestCacher_Start_WithNs(t *testing.T) {
 			AvailableReplicas: 1,
 			Labels:            nil,
 			Annotations:       &annotations,
-			Namespace:         "billing",
+			Namespace:         "faas",
 		},
 		types.FunctionStatus{
 			Name:              "secrter",
@@ -139,8 +170,11 @@ func TestCacher_Start_WithNs(t *testing.T) {
 			AvailableReplicas: 1,
 			Labels:            nil,
 			Annotations:       &annotations,
-			Namespace:         "secret",
+			Namespace:         "faas",
 		},
+	}
+
+	fnTestNs := []types.FunctionStatus{
 		types.FunctionStatus{
 			Name:              "transporter",
 			Image:             "docker:image",
@@ -150,16 +184,22 @@ func TestCacher_Start_WithNs(t *testing.T) {
 			AvailableReplicas: 1,
 			Labels:            nil,
 			Annotations:       &annotations,
-			Namespace:         "transport",
+			Namespace:         "test",
 		},
 	}
+
+	clientMock := new(MockOpenFaaSClient)
+	clientMock.On("HasNamespaceSupport", mock.Anything).Return(true, nil)
+	clientMock.On("GetNamespaces", mock.Anything).Return(namespaces, nil)
+	clientMock.On("GetFunctions", "faas").Return(fnFaaSNs, nil)
+	clientMock.On("GetFunctions", "test").Return(fnTestNs, nil)
+	clientMock.On("GetFunctions", "special").Return([]types.FunctionStatus{}, nil)
 
 	conf := &config.Controller{TopicRefreshTime: 3 * time.Second}
 
 	t.Parallel()
 
 	t.Run("Should perform a initial population of the map", func(t *testing.T) {
-		clientMock := newOFClientMock(namespaces, functions, nil, true)
 		cacher := NewController(conf, clientMock)
 		topicMock := newTopicMapMock(cacher.cache)
 		cacher.cache = topicMock
@@ -171,7 +211,6 @@ func TestCacher_Start_WithNs(t *testing.T) {
 	})
 
 	t.Run("Should sync every 3 seconds", func(t *testing.T) {
-		clientMock := newOFClientMock(namespaces, functions, nil, true)
 		cacher := NewController(conf, clientMock)
 		topicMock := newTopicMapMock(cacher.cache)
 		cacher.cache = topicMock
@@ -186,8 +225,7 @@ func TestCacher_Start_WithNs(t *testing.T) {
 }
 
 func TestCacher_Start_Normal(t *testing.T) {
-	annotations := map[string]string{}
-	annotations["topic"] = "billing,secret,transport"
+	annotations := map[string]string{"topic": "billing,secret,transport"}
 
 	functions := []types.FunctionStatus{
 		types.FunctionStatus{
@@ -210,16 +248,19 @@ func TestCacher_Start_Normal(t *testing.T) {
 			AvailableReplicas: 1,
 			Labels:            nil,
 			Annotations:       &annotations,
-			Namespace:         "special",
+			Namespace:         "faas",
 		},
 	}
+
+	clientMock := new(MockOpenFaaSClient)
+	clientMock.On("HasNamespaceSupport", mock.Anything).Return(false, nil)
+	clientMock.On("GetFunctions", mock.Anything).Return(functions, nil)
 
 	conf := &config.Controller{TopicRefreshTime: 3 * time.Second}
 
 	t.Parallel()
 
 	t.Run("Should perform a initial population of the map", func(t *testing.T) {
-		clientMock := newOFClientMock(nil, functions, nil, false)
 		cacher := NewController(conf, clientMock)
 		topicMock := newTopicMapMock(cacher.cache)
 		cacher.cache = topicMock
@@ -231,7 +272,6 @@ func TestCacher_Start_Normal(t *testing.T) {
 	})
 
 	t.Run("Should sync every 3 seconds", func(t *testing.T) {
-		clientMock := newOFClientMock(nil, functions, nil, false)
 		cacher := NewController(conf, clientMock)
 		topicMock := newTopicMapMock(cacher.cache)
 		cacher.cache = topicMock
@@ -251,7 +291,10 @@ func TestCacher_Start_WithFailures(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Should swallow errors received during get namespace", func(t *testing.T) {
-		clientMock := newOFClientMock(nil, nil, errors.New("Swallow me"), true)
+		clientMock := new(MockOpenFaaSClient)
+		clientMock.On("HasNamespaceSupport", mock.Anything).Return(true, nil)
+		clientMock.On("GetNamespaces", mock.Anything).Return([]string{}, errors.New("Swallow me"))
+
 		cacher := NewController(conf, clientMock)
 		topicMock := newTopicMapMock(cacher.cache)
 		cacher.cache = topicMock
@@ -263,7 +306,10 @@ func TestCacher_Start_WithFailures(t *testing.T) {
 	})
 
 	t.Run("Should swallow errors received during get functions", func(t *testing.T) {
-		clientMock := newOFClientMock([]string{"faas"}, nil, errors.New("Swallow me"), true)
+		clientMock := new(MockOpenFaaSClient)
+		clientMock.On("HasNamespaceSupport", mock.Anything).Return(false, nil)
+		clientMock.On("GetFunctions", mock.Anything).Return([]types.FunctionStatus{}, errors.New("Swallow me"))
+
 		cacher := NewController(conf, clientMock)
 		topicMock := newTopicMapMock(cacher.cache)
 		cacher.cache = topicMock
