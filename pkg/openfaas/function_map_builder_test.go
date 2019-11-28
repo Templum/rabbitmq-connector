@@ -1,8 +1,9 @@
 package openfaas
 
 import (
-	"gotest.tools/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFunctionMapBuilder_Append(t *testing.T) {
@@ -16,7 +17,7 @@ func TestFunctionMapBuilder_Append(t *testing.T) {
 
 		build := target.Build()
 
-		assert.Check(t, len(build) == 0, "Expected to skip empty/whitespace topic")
+		assert.Len(t, build, 0, "Expected to skip empty/whitespace topic")
 	})
 
 	t.Run("Should append to existing entries", func(t *testing.T) {
@@ -26,8 +27,8 @@ func TestFunctionMapBuilder_Append(t *testing.T) {
 		target.Append("Billing", "NotifyLogistic")
 		build := target.Build()
 
-		assert.Check(t, build["Billing"] != nil, "Expected added Topic to be present")
-		assert.Check(t, len(build["Billing"]) == 2, "Expected two entries")
+		assert.NotNil(t, build["Billing"], "Expected added Topic to be present")
+		assert.Len(t, build["Billing"], 2, "Expected two entries")
 	})
 }
 
@@ -38,7 +39,7 @@ func TestFunctionMapBuilder_Build(t *testing.T) {
 		target := NewFunctionMapBuilder()
 		build := target.Build()
 
-		assert.Check(t, len(build) == 0, "Expected empty map when nothing was appended")
+		assert.Len(t, build, 0, "Expected empty map when nothing was appended")
 	})
 
 	t.Run("Should return a map based on previous append", func(t *testing.T) {
@@ -47,7 +48,7 @@ func TestFunctionMapBuilder_Build(t *testing.T) {
 		target.Append("Billing", "CalcTax")
 		build := target.Build()
 
-		assert.Check(t, build["Billing"] != nil, "Expected added Topic to be present")
-		assert.Check(t, len(build["Billing"]) == 1, "Expected one entry")
+		assert.NotNil(t, build["Billing"], "Expected added Topic to be present")
+		assert.Len(t, build["Billing"], 1, "Expected one entry")
 	})
 }

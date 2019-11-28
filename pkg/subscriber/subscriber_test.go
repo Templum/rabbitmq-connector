@@ -3,11 +3,12 @@ package subscriber
 import (
 	"bytes"
 	"errors"
-	"github.com/Templum/rabbitmq-connector/pkg/types"
-	"github.com/streadway/amqp"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/Templum/rabbitmq-connector/pkg/types"
+	"github.com/streadway/amqp"
 )
 
 //---- QueueConsumer Mock ----//

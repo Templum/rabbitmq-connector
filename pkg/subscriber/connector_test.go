@@ -2,12 +2,14 @@ package subscriber
 
 import (
 	"errors"
+	"runtime"
+	"testing"
+
 	"github.com/Templum/rabbitmq-connector/pkg/config"
 	"github.com/Templum/rabbitmq-connector/pkg/rabbitmq"
 	"github.com/Templum/rabbitmq-connector/pkg/types"
 	"github.com/streadway/amqp"
-	"runtime"
-	"testing"
+	"github.com/stretchr/testify/assert"
 )
 
 //---- QueueConsumer Mock ----//
@@ -64,17 +66,11 @@ func TestConnector_Start(t *testing.T) {
 		target.Start()
 
 		connector, _ := target.(*connector)
-
-		if len(connector.subscribers) != CalculateWorkerCount(1) {
-			t.Errorf("Expected Connector to start %d Worker instead he started %d", CalculateWorkerCount(1), len(connector.subscribers))
-		}
+		assert.Equalf(t, len(connector.subscribers), CalculateWorkerCount(1), "Expected Connector to start %d Worker instead he started %d", CalculateWorkerCount(1), len(connector.subscribers))
 
 		for _, sub := range connector.subscribers {
 			subscriber, _ := sub.(*subscriber)
-
-			if !subscriber.IsRunning() {
-				t.Error("Subscriber was not running")
-			}
+			assert.True(t, subscriber.IsRunning(), "Subscriber was not running")
 		}
 	})
 
@@ -84,10 +80,7 @@ func TestConnector_Start(t *testing.T) {
 		target.Start()
 
 		connector, _ := target.(*connector)
-
-		if len(connector.subscribers) != 0 {
-			t.Errorf("Expected Connector to start 0 Worker instead he started %d", len(connector.subscribers))
-		}
+		assert.Lenf(t, connector.subscribers, 0, "Expected Connector to start 0 Worker instead he started %d", len(connector.subscribers))
 	})
 }
 
@@ -100,10 +93,7 @@ func TestConnector_End(t *testing.T) {
 	target.End()
 
 	connector, _ := target.(*connector)
-
-	if len(connector.subscribers) != 0 {
-		t.Errorf("Expected Connector to cleanup workers. %d are still left", len(connector.subscribers))
-	}
+	assert.Lenf(t, connector.subscribers, 0, "Expected Connector to cleanup workers. %d are still left", len(connector.subscribers))
 }
 
 func TestCalculateWorkerCount(t *testing.T) {
@@ -113,39 +103,27 @@ func TestCalculateWorkerCount(t *testing.T) {
 		target := runtime.NumCPU() * 2
 
 		calculated := CalculateWorkerCount(1)
-
-		if calculated != target {
-			t.Errorf("Expected %d Received %d", target, calculated)
-		}
+		assert.Equal(t, target, calculated, "Expected one topic per worker")
 	})
 
 	t.Run("Should Split between two topics", func(t *testing.T) {
 		target := runtime.NumCPU()
 
 		calculated := CalculateWorkerCount(2)
-
-		if calculated != target {
-			t.Errorf("Expected %d Received %d", target, calculated)
-		}
+		assert.Equal(t, target, calculated, "Expected two topics per worker")
 	})
 
 	t.Run("Exactly one worker per topic", func(t *testing.T) {
 		target := 1
 
 		calculated := CalculateWorkerCount(runtime.NumCPU() * 2)
-
-		if calculated != target {
-			t.Errorf("Expected %d Received %d", target, calculated)
-		}
+		assert.Equal(t, target, calculated, "Expected exactly one topic per worker")
 	})
 
 	t.Run("At least one worker", func(t *testing.T) {
 		target := 1
 
 		calculated := CalculateWorkerCount(runtime.NumCPU()*2 + 2)
-
-		if calculated != target {
-			t.Errorf("Expected %d Received %d", target, calculated)
-		}
+		assert.Equal(t, target, calculated, "Expected at least one topic per worker")
 	})
 }
