@@ -42,7 +42,7 @@ func main() {
 
 	// Setup OpenFaaS Controller which is used for querying and more
 	httpClient := types.MakeHTTPClient(false, 60*time.Second)
-	ofSDK := openfaas.NewController(conf, openfaas.NewClient(httpClient, conf.BasicAuth, conf.GatewayURL))
+	ofSDK := openfaas.NewController(conf, openfaas.NewClient(httpClient, conf.BasicAuth, conf.GatewayURL), openfaas.NewTopicFunctionCache())
 	go ofSDK.Start(ctx)
 	log.Printf("Started Cache Task which populates the topic map")
 
