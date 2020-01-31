@@ -71,7 +71,7 @@ func (s *subscriber) Start() error {
 					log.Printf("Finished invocations of functions on topic %s", s.topic)
 				}()
 			} else {
-				log.Printf("Should not happen")
+				log.Printf("Should not happen, but subscriber topic - %s is not equals to invocation topic - %s", s.topic, invocation.Topic)
 			}
 		}
 	}()
