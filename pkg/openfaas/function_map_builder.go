@@ -11,7 +11,7 @@ type TopicMapBuilder interface {
 	Build() map[string][]string
 }
 
-// FunctionMapBuilder convienient construct to build a map
+// FunctionMapBuilder convenient construct to build a map
 // of function <=> topic
 type FunctionMapBuilder struct {
 	target map[string][]string
