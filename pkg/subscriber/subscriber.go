@@ -5,6 +5,7 @@ package subscriber
 
 import (
 	"log"
+	"sync"
 
 	"github.com/Templum/rabbitmq-connector/pkg/rabbitmq"
 	"github.com/Templum/rabbitmq-connector/pkg/types"
@@ -17,6 +18,7 @@ type subscriber struct {
 	consumer rabbitmq.QueueConsumer
 	client   types.Invoker
 
+	mutex  sync.RWMutex
 	active bool
 }
 
@@ -77,6 +79,8 @@ func (s *subscriber) Start() error {
 	}()
 
 	log.Printf("Subscriber %s is now listening for messages on %s", s.name, s.topic)
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	s.active = true
 	return nil
 }
@@ -85,10 +89,14 @@ func (s *subscriber) Stop() error {
 	s.consumer.Stop()
 
 	log.Printf("Subscriber %s stopped listening for messages on %s", s.name, s.topic)
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	s.active = false
 	return nil
 }
 
 func (s *subscriber) IsRunning() bool {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
 	return s.active
 }
