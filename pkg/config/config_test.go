@@ -63,6 +63,18 @@ func TestNewConfig(t *testing.T) {
 		assert.Equal(t, duration, 30*time.Second, "Should fallback to 30s")
 	})
 
+	t.Run("With invalid SkipVerify", func(t *testing.T) {
+		os.Setenv("RMQ_TOPICS", "test")
+		os.Setenv("INSECURE_SKIP_VERIFY", "is_string")
+		defer os.Unsetenv("INSECURE_SKIP_VERIFY")
+		defer os.Unsetenv("RMQ_TOPICS")
+
+		config, err := NewConfig()
+
+		assert.Nil(t, err, "Should not throw")
+		assert.False(t, config.InsecureSkipVerify, "Expected default value")
+	})
+
 	t.Run("Empty Topics", func(t *testing.T) {
 		os.Setenv("RMQ_TOPICS", "")
 		defer os.Unsetenv("RMQ_TOPICS")
@@ -86,6 +98,7 @@ func TestNewConfig(t *testing.T) {
 		assert.Equal(t, config.ExchangeName, "OpenFaasEx", "Expected default value")
 		assert.Len(t, config.Topics, 1, "Expected the one defined topic to be present")
 		assert.Equal(t, config.TopicRefreshTime, 30*time.Second, "Expected default value")
+		assert.False(t, config.InsecureSkipVerify, "Expected default value")
 	})
 
 	t.Run("Override Config", func(t *testing.T) {
@@ -98,6 +111,7 @@ func TestNewConfig(t *testing.T) {
 		os.Setenv("RMQ_PASS", "password")
 		os.Setenv("OPEN_FAAS_GW_URL", "https://gateway")
 		os.Setenv("TOPIC_MAP_REFRESH_TIME", "40s")
+		os.Setenv("INSECURE_SKIP_VERIFY", "true")
 
 		defer os.Unsetenv("RMQ_TOPICS")
 		defer os.Unsetenv("RMQ_QUEUE")
@@ -108,6 +122,7 @@ func TestNewConfig(t *testing.T) {
 		defer os.Unsetenv("RMQ_PASS")
 		defer os.Unsetenv("OPEN_FAAS_GW_URL")
 		defer os.Unsetenv("TOPIC_MAP_REFRESH_TIME")
+		defer os.Unsetenv("INSECURE_SKIP_VERIFY")
 
 		config, err := NewConfig()
 
@@ -119,5 +134,6 @@ func TestNewConfig(t *testing.T) {
 		assert.Equal(t, config.ExchangeName, "Ex", "Expected override value")
 		assert.Len(t, config.Topics, 1, "Expected the one defined topic to be present")
 		assert.Equal(t, config.TopicRefreshTime, 40*time.Second, "Expected override value")
+		assert.True(t, config.InsecureSkipVerify, "Expected override value")
 	})
 }
