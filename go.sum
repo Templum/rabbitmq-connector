@@ -6,8 +6,8 @@ github.com/openfaas-incubator/connector-sdk v0.0.0-20191019094425-193b73292e32 h
 github.com/openfaas-incubator/connector-sdk v0.0.0-20191019094425-193b73292e32/go.mod h1:jHCtd1HCZwhuwdPy4OB8CQU7ZqzxBdWNhIhH/khCJqQ=
 github.com/openfaas/faas-provider v0.0.0-20191030180248-7677057e416b h1:Ih33bOW2qAMmWkpypZ8JnQ/7blt1VdXkfHPVN4tILQk=
 github.com/openfaas/faas-provider v0.0.0-20191030180248-7677057e416b/go.mod h1:W4OIp33RUOpR7wW+omJB/7GhIydRmYXvKf/VqUKI4yM=
-github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
-github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
+github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
+github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271 h1:WhxRHzgeVGETMlmVfqhRn8RIeeNoPr2Czh33I4Zdccw=
