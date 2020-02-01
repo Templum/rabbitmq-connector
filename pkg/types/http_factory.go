@@ -12,6 +12,7 @@ import (
 
 // MakeHTTPClient generates an HTTP Client setting basic properties including timeouts
 func MakeHTTPClient(insecure bool, timeout time.Duration) *http.Client {
+	/* #nosec G402 as default is false*/
 	return &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
