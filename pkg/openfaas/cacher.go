@@ -23,11 +23,11 @@ type Controller struct {
 }
 
 // NewController returns a new instance
-func NewController(conf *config.Controller, client FunctionCrawler) *Controller {
+func NewController(conf *config.Controller, client FunctionCrawler, cache TopicMap) *Controller {
 	return &Controller{
 		conf:   conf,
 		client: client,
-		cache:  NewTopicFunctionCache(),
+		cache:  cache,
 	}
 }
 

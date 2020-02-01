@@ -4,9 +4,10 @@ package config
 
 import (
 	"os"
-	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewConfig(t *testing.T) {
@@ -17,15 +18,14 @@ func TestNewConfig(t *testing.T) {
 		var err error
 
 		_, err = NewConfig()
-		if !strings.Contains(err.Error(), "does not include the protocol http / https") {
-			t.Errorf("Did not throw new correct error. Received %s", err)
-		}
+
+		assert.NotNil(t, err, "Should throw err")
+		assert.Contains(t, err.Error(), "does not include the protocol http / https", "Did not throw correct error")
 
 		os.Setenv("OPEN_FAAS_GW_URL", "tcp://gateway:8080")
 		_, err = NewConfig()
-		if !strings.Contains(err.Error(), "does not include the protocol http / https") {
-			t.Errorf("Did not throw new correct error. Received %s", err)
-		}
+		assert.NotNil(t, err, "Should throw err")
+		assert.Contains(t, err.Error(), "does not include the protocol http / https", "Did not throw correct error")
 	})
 
 	t.Run("With invalid Rabbit MQ Port", func(t *testing.T) {
@@ -35,21 +35,18 @@ func TestNewConfig(t *testing.T) {
 		var err error
 
 		_, err = NewConfig()
-		if !strings.Contains(err.Error(), "is not a valid port") {
-			t.Errorf("Did not throw new correct error. Received %s", err)
-		}
+		assert.NotNil(t, err, "Should throw err")
+		assert.Contains(t, err.Error(), "is not a valid port", "Did not throw correct error")
 
 		os.Setenv("RMQ_PORT", "-1")
 		_, err = NewConfig()
-		if !strings.Contains(err.Error(), "is outside of the allowed port range") {
-			t.Errorf("Did not throw new correct error. Received %s", err)
-		}
+		assert.NotNil(t, err, "Should throw err")
+		assert.Contains(t, err.Error(), "is outside of the allowed port range", "Did not throw correct error")
 
 		os.Setenv("RMQ_PORT", "65536")
 		_, err = NewConfig()
-		if !strings.Contains(err.Error(), "is outside of the allowed port range") {
-			t.Errorf("Did not throw new correct error. Received %s", err)
-		}
+		assert.NotNil(t, err, "Should throw err")
+		assert.Contains(t, err.Error(), "is outside of the allowed port range", "Did not throw correct error")
 	})
 
 	t.Run("With invalid RefreshTime", func(t *testing.T) {
@@ -59,18 +56,11 @@ func TestNewConfig(t *testing.T) {
 		var duration time.Duration
 
 		duration = getRefreshTime()
-
-		if duration.Seconds() != 30 {
-			t.Errorf("Should fallback to 30s instead it was %f", duration.Seconds())
-		}
+		assert.Equal(t, duration, 30*time.Second, "Should fallback to 30s")
 
 		os.Setenv("TOPIC_MAP_REFRESH_TIME", "66,31h")
-
 		duration = getRefreshTime()
-
-		if duration.Seconds() != 30 {
-			t.Errorf("Should fallback to 30s instead it was %f", duration.Seconds())
-		}
+		assert.Equal(t, duration, 30*time.Second, "Should fallback to 30s")
 	})
 
 	t.Run("Empty Topics", func(t *testing.T) {
@@ -78,9 +68,8 @@ func TestNewConfig(t *testing.T) {
 		defer os.Unsetenv("RMQ_TOPICS")
 
 		_, err := NewConfig()
-		if !strings.Contains(err.Error(), "no Topic was specified. Provide them via Env RMQ_TOPICS=account,billing,support") {
-			t.Errorf("Did not throw new correct error. Received %s", err)
-		}
+		assert.NotNil(t, err, "Should throw err")
+		assert.Contains(t, err.Error(), "no Topic was specified. Provide them via Env RMQ_TOPICS=account,billing,support", "Did not throw correct error")
 	})
 
 	t.Run("Default Config", func(t *testing.T) {
@@ -88,33 +77,15 @@ func TestNewConfig(t *testing.T) {
 		defer os.Unsetenv("RMQ_TOPICS")
 
 		config, err := NewConfig()
-		if err != nil {
-			t.Error("Should not throw an error")
-		}
 
-		if config.GatewayURL != "http://gateway:8080" {
-			t.Errorf("Expected http://gateway:8080 Received %s", config.GatewayURL)
-		}
-
-		if config.RabbitConnectionURL != "amqp://guest:guest@localhost:5672/" {
-			t.Errorf("Expected amqp://guest:guest@localhost:5672/ Received %s", config.RabbitConnectionURL)
-		}
-
-		if config.RabbitSanitizedURL != "amqp://localhost:5672" {
-			t.Errorf("Expected amqp://localhost:5672 Received %s", config.RabbitSanitizedURL)
-		}
-
-		if config.ExchangeName != "OpenFaasEx" {
-			t.Errorf("Expected OpenFaasEx Received %s", config.ExchangeName)
-		}
-
-		if len(config.Topics) != 1 {
-			t.Errorf("Expected 1 Topic Received %d Topic", len(config.Topics))
-		}
-
-		if config.TopicRefreshTime.Seconds() != 30 {
-			t.Errorf("Expected 30s Received %fs", config.TopicRefreshTime.Seconds())
-		}
+		assert.Nil(t, err, "Should not throw")
+		assert.Equal(t, config.GatewayURL, "http://gateway:8080", "Expected default value")
+		assert.Equal(t, config.RabbitConnectionURL, "amqp://guest:guest@localhost:5672/", "Expected default value")
+		assert.NotContains(t, config.RabbitSanitizedURL, "guest:guest", "Expected credentials not to be present")
+		assert.Equal(t, config.RabbitSanitizedURL, "amqp://localhost:5672", "Expected default value")
+		assert.Equal(t, config.ExchangeName, "OpenFaasEx", "Expected default value")
+		assert.Len(t, config.Topics, 1, "Expected the one defined topic to be present")
+		assert.Equal(t, config.TopicRefreshTime, 30*time.Second, "Expected default value")
 	})
 
 	t.Run("Override Config", func(t *testing.T) {
@@ -139,28 +110,14 @@ func TestNewConfig(t *testing.T) {
 		defer os.Unsetenv("TOPIC_MAP_REFRESH_TIME")
 
 		config, err := NewConfig()
-		if err != nil {
-			t.Error("Should not throw an error")
-		}
 
-		if config.GatewayURL != "https://gateway" {
-			t.Errorf("Expected https://gateway Received %s", config.GatewayURL)
-		}
-
-		if config.RabbitConnectionURL != "amqp://username:password@rabbit:1337/" {
-			t.Errorf("Expected amqp://username:password@rabbit:1337/ Received %s", config.RabbitConnectionURL)
-		}
-
-		if config.RabbitSanitizedURL != "amqp://rabbit:1337" {
-			t.Errorf("Expected amqp://rabbit:1337 Received %s", config.RabbitSanitizedURL)
-		}
-
-		if config.ExchangeName != "Ex" {
-			t.Errorf("Expected Ex Received %s", config.ExchangeName)
-		}
-
-		if config.TopicRefreshTime.Seconds() != 40 {
-			t.Errorf("Expected 40s Received %fs", config.TopicRefreshTime.Seconds())
-		}
+		assert.Nil(t, err, "Should not throw")
+		assert.Equal(t, config.GatewayURL, "https://gateway", "Expected override value")
+		assert.Equal(t, config.RabbitConnectionURL, "amqp://username:password@rabbit:1337/", "Expected override value")
+		assert.NotContains(t, config.RabbitSanitizedURL, "username:password", "Expected credentials not to be present")
+		assert.Equal(t, config.RabbitSanitizedURL, "amqp://rabbit:1337", "Expected override value")
+		assert.Equal(t, config.ExchangeName, "Ex", "Expected override value")
+		assert.Len(t, config.Topics, 1, "Expected the one defined topic to be present")
+		assert.Equal(t, config.TopicRefreshTime, 40*time.Second, "Expected override value")
 	})
 }

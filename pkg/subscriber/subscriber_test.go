@@ -1,98 +1,77 @@
 package subscriber
 
 import (
-	"bytes"
 	"errors"
-	"github.com/Templum/rabbitmq-connector/pkg/types"
-	"github.com/streadway/amqp"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/Templum/rabbitmq-connector/pkg/types"
+	"github.com/streadway/amqp"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 //---- QueueConsumer Mock ----//
 
 type fullQueueConsumer struct {
-	faulty bool
-	Output chan *types.OpenFaaSInvocation
+	mock.Mock
 }
 
 func (m *fullQueueConsumer) Consume() (<-chan *types.OpenFaaSInvocation, error) {
-	if m.faulty {
-		return nil, errors.New("expected")
-	}
+	args := m.Called(nil)
 
-	m.Output = make(chan *types.OpenFaaSInvocation)
-	return m.Output, nil
+	if c, ok := args.Get(0).(chan *types.OpenFaaSInvocation); ok {
+		return c, nil
+	}
+	return nil, errors.New("expected")
 }
 
 func (m *fullQueueConsumer) Stop() {
-	if m.Output != nil {
-		close(m.Output)
-	}
+	m.Called(nil)
 }
 
 func (m *fullQueueConsumer) ListenForErrors() <-chan *amqp.Error {
-	return make(chan *amqp.Error)
+
+	args := m.Called(nil)
+	return args.Get(0).(chan *amqp.Error)
 }
 
 //---- Invoker Mock ----//
 type mockInvoker struct {
-	receivedTopic   string
-	receivedMessage *[]byte
-	mutex           sync.Mutex
+	mock.Mock
+	mutex sync.RWMutex
 }
 
 func (m *mockInvoker) Invoke(topic string, message []byte) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	m.receivedTopic = topic
-	m.receivedMessage = &message
-}
 
-func (m *mockInvoker) GetTopic() string {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	return m.receivedTopic
-}
-
-func (m *mockInvoker) GetMessage() *[]byte {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	return m.receivedMessage
+	m.Called(topic, message)
 }
 
 func TestSubscriber_Start(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Start without error", func(t *testing.T) {
-		mock := fullQueueConsumer{faulty: false}
-		target := NewSubscriber("Unit Test", "Sample", &mock, nil)
+		mock := new(fullQueueConsumer)
+		mock.On("Consume", nil).Return(make(chan *types.OpenFaaSInvocation))
+		mock.On("ListenForErrors", nil).Return(make(chan *amqp.Error))
+		target := NewSubscriber("Unit Test", "Sample", mock, nil)
 
 		err := target.Start()
-
-		if err != nil {
-			t.Errorf("Expected no error, but Received %s", err)
-		}
-
-		if target.IsRunning() != true {
-			t.Errorf("Expected true for isRunning Received %t", target.IsRunning())
-		}
+		assert.Nil(t, err, "Expected start not to fail")
+		assert.True(t, target.IsRunning(), "Expected consumer to be running")
 	})
 
 	t.Run("Start with error", func(t *testing.T) {
-		mock := fullQueueConsumer{faulty: true}
-		target := NewSubscriber("Unit Test", "Sample", &mock, nil)
+		mock := new(fullQueueConsumer)
+		mock.On("Consume", nil).Return(nil)
+		target := NewSubscriber("Unit Test", "Sample", mock, nil)
 
 		err := target.Start()
-
-		if err.Error() != "expected" {
-			t.Errorf("Expected Error expected Received %s", err)
-		}
-
-		if target.IsRunning() != false {
-			t.Errorf("Expected false for isRunning Received %t", target.IsRunning())
-		}
+		assert.Error(t, err, "Expected start to fail")
+		assert.False(t, target.IsRunning(), "Expected consumer not to be running")
 	})
 }
 
@@ -100,26 +79,22 @@ func TestSubscriber_IsRunning(t *testing.T) {
 	t.Parallel()
 
 	t.Run("When running", func(t *testing.T) {
-		mock := fullQueueConsumer{faulty: false}
-		target := NewSubscriber("Unit Test", "Sample", &mock, nil)
+		mock := new(fullQueueConsumer)
+		mock.On("Consume", nil).Return(make(chan *types.OpenFaaSInvocation))
+		mock.On("ListenForErrors", nil).Return(make(chan *amqp.Error))
+		target := NewSubscriber("Unit Test", "Sample", mock, nil)
 		_ = target.Start()
 
 		isRunning := target.IsRunning()
-
-		if isRunning != true {
-			t.Errorf("Expected true for isRunning Received %t", isRunning)
-		}
+		assert.True(t, isRunning, "Expected consumer to be running")
 	})
 
 	t.Run("When not running", func(t *testing.T) {
-		mock := fullQueueConsumer{faulty: false}
-		target := NewSubscriber("Unit Test", "Sample", &mock, nil)
+		mock := new(fullQueueConsumer)
+		target := NewSubscriber("Unit Test", "Sample", mock, nil)
 
 		isRunning := target.IsRunning()
-
-		if isRunning != false {
-			t.Errorf("Expected false for isRunning Received %t", isRunning)
-		}
+		assert.False(t, isRunning, "Expected consumer not to be running")
 	})
 }
 
@@ -127,26 +102,70 @@ func TestSubscriber_Stop(t *testing.T) {
 	t.Parallel()
 
 	t.Run("End without error", func(t *testing.T) {
-		mock := fullQueueConsumer{faulty: false}
-		target := NewSubscriber("Unit Test", "Sample", &mock, nil)
+		mock := new(fullQueueConsumer)
+		mock.On("Consume", nil).Return(make(chan *types.OpenFaaSInvocation))
+		mock.On("ListenForErrors", nil).Return(make(chan *amqp.Error))
+		mock.On("Stop", nil).Return()
+		target := NewSubscriber("Unit Test", "Sample", mock, nil)
 
 		_ = target.Start()
 		err := target.Stop()
-
-		if err != nil {
-			t.Errorf("Expected no error, but Received %s", err)
-		}
+		assert.Nil(t, err, "Expected stop not to fail")
 	})
 
 	t.Run("End without being started", func(t *testing.T) {
-		mock := fullQueueConsumer{faulty: false}
-		target := NewSubscriber("Unit Test", "Sample", &mock, nil)
+		mock := new(fullQueueConsumer)
+		mock.On("Consume", nil).Return(make(chan *types.OpenFaaSInvocation))
+		mock.On("ListenForErrors", nil).Return(make(chan *amqp.Error))
+		mock.On("Stop", nil).Return()
+		target := NewSubscriber("Unit Test", "Sample", mock, nil)
 
 		err := target.Stop()
+		assert.Nil(t, err, "Expected stop not to fail")
+	})
+}
 
-		if err != nil {
-			t.Errorf("Expected no error, but Received %s", err)
-		}
+func TestConsumerError(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Should stop consumer if critical error was received", func(t *testing.T) {
+		errChannel := make(chan *amqp.Error)
+		mock := new(fullQueueConsumer)
+		mock.On("Consume", nil).Return(make(chan *types.OpenFaaSInvocation))
+		mock.On("ListenForErrors", nil).Return(errChannel)
+		mock.On("Stop", nil).Return()
+		target := NewSubscriber("Unit Test", "Sample", mock, nil)
+
+		err := target.Start()
+		assert.Nil(t, err, "Expected start not to fail")
+		assert.True(t, target.IsRunning(), "Expected consumer to be running")
+
+		errChannel <- &amqp.Error{Recover: false, Reason: "Critical Error Occured"}
+		time.Sleep(300 * time.Millisecond)
+
+		mock.AssertNumberOfCalls(t, "Consume", 1)
+		mock.AssertNumberOfCalls(t, "Stop", 1)
+		assert.False(t, target.IsRunning(), "Expected consumer to be stopped")
+	})
+
+	t.Run("Should restart consumer if recoverable error was received", func(t *testing.T) {
+		errChannel := make(chan *amqp.Error)
+		mock := new(fullQueueConsumer)
+		mock.On("Consume", nil).Return(make(chan *types.OpenFaaSInvocation))
+		mock.On("ListenForErrors", nil).Return(errChannel)
+		mock.On("Stop", nil).Return()
+		target := NewSubscriber("Unit Test", "Sample", mock, nil)
+
+		err := target.Start()
+		assert.Nil(t, err, "Expected start not to fail")
+		assert.True(t, target.IsRunning(), "Expected consumer to be running")
+
+		errChannel <- &amqp.Error{Recover: true, Reason: "Recoverable by reconnecting"}
+		time.Sleep(300 * time.Millisecond)
+
+		mock.AssertNumberOfCalls(t, "Consume", 2)
+		mock.AssertNumberOfCalls(t, "Stop", 1)
+		assert.True(t, target.IsRunning(), "Expected consumer to be running")
 	})
 }
 
@@ -154,49 +173,62 @@ func TestMessageReceived(t *testing.T) {
 	t.Parallel()
 
 	t.Run("With correct topic", func(t *testing.T) {
-		var wg sync.WaitGroup
+		msgStream := make(chan *types.OpenFaaSInvocation)
 		message := []byte("Hello World")
-		consumer := fullQueueConsumer{faulty: false}
-		invoker := mockInvoker{}
-		target := NewSubscriber("Unit Test", "Sample", &consumer, &invoker)
+		targetTopic := "Sample"
+
+		consumerMock := new(fullQueueConsumer)
+		consumerMock.On("Consume", nil).Return(msgStream)
+		consumerMock.On("ListenForErrors", nil).Return(make(chan *amqp.Error))
+		consumerMock.On("Stop", nil).Return()
+
+		invokerMock := new(mockInvoker)
+		invokerMock.On("Invoke", targetTopic, message).Return()
+
+		target := NewSubscriber("Unit Test", "Sample", consumerMock, invokerMock)
 
 		_ = target.Start()
 
+		var wg sync.WaitGroup
 		wg.Add(1)
 
 		go func() {
-			consumer.Output <- &types.OpenFaaSInvocation{
+			msgStream <- &types.OpenFaaSInvocation{
 				Topic:   "Sample",
 				Message: &message,
 			}
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(300 * time.Millisecond)
 			wg.Done()
 		}()
 		wg.Wait()
 
-		if invoker.GetTopic() != "Sample" {
-			t.Errorf("Invoker was not called with the correct Topic Sample. %s", invoker.receivedTopic)
-		}
-
-		if !bytes.Equal(*invoker.GetMessage(), message) {
-			t.Error("Invoker was not called with the correct Message.")
-		}
+		invokerMock.AssertCalled(t, "Invoke", targetTopic, message)
+		invokerMock.AssertNumberOfCalls(t, "Invoke", 1)
 	})
 
 	t.Run("Without correct topic", func(t *testing.T) {
-		var wg sync.WaitGroup
+		msgStream := make(chan *types.OpenFaaSInvocation)
 		message := []byte("Hello World")
-		consumer := fullQueueConsumer{faulty: false}
-		invoker := mockInvoker{}
-		target := NewSubscriber("Unit Test", "Sample", &consumer, &invoker)
+		targetTopic := "Other"
+
+		consumerMock := new(fullQueueConsumer)
+		consumerMock.On("Consume", nil).Return(msgStream)
+		consumerMock.On("ListenForErrors", nil).Return(make(chan *amqp.Error))
+		consumerMock.On("Stop", nil).Return()
+
+		invokerMock := new(mockInvoker)
+		invokerMock.On("Invoke", targetTopic, message).Return()
+
+		target := NewSubscriber("Unit Test", "Sample", consumerMock, invokerMock)
 
 		_ = target.Start()
 
+		var wg sync.WaitGroup
 		wg.Add(1)
 
 		go func() {
-			consumer.Output <- &types.OpenFaaSInvocation{
-				Topic:   "Other",
+			msgStream <- &types.OpenFaaSInvocation{
+				Topic:   targetTopic,
 				Message: &message,
 			}
 			time.Sleep(500 * time.Millisecond)
@@ -204,8 +236,7 @@ func TestMessageReceived(t *testing.T) {
 		}()
 		wg.Wait()
 
-		if invoker.GetTopic() == "Sample" {
-			t.Error("Invoker should not be called for Other")
-		}
+		invokerMock.AssertNotCalled(t, "Invoke", "Sample", message)
+		invokerMock.AssertNumberOfCalls(t, "Invoke", 0)
 	})
 }
