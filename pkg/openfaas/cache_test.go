@@ -13,7 +13,7 @@ func TestTopicMap(t *testing.T) {
 
 	t.Run("Should override cache with update", func(t *testing.T) {
 		cache := NewTopicFunctionCache()
-		
+
 		before := len(cache.topicMap)
 		cache.Refresh(update)
 		after := len(cache.topicMap)
