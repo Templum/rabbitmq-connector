@@ -57,8 +57,8 @@ func NewClient(client *http.Client, creds *auth.BasicAuthCredentials, gatewayURL
 	}
 }
 
-// InvokeSync TODO:
-func (c *Client) InvokeSync(ctx context.Context, name string, payload []byte) ([]byte, error) { // TODO: either reuse provided payload or make it pasable
+// InvokeSync calls a given function in a synchronous way waiting for the response using the provided payload while considering the provided context
+func (c *Client) InvokeSync(ctx context.Context, name string, payload []byte) ([]byte, error) { // TODO: either reuse provided payload or make it parseable
 	functionURL := fmt.Sprintf("%s/function/%s", c.url, name)
 
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, functionURL, bytes.NewReader(payload))
@@ -94,8 +94,8 @@ func (c *Client) InvokeSync(ctx context.Context, name string, payload []byte) ([
 	}
 }
 
-// InvokeAsync TODO:
-func (c *Client) InvokeAsync(ctx context.Context, name string, payload []byte) (bool, error) { // TODO: either reuse provided payload or make it pasable
+// InvokeAsync calls a given function in a asynchronous way waiting for the response using the provided payload while considering the provided context
+func (c *Client) InvokeAsync(ctx context.Context, name string, payload []byte) (bool, error) { // TODO: either reuse provided payload or make it parseable
 	functionURL := fmt.Sprintf("%s/async-function/%s", c.url, name)
 
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, functionURL, bytes.NewReader(payload))
@@ -128,7 +128,7 @@ func (c *Client) InvokeAsync(ctx context.Context, name string, payload []byte) (
 	}
 }
 
-// HasNamespaceSupport TODO:
+// HasNamespaceSupport Checks if the version of OpenFaaS does support Namespace
 func (c *Client) HasNamespaceSupport(ctx context.Context) (bool, error) {
 	getNamespaces := fmt.Sprintf("%s/system/namespaces", c.url)
 
@@ -148,7 +148,11 @@ func (c *Client) HasNamespaceSupport(ctx context.Context) (bool, error) {
 
 	switch res.StatusCode {
 	case 200:
-		return true, nil
+		resp, _ := ioutil.ReadAll(res.Body)
+		var namespaces []string
+		err = json.Unmarshal(resp, &namespaces)
+		// Swarm edition of OF does not support namespaces and is simply returning empty array
+		return len(namespaces) > 0, nil
 	case 401:
 		return false, errors.New("OpenFaaS Credentials are invalid")
 	default:
@@ -156,7 +160,7 @@ func (c *Client) HasNamespaceSupport(ctx context.Context) (bool, error) {
 	}
 }
 
-// GetNamespaces TODO:
+// GetNamespaces returns all namespaces where Functions are deployed on
 func (c *Client) GetNamespaces(ctx context.Context) ([]string, error) {
 	getNamespaces := fmt.Sprintf("%s/system/namespaces", c.url)
 
@@ -188,7 +192,7 @@ func (c *Client) GetNamespaces(ctx context.Context) ([]string, error) {
 	return namespaces, nil
 }
 
-// GetFunctions TODO:
+// GetFunctions returns a list of all functions in the given namespace or in the default namespace
 func (c *Client) GetFunctions(ctx context.Context, namespace string) ([]types.FunctionStatus, error) {
 	getFunctions := fmt.Sprintf("%s/system/functions", c.url)
 
@@ -213,7 +217,7 @@ func (c *Client) GetFunctions(ctx context.Context, namespace string) ([]types.Fu
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
-	functions := []types.FunctionStatus{}
+	var functions []types.FunctionStatus
 	err = json.Unmarshal(resp, &functions)
 
 	if err != nil {

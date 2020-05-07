@@ -167,7 +167,7 @@ func TestClient_InvokeAsync(t *testing.T) {
 }
 
 func TestClient_HasNamespaceSupport(t *testing.T) {
-	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	k8sOF := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if user, pass, ok := r.BasicAuth(); ok {
 			if user == "User" && pass == "Pass" {
 				w.WriteHeader(502)
@@ -179,31 +179,53 @@ func TestClient_HasNamespaceSupport(t *testing.T) {
 			return
 		}
 
+		namespaces := []string{"one", "two"}
+		out, _ := json.Marshal(namespaces)
+
 		w.WriteHeader(200)
-		w.Write(nil)
+		w.Write(out)
 		return
 	}))
-	defer server.Close()
+	defer k8sOF.Close()
 
-	openfaasClient := NewClient(server.Client(), nil, server.URL)
+	swarmOF := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		namespaces := []string{}
+		out, _ := json.Marshal(namespaces)
 
-	authenticatedOpenFaaSClient := NewClient(server.Client(), &auth.BasicAuthCredentials{
+		w.WriteHeader(200)
+		w.Write(out)
+		return
+	}))
+
+	ofK8SClient := NewClient(k8sOF.Client(), nil, k8sOF.URL)
+
+	ofSwarmClient := NewClient(swarmOF.Client(), nil, swarmOF.URL)
+
+	authenticatedOpenFaaSClient := NewClient(k8sOF.Client(), &auth.BasicAuthCredentials{
 		User:     "User",
 		Password: "Invalid",
-	}, server.URL)
+	}, k8sOF.URL)
 
-	failingOpenFaaSClient := NewClient(server.Client(), &auth.BasicAuthCredentials{
+	failingOpenFaaSClient := NewClient(k8sOF.Client(), &auth.BasicAuthCredentials{
 		User:     "User",
 		Password: "Pass",
-	}, server.URL)
+	}, k8sOF.URL)
 
 	t.Parallel()
 
 	t.Run("Should return true if namespaces endpoint available", func(t *testing.T) {
-		ok, err := openfaasClient.HasNamespaceSupport(context.Background())
+		ok, err := ofK8SClient.HasNamespaceSupport(context.Background())
 
 		assert.Nil(t, err, "Should not fail")
 		assert.Equal(t, ok, true, "Did not receive expected response")
+	})
+
+	t.Run("Should return false if namespace endpoint does not return empty list", func(t *testing.T) {
+		ok, err := ofSwarmClient.HasNamespaceSupport(context.Background())
+
+		assert.Nil(t, err, "Should not fail")
+		assert.Equal(t, ok, false, "Did not receive expected response")
 	})
 
 	t.Run("Should return false if namespace endpoint is not available", func(t *testing.T) {
