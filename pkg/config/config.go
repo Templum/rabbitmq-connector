@@ -25,8 +25,9 @@ type Controller struct {
 	ExchangeName string
 	Topics       []string
 
-	TopicRefreshTime time.Duration
-	BasicAuth        *auth.BasicAuthCredentials
+	TopicRefreshTime   time.Duration
+	BasicAuth          *auth.BasicAuthCredentials
+	InsecureSkipVerify bool
 }
 
 // NewConfig reads the connector config from environment variables and further validates them,
@@ -50,6 +51,11 @@ func NewConfig() (*Controller, error) {
 		return nil, err
 	}
 
+	skipVerify, err := strconv.ParseBool(readFromEnv(envSkipVerify, "false"))
+	if err != nil {
+		skipVerify = false
+	}
+
 	return &Controller{
 		GatewayURL: gatewayURL,
 		BasicAuth:  types.GetCredentials(),
@@ -60,12 +66,14 @@ func NewConfig() (*Controller, error) {
 		ExchangeName: exchange,
 		Topics:       topics,
 
-		TopicRefreshTime: getRefreshTime(),
+		TopicRefreshTime:   getRefreshTime(),
+		InsecureSkipVerify: skipVerify,
 	}, nil
 }
 
 const (
-	envFaaSGwURL = "OPEN_FAAS_GW_URL"
+	envFaaSGwURL  = "OPEN_FAAS_GW_URL"
+	envSkipVerify = "INSECURE_SKIP_VERIFY"
 
 	envRabbitUser = "RMQ_USER"
 	envRabbitPass = "RMQ_PASS"

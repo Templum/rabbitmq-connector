@@ -51,9 +51,9 @@ func NewProducer(cfg *config.Controller) (*Producer, error) {
 
 func (p *Producer) setup(cfg *config.Controller) error {
 	var err error
-	con, err := amqp.Dial(cfg.RabbitConnectionURL)
+	con, _ := amqp.Dial(cfg.RabbitConnectionURL)
 
-	channel, err := con.Channel()
+	channel, _ := con.Channel()
 
 	err = channel.ExchangeDeclare(
 		cfg.ExchangeName,

@@ -144,7 +144,7 @@ func TestCacher_Start_WithNs(t *testing.T) {
 		defer cancel()
 
 		cacher.Start(ctx)
-		assert.Equal(t, cacheMock.CalledNTimes(), 1, "Expected an inital sync")
+		assert.Equal(t, cacheMock.CalledNTimes(), 1, "Expected an initial sync")
 	})
 
 	t.Run("Should sync every 3 seconds", func(t *testing.T) {
@@ -156,7 +156,7 @@ func TestCacher_Start_WithNs(t *testing.T) {
 		defer cancel()
 
 		cacher.Start(ctx)
-		assert.Equal(t, cacheMock.CalledNTimes(), 1, "Expected an inital sync")
+		assert.Equal(t, cacheMock.CalledNTimes(), 1, "Expected an initial sync")
 		time.Sleep(4 * time.Second)
 		assert.Equal(t, cacheMock.CalledNTimes(), 2, "Expected a new sync")
 	})
@@ -207,7 +207,7 @@ func TestCacher_Start_Normal(t *testing.T) {
 		defer cancel()
 
 		cacher.Start(ctx)
-		assert.Equal(t, cacheMock.CalledNTimes(), 1, "Expected an inital sync")
+		assert.Equal(t, cacheMock.CalledNTimes(), 1, "Expected an initial sync")
 	})
 
 	t.Run("Should sync every 3 seconds", func(t *testing.T) {
@@ -218,7 +218,7 @@ func TestCacher_Start_Normal(t *testing.T) {
 		defer cancel()
 
 		cacher.Start(ctx)
-		assert.Equal(t, cacheMock.CalledNTimes(), 1, "Expected an inital sync")
+		assert.Equal(t, cacheMock.CalledNTimes(), 1, "Expected an initial sync")
 		time.Sleep(4 * time.Second)
 		assert.Equal(t, cacheMock.CalledNTimes(), 2, "Expected a new sync")
 	})
@@ -241,7 +241,7 @@ func TestCacher_Start_WithFailures(t *testing.T) {
 		defer cancel()
 
 		cacher.Start(ctx)
-		assert.Equal(t, cacheMock.CalledNTimes(), 1, "Expected an inital sync")
+		assert.Equal(t, cacheMock.CalledNTimes(), 1, "Expected an initial sync")
 	})
 
 	t.Run("Should swallow errors received during get functions", func(t *testing.T) {
@@ -256,7 +256,7 @@ func TestCacher_Start_WithFailures(t *testing.T) {
 		defer cancel()
 
 		cacher.Start(ctx)
-		assert.Equal(t, cacheMock.CalledNTimes(), 1, "Expected an inital sync")
+		assert.Equal(t, cacheMock.CalledNTimes(), 1, "Expected an initial sync")
 	})
 }
 
