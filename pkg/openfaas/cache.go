@@ -14,7 +14,7 @@ type TopicMap interface {
 	Refresh(update map[string][]string)
 }
 
-// TopicFunctionCache TODO:
+// TopicFunctionCache contains a map of of topics to functions
 type TopicFunctionCache struct {
 	topicMap map[string][]string
 	lock     sync.RWMutex
@@ -28,7 +28,7 @@ func NewTopicFunctionCache() *TopicFunctionCache {
 	}
 }
 
-// GetCachedValues TODO:
+// GetCachedValues reads the cached functions for a given topic
 func (m *TopicFunctionCache) GetCachedValues(name string) []string {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
@@ -44,7 +44,7 @@ func (m *TopicFunctionCache) GetCachedValues(name string) []string {
 	return functions
 }
 
-// Refresh TODO:
+// Refresh updates the existing cache with new values while syncing ensuring no read conflicts
 func (m *TopicFunctionCache) Refresh(update map[string][]string) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
