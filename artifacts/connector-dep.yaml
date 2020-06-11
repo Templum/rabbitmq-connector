@@ -5,6 +5,9 @@ metadata:
   namespace: openfaas
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq-connector
   template:
     metadata:
       labels:
@@ -14,51 +17,9 @@ spec:
       - name: connector
         image: templum/rabbitmq-connector:develop
         imagePullPolicy: Always
-        env:
-        - name: basic_auth
-          value: "true"
-        - name: secret_mount_path
-          value: "/etc/openfaas"
-        - name: OPEN_FAAS_GW_URL
-          valueFrom:
-            configMapKeyRef:
-              name: rabbitmq-connector-configmap
-              key: OPEN_FAAS_GW_URL
-        - name: RMQ_TOPICS
-          valueFrom:
-            configMapKeyRef:
-              name: rabbitmq-connector-configmap
-              key: RMQ_TOPICS
-        - name: RMQ_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: rabbitmq-connector-configmap
-              key: RMQ_HOST
-        - name: RMQ_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: rabbitmq-connector-configmap
-              key: RMQ_PORT
-        - name: RMQ_USER
-          valueFrom:
-            configMapKeyRef:
-              name: rabbitmq-connector-configmap
-              key: RMQ_USER
-        - name: RMQ_PASS
-          valueFrom:
-            configMapKeyRef:
-              name: rabbitmq-connector-configmap
-              key: RMQ_PASS
-        - name: REQ_TIMEOUT
-          valueFrom:
-            configMapKeyRef:
-              name: rabbitmq-connector-configmap
-              key: REQ_TIMEOUT
-        - name: TOPIC_MAP_REFRESH_TIME
-          valueFrom:
-            configMapKeyRef:
-              name: rabbitmq-connector-configmap
-              key: TOPIC_MAP_REFRESH_TIME
+        envFrom:
+        - configMapRef:
+            name: rabbitmq-connector-configmap
         resources: # Adjust them to suite your needs
           requests:
             memory: 512Mi
