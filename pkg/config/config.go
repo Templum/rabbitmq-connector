@@ -1,7 +1,9 @@
-package config
+/*
+ * Copyright (c) Simon Pelczer 2020. All rights reserved.
+ *  Licensed under the MIT license. See LICENSE file in the project root for full license information.
+ */
 
-// Copyright (c) Simon Pelczer 2019. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+package config
 
 import (
 	"errors"
@@ -12,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	t "github.com/Templum/rabbitmq-connector/pkg/types"
 	"github.com/openfaas-incubator/connector-sdk/types"
 	"github.com/openfaas/faas-provider/auth"
 )
@@ -22,8 +25,7 @@ type Controller struct {
 	RabbitConnectionURL string
 	RabbitSanitizedURL  string
 
-	ExchangeName string
-	Topics       []string
+	Topology t.Topology
 
 	TopicRefreshTime   time.Duration
 	BasicAuth          *auth.BasicAuthCredentials
@@ -44,9 +46,7 @@ func NewConfig() (*Controller, error) {
 		return nil, err
 	}
 
-	exchange := readFromEnv(envRabbitExchange, "OpenFaasEx")
-
-	topics, err := getTopics()
+	topology, err := getTopology()
 	if err != nil {
 		return nil, err
 	}
@@ -63,8 +63,7 @@ func NewConfig() (*Controller, error) {
 		RabbitConnectionURL: rabbitURL,
 		RabbitSanitizedURL:  sanitizedURL,
 
-		ExchangeName: exchange,
-		Topics:       topics,
+		Topology: topology,
 
 		TopicRefreshTime:   getRefreshTime(),
 		InsecureSkipVerify: skipVerify,
@@ -80,8 +79,7 @@ const (
 	envRabbitHost = "RMQ_HOST"
 	envRabbitPort = "RMQ_PORT"
 
-	envRabbitTopics   = "RMQ_TOPICS"
-	envRabbitExchange = "RMQ_EXCHANGE"
+	envPathToTopology = "PATH_TO_TOPOLOGY"
 	envRefreshTime    = "TOPIC_MAP_REFRESH_TIME"
 )
 
@@ -121,15 +119,14 @@ func getSanitizedRabbitMQURL() string {
 	return fmt.Sprintf("amqp://%s:%s", host, port)
 }
 
-func getTopics() ([]string, error) {
-	topicsString := readFromEnv(envRabbitTopics, "")
-	topics := strings.Split(topicsString, ",")
+func getTopology() (t.Topology, error) {
+	path := readFromEnv(envPathToTopology, ".")
 
-	if topicsString == "" || len(topics) < 1 {
-		return nil, errors.New("no Topic was specified. Provide them via Env RMQ_TOPICS=account,billing,support")
+	if info, err := os.Stat(path); os.IsNotExist(err) || !strings.HasSuffix(info.Name(), "yaml") {
+		return t.Topology{}, errors.New("provided topology is either non existing or does not end with .yaml")
 	}
 
-	return topics, nil
+	return t.ReadTopologyFromFile(path)
 }
 
 func getRefreshTime() time.Duration {

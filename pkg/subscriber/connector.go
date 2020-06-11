@@ -1,7 +1,9 @@
-package subscriber
+/*
+ * Copyright (c) Simon Pelczer 2020. All rights reserved.
+ *  Licensed under the MIT license. See LICENSE file in the project root for full license information.
+ */
 
-// Copyright (c) Simon Pelczer 2019. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+package subscriber
 
 import (
 	"log"
@@ -17,7 +19,7 @@ import (
 type connector struct {
 	config  *config.Controller
 	client  types.Invoker
-	factory rabbitmq.QueueConsumerFactory
+	factory rabbitmq.ExchangeFactory
 
 	subscribers []Subscriber
 }
@@ -29,7 +31,7 @@ type Connector interface {
 }
 
 // NewConnector generates a connector using the provided parameters.
-func NewConnector(config *config.Controller, client types.Invoker, factory rabbitmq.QueueConsumerFactory) Connector {
+func NewConnector(config *config.Controller, client types.Invoker, factory rabbitmq.ExchangeFactory) Connector {
 	return &connector{
 		config:      config,
 		client:      client,
@@ -40,7 +42,7 @@ func NewConnector(config *config.Controller, client types.Invoker, factory rabbi
 
 func (m *connector) Start() {
 	// Start Consumer
-	m.spawnWorkers(m.config.Topics)
+	m.spawnSubscribers(m.config.Topology)
 
 	for _, subscriber := range m.subscribers {
 		_ = subscriber.Start()
@@ -51,22 +53,20 @@ func (m *connector) End() {
 	m.clearWorkers()
 }
 
-func (m *connector) spawnWorkers(topics []string) {
-	amountOfTopics := len(topics)
-	workerCount := CalculateWorkerCount(amountOfTopics)
-	log.Printf("%d Topic(s) are registered. Will be spawning %d Worker(s) per Topic. ", amountOfTopics, workerCount)
+func (m *connector) spawnSubscribers(topology types.Topology) {
 
-	for _, topic := range topics {
-		for i := 0; i < workerCount; i++ {
-			consumer, err := m.factory.Build(topic)
-			if err != nil {
-				log.Printf("Failed to setup a worker for %s. Received %s", topic, err)
-			} else {
-				subscriber := NewSubscriber(Generator.GetRandomName(3), topic, consumer, m.client)
-				m.subscribers = append(m.subscribers, subscriber)
-			}
+	m.factory.WithConnection(m.config.RabbitConnectionURL, m.config.RabbitSanitizedURL)
+
+	for _, exchange := range topology {
+		subs, err := m.factory.WithExchange(exchange).Build()
+		if err != nil {
+			log.Printf("Failed to setup subscriber on exchange %s due to %s", exchange.Name, err)
+		} else {
+			subscriber := NewSubscriber(Generator.GetRandomName(3), topic, consumer, m.client)
+			m.subscribers = append(m.subscribers, subscriber)
 		}
 	}
+
 }
 
 func (m *connector) clearWorkers() {

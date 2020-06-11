@@ -1,12 +1,14 @@
+/*
+ * Copyright (c) Simon Pelczer 2020. All rights reserved.
+ *  Licensed under the MIT license. See LICENSE file in the project root for full license information.
+ */
+
 package openfaas
 
 import (
 	"log"
 	"sync"
 )
-
-// Copyright (c) Simon Pelczer 2019. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // TopicMap defines a interface for a topic map
 type TopicMap interface {

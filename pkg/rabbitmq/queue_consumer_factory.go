@@ -1,10 +1,12 @@
+/*
+ * Copyright (c) Simon Pelczer 2020. All rights reserved.
+ *  Licensed under the MIT license. See LICENSE file in the project root for full license information.
+ */
 package rabbitmq
 
-// Copyright (c) Simon Pelczer 2019. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 import (
-	"fmt"
+	"github.com/Templum/rabbitmq-connector/pkg/types"
 	"log"
 	"time"
 
@@ -39,7 +41,7 @@ func NewQueueConsumerFactory(config *config.Controller) (QueueConsumerFactory, e
 	return &factory, nil
 }
 
-func (f *queueConsumerFactory) Build(topic string) (QueueConsumer, error) {
+func (f *queueConsumerFactory) Build(ex types.Exchange) (QueueConsumer, error) {
 	var err error
 	ch, err := f.establishChannel(5)
 	if err != nil {
@@ -123,10 +125,4 @@ func (f *queueConsumerFactory) declareTopology(c *amqp.Channel, topic string) er
 
 	log.Printf("Binding Queue %s to Exchange %s for Topic: %s", queueName, cfg.ExchangeName, topic)
 	return nil
-}
-
-// generateQueueName will return the QueueName which consists of a prefix and the topic
-func generateQueueName(topic string) string {
-	const PreFix = "OpenFaaS"
-	return fmt.Sprintf("%s_%s", PreFix, topic)
 }

@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) Simon Pelczer 2020. All rights reserved.
+ *  Licensed under the MIT license. See LICENSE file in the project root for full license information.
+ */
+
 package openfaas
 
 import (
@@ -10,8 +15,6 @@ import (
 	"github.com/openfaas/faas-provider/types"
 )
 
-// Copyright (c) Simon Pelczer 2019. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // Controller is responsible for building up and maintaining a
 // Cache with all of the deployed OpenFaaS Functions across

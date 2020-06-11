@@ -1,68 +1,72 @@
+/*
+ * Copyright (c) Simon Pelczer 2020. All rights reserved.
+ *  Licensed under the MIT license. See LICENSE file in the project root for full license information.
+ */
+
 package rabbitmq
 
-// Copyright (c) Simon Pelczer 2019. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
 import (
-	"log"
-
 	"github.com/Templum/rabbitmq-connector/pkg/types"
 	"github.com/streadway/amqp"
+	"log"
 )
 
-type queueConsumer struct {
-	queueName string
-	channel   *amqp.Channel
+type topicSubscriber struct {
+	ch          *amqp.Channel
+	targetQueue string
 }
 
-// QueueConsumer is an Consumer that listens on a specified queue and forwards incoming messages.
-type QueueConsumer interface {
-	Consume() (<-chan *types.OpenFaaSInvocation, error)
+func NewTopicSubscriber(ch *amqp.Channel, targetQueue string) Subscriber {
+	return &topicSubscriber{
+		ch:          ch,
+		targetQueue: targetQueue,
+	}
+}
+
+type Subscriber interface {
+	Subscribe() (<-chan types.OpenFaaSInvocation, error)
 	Stop()
-	ListenForErrors() <-chan *amqp.Error
 }
 
-// NewQueueConsumer creates a new instance of QueueConsumer and assigns the passed channel to it.
-func NewQueueConsumer(queueName string, channel *amqp.Channel) QueueConsumer {
-	return &queueConsumer{queueName: queueName, channel: channel}
-}
-
-func (c *queueConsumer) Consume() (<-chan *types.OpenFaaSInvocation, error) {
-	ch, err := c.channel.Consume(
-		c.queueName,
-		"", // Let Rabbit MQ Generate a Tag
+func (s *topicSubscriber) Subscribe() (<-chan types.OpenFaaSInvocation, error) {
+	incoming, err := s.ch.Consume(
+		s.targetQueue,
+		"",
 		true,
 		false,
 		false,
 		false,
-		nil,
-	)
+		nil)
 
 	if err != nil {
 		return nil, err
 	}
 
-	out := make(chan *types.OpenFaaSInvocation)
+	out := make(chan types.OpenFaaSInvocation)
+	errors := make(chan *amqp.Error)
+	s.ch.NotifyClose(errors)
 
 	go func() {
-		for message := range ch {
+		for message := range incoming {
 			out <- types.NewInvocation(message)
+		}
+		close(out)
+	}()
+
+	go func() {
+		for received := range errors {
+			if received.Recover {
+				log.Printf("Received non critical error %s.", received)
+			} else {
+				log.Printf("Received critical error %s.", received)
+			}
 		}
 	}()
 
 	return out, nil
 }
 
-func (c *queueConsumer) Stop() {
-	err := c.channel.Close()
-	if err != nil {
-		log.Printf("Received %s during close", err)
-	}
+func (s *topicSubscriber) Stop() {
 }
 
-func (c *queueConsumer) ListenForErrors() <-chan *amqp.Error {
-	errors := make(chan *amqp.Error)
-	c.channel.NotifyClose(errors)
-
-	return errors
-}
+// https://golang.hotexamples.com/de/examples/github.com.streadway.amqp/Connection/NotifyClose/golang-connection-notifyclose-method-examples.html

@@ -1,5 +1,8 @@
-// Copyright (c) Simon Pelczer 2019. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+/*
+ * Copyright (c) Simon Pelczer 2020. All rights reserved.
+ *  Licensed under the MIT license. See LICENSE file in the project root for full license information.
+ */
+
 package main
 
 import (
@@ -40,8 +43,9 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+
+	httpClient := types.MakeHTTPClient(conf.InsecureSkipVerify, 60*time.Second) // TODO: Replace with a more performance implementation
 	// Setup OpenFaaS Controller which is used for querying and more
-	httpClient := types.MakeHTTPClient(conf.InsecureSkipVerify, 60*time.Second)
 	ofSDK := openfaas.NewController(conf, openfaas.NewClient(httpClient, conf.BasicAuth, conf.GatewayURL), openfaas.NewTopicFunctionCache())
 	go ofSDK.Start(ctx)
 	log.Printf("Started Cache Task which populates the topic map")
