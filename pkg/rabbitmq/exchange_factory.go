@@ -20,7 +20,7 @@ type Factory interface {
 }
 
 type ExchangeFactory struct {
-	maker      ChannelMaker
+	maker    ChannelMaker
 	exchange types.Exchange
 }
 

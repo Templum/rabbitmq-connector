@@ -45,7 +45,7 @@ func (m *ConnectionManager) Connect(connectionUrl string) error {
 
 			// Handling connection closes
 			go func(closeChannel chan *amqp.Error) {
-				received :=  <- closeChannel
+				received := <-closeChannel
 
 				// Closing the old channel was during reconnect a new channel should be created
 				close(closeChannel)
@@ -78,7 +78,7 @@ func (m *ConnectionManager) Reconnect() {
 
 	if err != nil {
 		log.Fatalf("Received fatal error %s during reconnecting to Rabbit MQ Cluster", err)
-		return;
+		return
 	}
 	log.Println("Successfully recovered connection Rabbit MQ Cluster")
 }

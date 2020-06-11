@@ -4,7 +4,6 @@
  */
 package rabbitmq
 
-
 import (
 	"github.com/Templum/rabbitmq-connector/pkg/types"
 	"log"

@@ -15,7 +15,6 @@ import (
 	"github.com/openfaas/faas-provider/types"
 )
 
-
 // Controller is responsible for building up and maintaining a
 // Cache with all of the deployed OpenFaaS Functions across
 // all namespaces
