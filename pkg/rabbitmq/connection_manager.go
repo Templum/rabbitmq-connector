@@ -23,10 +23,23 @@ type ChannelMaker interface {
 	CreateChannel() (*amqp.Channel, error)
 }
 
+type Manager interface {
+	Connector
+	ChannelMaker
+}
+
 type ConnectionManager struct {
 	url  string
 	con  *amqp.Connection
 	lock sync.RWMutex
+}
+
+func NewConnectionManager() Manager {
+	return &ConnectionManager{
+		lock: sync.RWMutex{},
+		url:  "",
+		con:  nil,
+	}
 }
 
 func (m *ConnectionManager) Connect(connectionUrl string) error {
@@ -47,8 +60,6 @@ func (m *ConnectionManager) Connect(connectionUrl string) error {
 			go func(closeChannel chan *amqp.Error) {
 				received := <-closeChannel
 
-				// Closing the old channel was during reconnect a new channel should be created
-				close(closeChannel)
 				if received.Recover {
 					log.Printf("Received non critical error %s.", received)
 				} else {
@@ -73,6 +84,11 @@ func (m *ConnectionManager) Reconnect() {
 	m.lock.RLock()
 	connectionUrl := m.url
 	m.lock.RUnlock()
+
+	if connectionUrl == "" {
+		log.Println("Disconnect was called no need to reconnect")
+		return
+	}
 
 	err := m.Connect(connectionUrl)
 
@@ -106,14 +122,14 @@ func (m *ConnectionManager) CreateChannel() (*amqp.Channel, error) {
 }
 
 func (m *ConnectionManager) Disconnect() {
-	// TODO: Set Flag
+	m.lock.Lock()
+	m.url = "" // Will use this as a flag to indicate reconnecting is not wanted
+
 	err := m.con.Close()
 	if err != nil {
 		log.Printf("Received %s during closing connection", err)
 	}
 
-	m.lock.Lock()
 	m.con = nil
-	m.url = ""
 	m.lock.Unlock()
 }
