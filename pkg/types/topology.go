@@ -29,6 +29,20 @@ type Exchange struct {
 	AutoDeleted bool
 }
 
+func (e *Exchange) EnsureCorrectType() {
+	switch strings.ToLower(e.Type) {
+	case "direct":
+		e.Type = "direct"
+		break
+	case "topic":
+		e.Type = "topic"
+		break
+	default:
+		e.Type = "direct"
+		break
+	}
+}
+
 func ReadTopologyFromFile(path string) (Topology, error) {
 	yamlFile, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -39,20 +53,6 @@ func ReadTopologyFromFile(path string) (Topology, error) {
 	err = yaml.Unmarshal(yamlFile, &out)
 	if err != nil {
 		return Topology{}, err
-	}
-
-	for _, exchange := range out {
-		switch strings.ToLower(exchange.Type) {
-		case "direct":
-			exchange.Type = "direct"
-			break
-		case "topic":
-			exchange.Type = "topic"
-			break
-		default:
-			exchange.Type = "direct"
-			break
-		}
 	}
 
 	return out, nil

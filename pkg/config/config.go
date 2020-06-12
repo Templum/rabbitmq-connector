@@ -93,8 +93,8 @@ func getOpenFaaSUrl() (string, error) {
 }
 
 func getRabbitMQConnectionURL() (string, error) {
-	user := readFromEnv(envRabbitUser, "guest")
-	pass := readFromEnv(envRabbitPass, "guest")
+	user := readFromEnv(envRabbitUser, "user")
+	pass := readFromEnv(envRabbitPass, "pass")
 	host := readFromEnv(envRabbitHost, "localhost")
 	port := readFromEnv(envRabbitPort, "5672")
 

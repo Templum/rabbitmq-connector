@@ -16,7 +16,11 @@ import (
 type Factory interface {
 	WithConnection(maker ChannelMaker) Factory
 	WithExchange(ex types.Exchange) Factory
-	Build() (interface{}, error)
+	Build() (ExchangeOrganizer, error)
+}
+
+func NewFactory() Factory {
+	return &ExchangeFactory{}
 }
 
 type ExchangeFactory struct {
@@ -31,11 +35,12 @@ func (f *ExchangeFactory) WithConnection(maker ChannelMaker) Factory {
 
 func (f *ExchangeFactory) WithExchange(ex types.Exchange) Factory {
 	log.Printf("Factory is configured for exchange %s", ex.Name)
+	ex.EnsureCorrectType()
 	f.exchange = ex
 	return f
 }
 
-func (f *ExchangeFactory) Build() (interface{}, error) {
+func (f *ExchangeFactory) Build() (ExchangeOrganizer, error) {
 	if f.maker == nil {
 		return nil, errors.New("no channel maker was provided")
 	}
@@ -50,7 +55,7 @@ func (f *ExchangeFactory) Build() (interface{}, error) {
 		return nil, topologyErr
 	}
 
-	return nil, nil
+	return NewExchange(channel, f.maker, f.exchange), nil
 }
 
 func declareTopology(con *amqp.Channel, ex types.Exchange) error {
@@ -63,12 +68,12 @@ func declareTopology(con *amqp.Channel, ex types.Exchange) error {
 	}
 
 	for _, topic := range ex.Topics {
-		name := generateQueueName(topic)
+		name := GenerateQueueName(ex.Name, topic)
 
 		_, declareErr := con.QueueDeclare(
 			name,
-			true,
-			false,
+			ex.Durable,
+			ex.AutoDeleted,
 			false,
 			false,
 			nil,
@@ -89,13 +94,13 @@ func declareTopology(con *amqp.Channel, ex types.Exchange) error {
 		if bindErr != nil {
 			return bindErr
 		}
-		log.Printf("Successfully declared Queue %s", name)
+		log.Printf("Successfully bound Queue %s to exchange %s", name, ex.Name)
 	}
 
 	return nil
 }
 
-func generateQueueName(topic string) string {
+func GenerateQueueName(ex string, topic string) string {
 	const PreFix = "OpenFaaS"
-	return fmt.Sprintf("%s_%s", PreFix, topic)
+	return fmt.Sprintf("%s_%s_%s", PreFix, ex, topic)
 }
