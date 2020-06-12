@@ -7,6 +7,7 @@ package main
 
 import (
 	"context"
+	"github.com/Templum/rabbitmq-connector/pkg/connector"
 	"log"
 	"os"
 	"os/signal"
@@ -17,7 +18,6 @@ import (
 	"github.com/Templum/rabbitmq-connector/pkg/config"
 	"github.com/Templum/rabbitmq-connector/pkg/openfaas"
 	"github.com/Templum/rabbitmq-connector/pkg/rabbitmq"
-	"github.com/Templum/rabbitmq-connector/pkg/subscriber"
 	"github.com/Templum/rabbitmq-connector/pkg/types"
 	"github.com/Templum/rabbitmq-connector/pkg/version"
 )
@@ -34,9 +34,9 @@ func main() {
 	}
 
 	// Building our Config from envs
-	conf, err := config.NewConfig()
-	if err != nil {
-		log.Fatalf("During Config validation %s occured.", err)
+	conf, validationErr := config.NewConfig()
+	if validationErr != nil {
+		log.Fatalf("During Config validation %s occured.", validationErr)
 	}
 
 	// Setup Application Context to ensure gracefully shutdowns
@@ -49,14 +49,12 @@ func main() {
 	go ofSDK.Start(ctx)
 	log.Printf("Started Cache Task which populates the topic map")
 
-	factory, err := rabbitmq.NewQueueConsumerFactory(conf)
-	if err != nil {
-		log.Fatalf("Connector could not be started Received %s", err)
-	}
+	c := connector.New(rabbitmq.NewConnectionManager(), rabbitmq.NewFactory(), ofSDK, conf)
+	err := c.Run()
 
-	connector := subscriber.NewConnector(conf, ofSDK, factory)
-	connector.Start()
-	log.Printf("Started RabbitMQ Connector")
+	if err != nil {
+		log.Fatalf("Received %s during Connector starting", err)
+	}
 
 	signalChannel := make(chan os.Signal, 2)
 	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
@@ -67,11 +65,11 @@ func main() {
 	case os.Interrupt:
 		log.Printf("Received SIGINT preparing for shutdown")
 
-		connector.End()
+		c.Shutdown()
 		cancel()
 	case syscall.SIGTERM:
 		log.Printf("Received SIGTERM shutting down")
-		connector.End()
+		c.Shutdown()
 		cancel()
 	}
 }
