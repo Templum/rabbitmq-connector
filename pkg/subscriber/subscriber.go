@@ -69,7 +69,7 @@ func (s *subscriber) Start() error {
 		for invocation := range invocations {
 			if s.topic == invocation.Topic {
 				go func() {
-					s.client.Invoke(s.topic, *invocation.Message)
+					s.client.Invoke(s.topic, invocation)
 					log.Printf("Finished invocations of functions on topic %s", s.topic)
 				}()
 			} else {

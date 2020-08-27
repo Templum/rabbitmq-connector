@@ -2,6 +2,7 @@ package openfaas
 
 import (
 	"context"
+	types2 "github.com/Templum/rabbitmq-connector/pkg/types"
 	"sync"
 	"testing"
 	"time"
@@ -49,11 +50,11 @@ func (m *MockOpenFaaSClient) InvokeCalledNTimes() int {
 	return m.invocation
 }
 
-func (m *MockOpenFaaSClient) InvokeAsync(ctx context.Context, name string, payload []byte) (bool, error) {
+func (m *MockOpenFaaSClient) InvokeAsync(ctx context.Context, name string, invocation *types2.OpenFaaSInvocation) (bool, error) {
 	return true, nil
 }
 
-func (m *MockOpenFaaSClient) InvokeSync(ctx context.Context, name string, payload []byte) ([]byte, error) {
+func (m *MockOpenFaaSClient) InvokeSync(ctx context.Context, name string, invocation *types2.OpenFaaSInvocation) ([]byte, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -86,7 +87,7 @@ func TestCacher_Start_WithNs(t *testing.T) {
 	annotations := map[string]string{"topic": "billing,secret,transport"}
 
 	fnFaaSNs := []types.FunctionStatus{
-		types.FunctionStatus{
+		{
 			Name:              "biller",
 			Image:             "docker:image",
 			InvocationCount:   0,
@@ -97,7 +98,7 @@ func TestCacher_Start_WithNs(t *testing.T) {
 			Annotations:       &annotations,
 			Namespace:         "faas",
 		},
-		types.FunctionStatus{
+		{
 			Name:              "secrter",
 			Image:             "docker:image",
 			InvocationCount:   0,
@@ -111,7 +112,7 @@ func TestCacher_Start_WithNs(t *testing.T) {
 	}
 
 	fnTestNs := []types.FunctionStatus{
-		types.FunctionStatus{
+		{
 			Name:              "transporter",
 			Image:             "docker:image",
 			InvocationCount:   0,
@@ -166,7 +167,7 @@ func TestCacher_Start_Normal(t *testing.T) {
 	annotations := map[string]string{"topic": "billing,secret,transport"}
 
 	functions := []types.FunctionStatus{
-		types.FunctionStatus{
+		{
 			Name:              "function-name",
 			Image:             "docker:image",
 			InvocationCount:   0,
@@ -177,7 +178,7 @@ func TestCacher_Start_Normal(t *testing.T) {
 			Annotations:       &annotations,
 			Namespace:         "faas",
 		},
-		types.FunctionStatus{
+		{
 			Name:              "wrencher",
 			Image:             "docker:image",
 			InvocationCount:   0,

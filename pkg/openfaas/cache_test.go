@@ -9,7 +9,7 @@ import (
 func TestTopicMap(t *testing.T) {
 	t.Parallel()
 
-	update := map[string][]string{"billing": []string{"taxes", "notify"}}
+	update := map[string][]string{"billing": {"taxes", "notify"}}
 
 	t.Run("Should override cache with update", func(t *testing.T) {
 		cache := NewTopicFunctionCache()

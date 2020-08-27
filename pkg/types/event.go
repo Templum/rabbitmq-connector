@@ -9,14 +9,18 @@ import (
 
 // OpenFaaSInvocation represent an Event Specification used during invocation
 type OpenFaaSInvocation struct {
-	Topic   string
-	Message *[]byte
+	ContentType     string
+	ContentEncoding string
+	Topic           string
+	Message         *[]byte
 }
 
 // NewInvocation creates a OpenFaaSInvocation from an amqp.Delivery.
 func NewInvocation(delivery amqp.Delivery) *OpenFaaSInvocation {
 	return &OpenFaaSInvocation{
-		Topic:   delivery.RoutingKey,
-		Message: &delivery.Body,
+		ContentType:     delivery.ContentType,
+		ContentEncoding: delivery.ContentEncoding,
+		Topic:           delivery.RoutingKey,
+		Message:         &delivery.Body,
 	}
 }

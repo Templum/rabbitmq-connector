@@ -43,11 +43,11 @@ type mockInvoker struct {
 	mutex sync.RWMutex
 }
 
-func (m *mockInvoker) Invoke(topic string, message []byte) {
+func (m *mockInvoker) Invoke(topic string, invocation *types.OpenFaaSInvocation) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	m.Called(topic, message)
+	m.Called(topic, invocation)
 }
 
 func TestSubscriber_Start(t *testing.T) {
