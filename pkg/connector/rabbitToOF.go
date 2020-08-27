@@ -59,7 +59,7 @@ func (c *Connector) Run() error {
 	}
 
 	for _, ex := range c.exchanges {
-		err := ex.Start()
+		err := ex.Start(c.client)
 
 		if err != nil {
 			log.Printf("Received %s", err)

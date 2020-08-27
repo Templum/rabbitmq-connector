@@ -13,7 +13,7 @@ import (
 )
 
 type Starter interface {
-	Start() error
+	Start(invoker types.Invoker) error
 }
 
 type Stopper interface {
@@ -58,7 +58,7 @@ func NewExchange(channel *amqp.Channel, maker ChannelMaker, definition types.Exc
 	return &ref
 }
 
-func (e *Exchange) Start() error {
+func (e *Exchange) Start(invoker types.Invoker) error {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
@@ -68,9 +68,15 @@ func (e *Exchange) Start() error {
 			return err
 		}
 
-		go func(deliveries <-chan amqp.Delivery) {
-			// TODO: Handle Deliveries
-		}(deliveries)
+		go func(topic string, deliveries <-chan amqp.Delivery) {
+			for delivery := range deliveries {
+				if topic == delivery.RoutingKey {
+					go invoker.Invoke(topic, delivery.Body)
+				} else {
+					log.Printf("Received message for topic %s that did not match subsribed topic %s", delivery.RoutingKey, topic)
+				}
+			}
+		}(topic, deliveries)
 	}
 
 	e.isRunning = true
@@ -130,7 +136,7 @@ func (e *Exchange) observeChannelState() {
 		e.lock.Unlock()
 
 		e.Stop()
-		e.Start() // Ignoring Error here
+		e.Start(nil) // TODO: No passing nil / Ignoring Error here
 	}
 
 }
