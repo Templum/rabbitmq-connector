@@ -177,13 +177,20 @@ func TestMessageReceived(t *testing.T) {
 		message := []byte("Hello World")
 		targetTopic := "Sample"
 
+		invocation := types.OpenFaaSInvocation{
+			Topic:           targetTopic,
+			Message:         &message,
+			ContentEncoding: "gzip",
+			ContentType:     "text/plain",
+		}
+
 		consumerMock := new(fullQueueConsumer)
 		consumerMock.On("Consume", nil).Return(msgStream)
 		consumerMock.On("ListenForErrors", nil).Return(make(chan *amqp.Error))
 		consumerMock.On("Stop", nil).Return()
 
 		invokerMock := new(mockInvoker)
-		invokerMock.On("Invoke", targetTopic, message).Return()
+		invokerMock.On("Invoke", targetTopic, &invocation).Return()
 
 		target := NewSubscriber("Unit Test", "Sample", consumerMock, invokerMock)
 
@@ -193,16 +200,13 @@ func TestMessageReceived(t *testing.T) {
 		wg.Add(1)
 
 		go func() {
-			msgStream <- &types.OpenFaaSInvocation{
-				Topic:   "Sample",
-				Message: &message,
-			}
+			msgStream <- &invocation
 			time.Sleep(300 * time.Millisecond)
 			wg.Done()
 		}()
 		wg.Wait()
 
-		invokerMock.AssertCalled(t, "Invoke", targetTopic, message)
+		invokerMock.AssertCalled(t, "Invoke", targetTopic, &invocation)
 		invokerMock.AssertNumberOfCalls(t, "Invoke", 1)
 	})
 
@@ -211,13 +215,20 @@ func TestMessageReceived(t *testing.T) {
 		message := []byte("Hello World")
 		targetTopic := "Other"
 
+		invocation := types.OpenFaaSInvocation{
+			Topic:           targetTopic,
+			Message:         &message,
+			ContentEncoding: "gzip",
+			ContentType:     "text/plain",
+		}
+
 		consumerMock := new(fullQueueConsumer)
 		consumerMock.On("Consume", nil).Return(msgStream)
 		consumerMock.On("ListenForErrors", nil).Return(make(chan *amqp.Error))
 		consumerMock.On("Stop", nil).Return()
 
 		invokerMock := new(mockInvoker)
-		invokerMock.On("Invoke", targetTopic, message).Return()
+		invokerMock.On("Invoke", targetTopic, &invocation).Return()
 
 		target := NewSubscriber("Unit Test", "Sample", consumerMock, invokerMock)
 
@@ -227,16 +238,13 @@ func TestMessageReceived(t *testing.T) {
 		wg.Add(1)
 
 		go func() {
-			msgStream <- &types.OpenFaaSInvocation{
-				Topic:   targetTopic,
-				Message: &message,
-			}
+			msgStream <- &invocation
 			time.Sleep(500 * time.Millisecond)
 			wg.Done()
 		}()
 		wg.Wait()
 
-		invokerMock.AssertNotCalled(t, "Invoke", "Sample", message)
+		invokerMock.AssertNotCalled(t, "Invoke", "Sample", &invocation)
 		invokerMock.AssertNumberOfCalls(t, "Invoke", 0)
 	})
 }
