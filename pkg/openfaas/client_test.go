@@ -60,6 +60,12 @@ func TestClient_InvokeSync(t *testing.T) {
 		ContentEncoding: "gzip",
 		ContentType:     "text/plain",
 	}
+	nilPayload := types2.OpenFaaSInvocation{
+		Topic:           "",
+		Message:         nil,
+		ContentEncoding: "gzip",
+		ContentType:     "text/plain",
+	}
 
 	t.Parallel()
 
@@ -71,7 +77,7 @@ func TestClient_InvokeSync(t *testing.T) {
 	})
 
 	t.Run("Should except nil as body", func(t *testing.T) {
-		resp, err := openfaasClient.InvokeSync(context.Background(), "exists", nil)
+		resp, err := openfaasClient.InvokeSync(context.Background(), "exists", &nilPayload)
 
 		assert.Nil(t, err, "Should not fail")
 		assert.Equal(t, string(resp), expectedResponse, "Did not receive expected response")
@@ -84,7 +90,7 @@ func TestClient_InvokeSync(t *testing.T) {
 	})
 
 	t.Run("Should throw error if unauthorized", func(t *testing.T) {
-		_, err := authenticatedOpenFaaSClient.InvokeSync(context.Background(), "exists", nil)
+		_, err := authenticatedOpenFaaSClient.InvokeSync(context.Background(), "exists", &nilPayload)
 
 		assert.Error(t, err, "OpenFaaS Credentials are invalid", "Did receive unexpected error")
 	})
@@ -141,6 +147,12 @@ func TestClient_InvokeAsync(t *testing.T) {
 		ContentEncoding: "gzip",
 		ContentType:     "text/plain",
 	}
+	nilPayload := types2.OpenFaaSInvocation{
+		Topic:           "",
+		Message:         nil,
+		ContentEncoding: "gzip",
+		ContentType:     "text/plain",
+	}
 
 	t.Parallel()
 
@@ -152,7 +164,7 @@ func TestClient_InvokeAsync(t *testing.T) {
 	})
 
 	t.Run("Should except nil as body", func(t *testing.T) {
-		ok, err := openfaasClient.InvokeAsync(context.Background(), "exists", nil)
+		ok, err := openfaasClient.InvokeAsync(context.Background(), "exists", &nilPayload)
 
 		assert.Nil(t, err, "Should not fail")
 		assert.Equal(t, ok, true, "Did not receive expected response")
@@ -165,7 +177,7 @@ func TestClient_InvokeAsync(t *testing.T) {
 	})
 
 	t.Run("Should throw error if unauthorized", func(t *testing.T) {
-		_, err := authenticatedOpenFaaSClient.InvokeAsync(context.Background(), "exists", nil)
+		_, err := authenticatedOpenFaaSClient.InvokeAsync(context.Background(), "exists", &nilPayload)
 
 		assert.Error(t, err, "OpenFaaS Credentials are invalid", "Did receive unexpected error")
 	})

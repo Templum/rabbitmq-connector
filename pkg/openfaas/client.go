@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	types2 "github.com/Templum/rabbitmq-connector/pkg/types"
+	"io"
 	"io/ioutil"
 	"net/http"
 
@@ -62,7 +63,14 @@ func NewClient(client *http.Client, creds *auth.BasicAuthCredentials, gatewayURL
 func (c *Client) InvokeSync(ctx context.Context, name string, invocation *types2.OpenFaaSInvocation) ([]byte, error) { // TODO: either reuse provided payload or make it parseable
 	functionURL := fmt.Sprintf("%s/function/%s", c.url, name)
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, functionURL, bytes.NewReader(*invocation.Message))
+	var body io.Reader
+	if invocation.Message != nil {
+		body = bytes.NewReader(*invocation.Message)
+	} else {
+		body = nil
+	}
+
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, functionURL, body)
 	req.Header.Set("Content-Type", invocation.ContentType)
 	req.Header.Set("Content-Encoding", invocation.ContentEncoding)
 
@@ -99,10 +107,17 @@ func (c *Client) InvokeSync(ctx context.Context, name string, invocation *types2
 }
 
 // InvokeAsync calls a given function in a asynchronous way waiting for the response using the provided payload while considering the provided context
-func (c *Client) InvokeAsync(ctx context.Context, name string, invocation *types2.OpenFaaSInvocation) (bool, error) { // TODO: either reuse provided payload or make it parseable
+func (c *Client) InvokeAsync(ctx context.Context, name string, invocation *types2.OpenFaaSInvocation) (bool, error) {
 	functionURL := fmt.Sprintf("%s/async-function/%s", c.url, name)
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, functionURL, bytes.NewReader(*invocation.Message))
+	var body io.Reader
+	if invocation.Message != nil {
+		body = bytes.NewReader(*invocation.Message)
+	} else {
+		body = nil
+	}
+
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, functionURL, body)
 	req.Header.Set("Content-Type", invocation.ContentType)
 	req.Header.Set("Content-Encoding", invocation.ContentEncoding)
 
