@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	types2 "github.com/Templum/rabbitmq-connector/pkg/types"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -52,39 +53,50 @@ func TestClient_InvokeSync(t *testing.T) {
 		Password: "Invalid",
 	}, server.URL)
 
+	message := []byte("Test")
+	payload := types2.OpenFaaSInvocation{
+		Topic:           "",
+		Message:         &message,
+		ContentEncoding: "gzip",
+		ContentType:     "text/plain",
+	}
+	nilPayload := types2.OpenFaaSInvocation{
+		Topic:           "",
+		Message:         nil,
+		ContentEncoding: "gzip",
+		ContentType:     "text/plain",
+	}
+
 	t.Parallel()
 
 	t.Run("Should invoke the specified function", func(t *testing.T) {
-		payload := []byte("Test")
-		resp, err := openfaasClient.InvokeSync(context.Background(), "exists", payload)
+		resp, err := openfaasClient.InvokeSync(context.Background(), "exists", &payload)
 
 		assert.Nil(t, err, "Should not fail")
 		assert.Equal(t, string(resp), expectedResponse, "Did not receive expected response")
 	})
 
 	t.Run("Should except nil as body", func(t *testing.T) {
-		resp, err := openfaasClient.InvokeSync(context.Background(), "exists", nil)
+		resp, err := openfaasClient.InvokeSync(context.Background(), "exists", &nilPayload)
 
 		assert.Nil(t, err, "Should not fail")
 		assert.Equal(t, string(resp), expectedResponse, "Did not receive expected response")
 	})
 
 	t.Run("Should throw error if function does not exist", func(t *testing.T) {
-		payload := []byte("Test")
-		_, err := openfaasClient.InvokeSync(context.Background(), "nonexisting", payload)
+		_, err := openfaasClient.InvokeSync(context.Background(), "nonexisting", &payload)
 
 		assert.Error(t, err, "Function nonexisting is not deployed", "Did receive unexpected error")
 	})
 
 	t.Run("Should throw error if unauthorized", func(t *testing.T) {
-		_, err := authenticatedOpenFaaSClient.InvokeSync(context.Background(), "exists", nil)
+		_, err := authenticatedOpenFaaSClient.InvokeSync(context.Background(), "exists", &nilPayload)
 
 		assert.Error(t, err, "OpenFaaS Credentials are invalid", "Did receive unexpected error")
 	})
 
 	t.Run("Should throw error on unexpected status code", func(t *testing.T) {
-		payload := []byte("Test")
-		_, err := openfaasClient.InvokeSync(context.Background(), "internal", payload)
+		_, err := openfaasClient.InvokeSync(context.Background(), "internal", &payload)
 
 		assert.Error(t, err, "Received unexpected Status Code 500", "Did receive unexpected error")
 	})
@@ -128,39 +140,50 @@ func TestClient_InvokeAsync(t *testing.T) {
 		Password: "Invalid",
 	}, server.URL)
 
+	message := []byte("Test")
+	payload := types2.OpenFaaSInvocation{
+		Topic:           "",
+		Message:         &message,
+		ContentEncoding: "gzip",
+		ContentType:     "text/plain",
+	}
+	nilPayload := types2.OpenFaaSInvocation{
+		Topic:           "",
+		Message:         nil,
+		ContentEncoding: "gzip",
+		ContentType:     "text/plain",
+	}
+
 	t.Parallel()
 
 	t.Run("Should invoke the specified function", func(t *testing.T) {
-		payload := []byte("Test")
-		ok, err := openfaasClient.InvokeAsync(context.Background(), "exists", payload)
+		ok, err := openfaasClient.InvokeAsync(context.Background(), "exists", &payload)
 
 		assert.Nil(t, err, "Should not fail")
 		assert.Equal(t, ok, true, "Did not receive expected response")
 	})
 
 	t.Run("Should except nil as body", func(t *testing.T) {
-		ok, err := openfaasClient.InvokeAsync(context.Background(), "exists", nil)
+		ok, err := openfaasClient.InvokeAsync(context.Background(), "exists", &nilPayload)
 
 		assert.Nil(t, err, "Should not fail")
 		assert.Equal(t, ok, true, "Did not receive expected response")
 	})
 
 	t.Run("Should throw error if function does not exist", func(t *testing.T) {
-		payload := []byte("Test")
-		_, err := openfaasClient.InvokeAsync(context.Background(), "nonexisting", payload)
+		_, err := openfaasClient.InvokeAsync(context.Background(), "nonexisting", &payload)
 
 		assert.Error(t, err, "Function nonexisting is not deployed", "Did receive unexpected error")
 	})
 
 	t.Run("Should throw error if unauthorized", func(t *testing.T) {
-		_, err := authenticatedOpenFaaSClient.InvokeAsync(context.Background(), "exists", nil)
+		_, err := authenticatedOpenFaaSClient.InvokeAsync(context.Background(), "exists", &nilPayload)
 
 		assert.Error(t, err, "OpenFaaS Credentials are invalid", "Did receive unexpected error")
 	})
 
 	t.Run("Should throw error on unexpected status code", func(t *testing.T) {
-		payload := []byte("Test")
-		_, err := openfaasClient.InvokeAsync(context.Background(), "internal", payload)
+		_, err := openfaasClient.InvokeAsync(context.Background(), "internal", &payload)
 
 		assert.Error(t, err, "Received unexpected Status Code 500", "Did receive unexpected error")
 	})
@@ -245,7 +268,7 @@ func TestClient_HasNamespaceSupport(t *testing.T) {
 func TestClient_GetFunctions(t *testing.T) {
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		allFn := []types.FunctionStatus{
-			types.FunctionStatus{
+			{
 				Name:              "function-name",
 				Image:             "docker:image",
 				InvocationCount:   0,
@@ -256,7 +279,7 @@ func TestClient_GetFunctions(t *testing.T) {
 				Annotations:       nil,
 				Namespace:         "faas",
 			},
-			types.FunctionStatus{
+			{
 				Name:              "wrencher",
 				Image:             "docker:image",
 				InvocationCount:   0,
@@ -270,7 +293,7 @@ func TestClient_GetFunctions(t *testing.T) {
 		}
 
 		namespacedFn := []types.FunctionStatus{
-			types.FunctionStatus{
+			{
 				Name:              "wrencher",
 				Image:             "docker:image",
 				InvocationCount:   0,
