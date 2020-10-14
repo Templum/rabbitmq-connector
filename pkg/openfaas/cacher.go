@@ -2,6 +2,7 @@ package openfaas
 
 import (
 	"context"
+	types2 "github.com/Templum/rabbitmq-connector/pkg/types"
 	"log"
 	"strings"
 	"time"
@@ -42,11 +43,11 @@ func (c *Controller) Start(ctx context.Context) {
 }
 
 // Invoke triggers a call to all functions registered to the specified topic
-func (c *Controller) Invoke(topic string, message []byte) {
+func (c *Controller) Invoke(topic string, invocation *types2.OpenFaaSInvocation) {
 	functions := c.cache.GetCachedValues(topic)
 
 	for _, fn := range functions {
-		go c.client.InvokeSync(context.Background(), fn, message)
+		go c.client.InvokeSync(context.Background(), fn, invocation)
 	}
 }
 

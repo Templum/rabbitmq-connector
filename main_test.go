@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/Templum/rabbitmq-connector/pkg/types"
 	"log"
 	"os"
 	"sync"
@@ -104,11 +105,11 @@ func newInvokerMock() *invokerMock {
 	return &invokerMock{counter: 0}
 }
 
-func (m *invokerMock) Invoke(topic string, message []byte) {
+func (m *invokerMock) Invoke(topic string, invoke *types.OpenFaaSInvocation) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	m.counter++
-	invocation := NewInvocation(topic, &message, m.counter)
+	invocation := NewInvocation(topic, invoke.Message, m.counter)
 	m.invocations = append(m.invocations, invocation)
 }
 
