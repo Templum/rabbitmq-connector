@@ -38,7 +38,7 @@ rmq:
   user: ""
   # either you give the password or the existing password secret
   password: ""
-  # if it exists, the password secret needs to have a key "rabbitmq-password" 
+  # if it exists, the password secret needs to have a key "rabbitmq-password"
   # (same requirement as for rabbitmq helm chart)
   existingPasswordSecret: ""
 
