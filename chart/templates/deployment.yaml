@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+{{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+    {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          - name: basic_auth
+            value: "true"
+          - name: secret_mount_path
+            value: {{ .Values.openfaas.secretMountPath }}
+          - name: OPEN_FAAS_GW_URL
+            value: http://{{ .Values.openfaas.host }}:{{ .Values.openfaas.port }}
+          - name: RMQ_TOPICS
+            value: {{ .Values.rmq.topics }}
+          - name: RMQ_HOST
+            value: {{ .Values.rmq.host }}
+          - name: RMQ_PORT
+            value: {{ .Values.rmq.port | quote }}
+          - name: RMQ_USER
+            value: {{ .Values.rmq.user }}
+          {{- if .Values.rmq.existingPasswordSecret }}
+          - name: RMQ_PASS
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.rmq.existingPasswordSecret }}
+                key: rabbitmq-password
+          {{- else }}
+          - name: RMQ_PASS
+            value: {{ .Values.rmq.password }}
+          {{- end }}
+          - name: REQ_TIMEOUT
+            value: {{ .Values.service.requestTimeout | quote }}
+          - name: TOPIC_MAP_REFRESH_TIME
+            value: {{ .Values.service.topiceMapRefreshTime | quote }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+          - name: openfaas-basic-auth
+            readOnly: true
+            mountPath: {{ .Values.openfaas.secretMountPath }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+      - name: openfaas-basic-auth
+        secret:
+          secretName: {{ include "chart.fullname" . }}-basic-auth
