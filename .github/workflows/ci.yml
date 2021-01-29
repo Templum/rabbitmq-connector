@@ -23,7 +23,6 @@ jobs:
         host port: 5672
         rabbitmq user: 'user'
         rabbitmq password: 'pass'
-        rabbitmq vhost: 'vhost_name'
       
     - name: Set up Go
       uses: actions/setup-go@v2
