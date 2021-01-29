@@ -32,7 +32,7 @@ func NewController(conf *config.Controller, client FunctionCrawler, cache TopicM
 	}
 }
 
-// Start setups the cache and starts continuos caching
+// Start setups the cache and starts continuous caching
 func (c *Controller) Start(ctx context.Context) {
 	hasNamespaceSupport, _ := c.client.HasNamespaceSupport(ctx)
 	timer := time.NewTicker(c.conf.TopicRefreshTime)

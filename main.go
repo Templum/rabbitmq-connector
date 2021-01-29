@@ -33,7 +33,7 @@ func main() {
 	// Building our Config from envs
 	conf, err := config.NewConfig()
 	if err != nil {
-		log.Fatalf("During Config validation %s occured.", err)
+		log.Fatalf("During Config validation %s occurred.", err)
 	}
 
 	// Setup Application Context to ensure gracefully shutdowns
