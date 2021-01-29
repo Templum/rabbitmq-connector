@@ -36,7 +36,6 @@ func NewInvocation(topic string, message *[]byte, receivedNo uint) *Invocation {
 //---- Producer ----//
 type Producer struct {
 	channel *amqp.Channel
-	counter uint
 
 	exchange string
 	topic    string
