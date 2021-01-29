@@ -33,15 +33,12 @@ func TestClient_InvokeSync(t *testing.T) {
 		case "/function/exists":
 			w.WriteHeader(200)
 			fmt.Fprint(w, expectedResponse)
-			break
 		case "/function/nonexisting":
 			w.WriteHeader(404)
 			fmt.Fprint(w, "Not Found")
-			break
 		default:
 			w.WriteHeader(500)
 			fmt.Fprint(w, "Internal Server Error")
-			break
 		}
 	}))
 	defer server.Close()
@@ -120,15 +117,12 @@ func TestClient_InvokeAsync(t *testing.T) {
 		case "/async-function/exists":
 			w.WriteHeader(202)
 			fmt.Fprint(w, "Hello World")
-			break
 		case "/async-function/nonexisting":
 			w.WriteHeader(404)
 			fmt.Fprint(w, "Not Found")
-			break
 		default:
 			w.WriteHeader(500)
 			fmt.Fprint(w, "Internal Server Error")
-			break
 		}
 	}))
 	defer server.Close()
@@ -194,7 +188,7 @@ func TestClient_HasNamespaceSupport(t *testing.T) {
 		if user, pass, ok := r.BasicAuth(); ok {
 			if user == "User" && pass == "Pass" {
 				w.WriteHeader(502)
-				w.Write(nil)
+				_, _ = w.Write(nil)
 				return
 			}
 			w.WriteHeader(401)
@@ -206,8 +200,7 @@ func TestClient_HasNamespaceSupport(t *testing.T) {
 		out, _ := json.Marshal(namespaces)
 
 		w.WriteHeader(200)
-		w.Write(out)
-		return
+		_, _ = w.Write(out)
 	}))
 	defer k8sOF.Close()
 
@@ -217,8 +210,7 @@ func TestClient_HasNamespaceSupport(t *testing.T) {
 		out, _ := json.Marshal(namespaces)
 
 		w.WriteHeader(200)
-		w.Write(out)
-		return
+		_, _ = w.Write(out)
 	}))
 
 	ofK8SClient := NewClient(k8sOF.Client(), nil, k8sOF.URL)
@@ -310,7 +302,7 @@ func TestClient_GetFunctions(t *testing.T) {
 			if user == "User" && pass == "Pass" {
 				w.WriteHeader(200)
 				out, _ := json.Marshal(allFn)
-				w.Write(out)
+				_, _ = w.Write(out)
 				return
 			}
 			w.WriteHeader(401)
@@ -323,7 +315,7 @@ func TestClient_GetFunctions(t *testing.T) {
 			if namespace == "special" {
 				w.WriteHeader(200)
 				out, _ := json.Marshal(namespacedFn)
-				w.Write(out)
+				_, _ = w.Write(out)
 				return
 			}
 
@@ -334,8 +326,7 @@ func TestClient_GetFunctions(t *testing.T) {
 
 		w.WriteHeader(200)
 		out, _ := json.Marshal(allFn)
-		w.Write(out)
-		return
+		_, _ = w.Write(out)
 	}))
 	defer server.Close()
 
@@ -397,7 +388,7 @@ func TestClient_GetNamespaces(t *testing.T) {
 		if user, pass, ok := r.BasicAuth(); ok {
 			if user == "User" && pass == "Pass" {
 				w.WriteHeader(502)
-				w.Write(nil)
+				_, _ =  w.Write(nil)
 				return
 			}
 			w.WriteHeader(401)
@@ -407,8 +398,7 @@ func TestClient_GetNamespaces(t *testing.T) {
 
 		w.WriteHeader(200)
 		out, _ := json.Marshal(namespaces)
-		w.Write(out)
-		return
+		_, _ = w.Write(out)
 	}))
 	defer server.Close()
 

@@ -50,7 +50,7 @@ type Client struct {
 }
 
 // NewClient creates a new instance of an OpenFaaS Client using
-// the provided informations
+// the provided information
 func NewClient(client *http.Client, creds *auth.BasicAuthCredentials, gatewayURL string) *Client {
 	return &Client{
 		client:      client,
@@ -172,7 +172,7 @@ func (c *Client) HasNamespaceSupport(ctx context.Context) (bool, error) {
 	case 200:
 		resp, _ := ioutil.ReadAll(res.Body)
 		var namespaces []string
-		err = json.Unmarshal(resp, &namespaces)
+		_ = json.Unmarshal(resp, &namespaces)
 		// Swarm edition of OF does not support namespaces and is simply returning empty array
 		return len(namespaces) > 0, nil
 	case 401:
