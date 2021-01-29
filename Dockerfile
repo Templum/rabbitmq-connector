@@ -1,4 +1,4 @@
-FROM golang:1.13-alpine as base_builder
+FROM golang:1.15.7-alpine as base_builder
 
 RUN apk --no-cache add ca-certificates git
 
