@@ -3,7 +3,7 @@ name: "CI"
 on:
   push:
     branches: [develop, master]
-    
+
   pull_request:
     branches: [ develop ]
     
@@ -31,7 +31,7 @@ jobs:
         host port: 5672
         rabbitmq user: 'user'
         rabbitmq password: 'pass'
-      
+
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
@@ -39,7 +39,7 @@ jobs:
 
     - name: Build
       run: go build -v ./...
-    
+
     - name: Test for Race Conditions
       run: go test -race ./...
 
@@ -55,7 +55,7 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: true
         verbose: true
-  
+
     - name: golangci-lint
       uses: golangci/golangci-lint-action@v2
       with:
