@@ -140,7 +140,7 @@ func TestConsumerError(t *testing.T) {
 		assert.Nil(t, err, "Expected start not to fail")
 		assert.True(t, target.IsRunning(), "Expected consumer to be running")
 
-		errChannel <- &amqp.Error{Recover: false, Reason: "Critical Error Occured"}
+		errChannel <- &amqp.Error{Recover: false, Reason: "Critical Error Occurred"}
 		time.Sleep(300 * time.Millisecond)
 
 		mock.AssertNumberOfCalls(t, "Consume", 1)

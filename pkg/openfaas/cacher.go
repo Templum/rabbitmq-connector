@@ -32,7 +32,7 @@ func NewController(conf *config.Controller, client FunctionCrawler, cache TopicM
 	}
 }
 
-// Start setups the cache and starts continous caching
+// Start setups the cache and starts continuous caching
 func (c *Controller) Start(ctx context.Context) {
 	hasNamespaceSupport, _ := c.client.HasNamespaceSupport(ctx)
 	timer := time.NewTicker(c.conf.TopicRefreshTime)
@@ -47,6 +47,8 @@ func (c *Controller) Invoke(topic string, invocation *types2.OpenFaaSInvocation)
 	functions := c.cache.GetCachedValues(topic)
 
 	for _, fn := range functions {
+
+		//nolint:golint,errcheck
 		go c.client.InvokeSync(context.Background(), fn, invocation)
 	}
 }
