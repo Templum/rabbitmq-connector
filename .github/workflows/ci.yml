@@ -53,7 +53,7 @@ jobs:
         files: coverage.txt
         flags: unit-tests
         name: codecov-umbrella
-        fail_ci_if_error: true
+        fail_ci_if_error: false
         verbose: true
 
     - name: golangci-lint
