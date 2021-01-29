@@ -186,7 +186,7 @@ func TestSystem(t *testing.T) {
 
 	t.Run("Should process messages send while being inactive", func(t *testing.T) {
 		for i := 0; i < 100; i++ {
-			message := []byte(fmt.Sprintf("I'm Message %d send while beeing inactive", i))
+			message := []byte(fmt.Sprintf("I'm Message %d send while being inactive", i))
 			err := producerClient.SendMessage(&message)
 
 			if err != nil {

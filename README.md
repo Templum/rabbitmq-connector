@@ -1,7 +1,9 @@
 # OpenFaaS RabbitMQ Connector
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/Templum/rabbitmq-connector)](https://goreportcard.com/report/github.com/Templum/rabbitmq-connector)
-[![Build Status](https://travis-ci.org/Templum/rabbitmq-connector.svg?branch=develop)](https://travis-ci.org/Templum/rabbitmq-connector)
+[![CodeFactor](https://www.codefactor.io/repository/github/templum/rabbitmq-connector/badge)](https://www.codefactor.io/repository/github/templum/rabbitmq-connector)
+![CI](https://github.com/Templum/rabbitmq-connector/workflows/CI/badge.svg)
+![Docker Release](https://github.com/Templum/rabbitmq-connector/workflows/Docker%20Release/badge.svg)
 [![codecov](https://codecov.io/gh/Templum/rabbitmq-connector/branch/develop/graph/badge.svg)](https://codecov.io/gh/Templum/rabbitmq-connector)
 
 This project is an unofficial connector/trigger for OpenFaaS, which allows triggering deployed function from RabbitMQ.
