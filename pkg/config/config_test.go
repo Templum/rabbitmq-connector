@@ -103,7 +103,6 @@ func TestNewConfig(t *testing.T) {
 
 	t.Run("Override Config", func(t *testing.T) {
 		os.Setenv("RMQ_TOPICS", "test")
-		os.Setenv("RMQ_QUEUE", "Queue")
 		os.Setenv("RMQ_EXCHANGE", "Ex")
 		os.Setenv("RMQ_HOST", "rabbit")
 		os.Setenv("RMQ_PORT", "1337")
@@ -114,7 +113,6 @@ func TestNewConfig(t *testing.T) {
 		os.Setenv("INSECURE_SKIP_VERIFY", "true")
 
 		defer os.Unsetenv("RMQ_TOPICS")
-		defer os.Unsetenv("RMQ_QUEUE")
 		defer os.Unsetenv("RMQ_EXCHANGE")
 		defer os.Unsetenv("RMQ_HOST")
 		defer os.Unsetenv("RMQ_PORT")

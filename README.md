@@ -27,8 +27,8 @@ Queue. Information on the Topology of the Queue can be found [here](#Topology)
 * `RMQ_PORT`: Port of Rabbit MQ
 * `RMQ_USER`: Defaults to `guest`
 * `RMQ_PASS`: Defaults to `guest`
-* `RMQ_QUEUE`: Queue Name will default to `OpenFaasQueue`
 * `RMQ_EXCHANGE`: Exchange Name will default to `OpenFaasEx`
+* *Please Note:* RabbitMQ Queue names are automatically generated based on the topic based on schema `OpenFaaS_{topic}`
 
 * `REQ_TIMEOUT`: Request Timeout for invocations of OpenFaaS functions defaults to `30s`
 * `TOPIC_MAP_REFRESH_TIME`: Refresh time for the topic map defaults to `60s`
