@@ -8,10 +8,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	types2 "github.com/Templum/rabbitmq-connector/pkg/types"
 	"io"
 	"io/ioutil"
 	"net/http"
+
+	internal "github.com/Templum/rabbitmq-connector/pkg/types"
 
 	"github.com/openfaas/faas-provider/auth"
 	"github.com/openfaas/faas-provider/types"
@@ -20,8 +21,8 @@ import (
 
 // Invoker defines interfaces that invoke deployed OpenFaaS Functions.
 type Invoker interface {
-	InvokeSync(ctx context.Context, name string, invocation *types2.OpenFaaSInvocation) ([]byte, error)
-	InvokeAsync(ctx context.Context, name string, invocation *types2.OpenFaaSInvocation) (bool, error)
+	InvokeSync(ctx context.Context, name string, invocation *internal.OpenFaaSInvocation) ([]byte, error)
+	InvokeAsync(ctx context.Context, name string, invocation *internal.OpenFaaSInvocation) (bool, error)
 }
 
 // NamespaceFetcher defines interfaces to explore namespaces of an OpenFaaS installation.
@@ -60,7 +61,7 @@ func NewClient(client *http.Client, creds *auth.BasicAuthCredentials, gatewayURL
 }
 
 // InvokeSync calls a given function in a synchronous way waiting for the response using the provided payload while considering the provided context
-func (c *Client) InvokeSync(ctx context.Context, name string, invocation *types2.OpenFaaSInvocation) ([]byte, error) { // TODO: either reuse provided payload or make it parseable
+func (c *Client) InvokeSync(ctx context.Context, name string, invocation *internal.OpenFaaSInvocation) ([]byte, error) { // TODO: either reuse provided payload or make it parseable
 	functionURL := fmt.Sprintf("%s/function/%s", c.url, name)
 
 	var body io.Reader
@@ -107,7 +108,7 @@ func (c *Client) InvokeSync(ctx context.Context, name string, invocation *types2
 }
 
 // InvokeAsync calls a given function in a asynchronous way waiting for the response using the provided payload while considering the provided context
-func (c *Client) InvokeAsync(ctx context.Context, name string, invocation *types2.OpenFaaSInvocation) (bool, error) {
+func (c *Client) InvokeAsync(ctx context.Context, name string, invocation *internal.OpenFaaSInvocation) (bool, error) {
 	functionURL := fmt.Sprintf("%s/async-function/%s", c.url, name)
 
 	var body io.Reader

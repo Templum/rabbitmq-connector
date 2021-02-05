@@ -1,0 +1,9 @@
+- name: AEx
+  topics: [Foo, Bar]
+  declare: true
+  type: "direct"
+  durable: false
+  auto-deleted: false
+- name: BEx
+  topics: [Dead, Beef]
+  declare: true
