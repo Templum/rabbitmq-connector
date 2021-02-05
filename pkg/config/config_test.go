@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,7 +15,14 @@ import (
 
 func TestNewConfig(t *testing.T) {
 	dir, _ := os.Getwd()
-	pathToExampleToplogy, _ := filepath.Abs(path.Join(dir, "..", "..", "..", "artifacts", "example_topology.yaml"))
+
+	relativePath := path.Join(dir, "..", "..", "..", "artifacts", "example_topology.yaml")
+
+	if !strings.Contains("rabbitmq-connector", relativePath) {
+		// Workaround for Linux
+		relativePath = path.Join(dir, "..", "..", "artifacts", "example_topology.yaml")
+	}
+	pathToExampleToplogy, _ := filepath.Abs(relativePath)
 
 	t.Run("With invalid Gateway Url", func(t *testing.T) {
 		os.Setenv("OPEN_FAAS_GW_URL", "gateway:8080")
