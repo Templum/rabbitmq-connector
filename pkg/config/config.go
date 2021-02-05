@@ -13,7 +13,7 @@ import (
 	"time"
 
 	internal "github.com/Templum/rabbitmq-connector/pkg/types"
-	"github.com/openfaas-incubator/connector-sdk/types"
+	"github.com/openfaas/connector-sdk/types"
 	"github.com/openfaas/faas-provider/auth"
 )
 
