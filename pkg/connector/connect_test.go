@@ -7,9 +7,7 @@ package connector
 
 import (
 	"errors"
-	"sync"
 	"testing"
-	"time"
 
 	"github.com/Templum/rabbitmq-connector/pkg/config"
 	"github.com/Templum/rabbitmq-connector/pkg/rabbitmq"
@@ -182,45 +180,25 @@ func TestConnector_Run(t *testing.T) {
 }
 
 func TestConnector_Stop(t *testing.T) {
-	conf := config.Controller{
-		RabbitSanitizedURL:  "amqp://localhost:5672/",
-		RabbitConnectionURL: "amqp://user:pass@localhost:5672/",
-		Topology: types.Topology{struct {
-			Name        string   "json:\"name\""
-			Topics      []string "json:\"topics\""
-			Declare     bool     "json:\"declare\""
-			Type        string   "json:\"type,omitempty\""
-			Durable     bool     "json:\"durable,omitempty\""
-			AutoDeleted bool     "json:\"auto-deleted,omitempty\""
-		}{
-			Name:        "Nasdaq",
-			Topics:      []string{"Transport", "Billing"},
-			Declare:     false,
-			Type:        "direct",
-			Durable:     false,
-			AutoDeleted: false,
-		}},
-	}
-
-	manager := new(managerMock)
-	manager.On("Connect", conf.RabbitConnectionURL).Return(make(<-chan *amqp.Error), nil)
-	manager.On("Disconnect", nil)
-
-	exchange := new(exchangeMock)
-	exchange.On("Start", nil).Return(nil)
-	exchange.On("Stop", nil)
-
-	factory := new(factoryMock)
-	factory.On("WithInvoker", nil)
-	factory.On("WithChanCreator", nil)
-	factory.On("WithExchange", nil)
-	factory.On("Build", nil).Return(exchange, nil)
-
-	target := New(manager, factory, nil, &conf)
-
-	_ = target.Run()
-
 	t.Run("Should stop all registered exchanges during shutdown", func(t *testing.T) {
+		manager := new(managerMock)
+		manager.On("Disconnect", nil)
+
+		exchange := new(exchangeMock)
+		exchange.On("Stop", nil)
+
+		factory := new(factoryMock)
+
+		target := &Connector{
+			client: nil,
+			conf:   nil,
+
+			factory:    factory,
+			conManager: manager,
+
+			exchanges: []rabbitmq.ExchangeOrganizer{exchange},
+		}
+
 		target.Shutdown()
 
 		manager.AssertExpectations(t)
@@ -228,17 +206,9 @@ func TestConnector_Stop(t *testing.T) {
 	})
 }
 
-func makeErrorStream(wg *sync.WaitGroup, err *amqp.Error) <-chan *amqp.Error {
+func makeErrorStream(err *amqp.Error) <-chan *amqp.Error {
 	errorStream := make(chan *amqp.Error, 1)
-
-	// This is a bit hacky, but should ensure correct checking of background behavior
-	go func(wg *sync.WaitGroup, err *amqp.Error, c chan *amqp.Error) {
-		time.Sleep(50 * time.Millisecond)
-		c <- err
-		time.Sleep(50 * time.Millisecond)
-		wg.Done()
-	}(wg, err, errorStream)
-
+	errorStream <- err
 	return errorStream
 }
 
@@ -264,16 +234,8 @@ func TestConnector_handleConnectionError(t *testing.T) {
 	}
 
 	t.Run("Should attempt recovery if observed error is recoverable", func(t *testing.T) {
-		var waitgroup sync.WaitGroup
-		waitgroup.Add(1)
-
 		manager := new(managerMock)
-		manager.On("Connect", conf.RabbitConnectionURL).Return(makeErrorStream(&waitgroup, &amqp.Error{
-			Code:    200,
-			Reason:  "Expected",
-			Server:  true,
-			Recover: true,
-		}), nil)
+		manager.On("Connect", conf.RabbitConnectionURL).Return(make(<-chan *amqp.Error), nil)
 
 		exchange := new(exchangeMock)
 		exchange.On("Start", nil).Return(nil)
@@ -285,19 +247,79 @@ func TestConnector_handleConnectionError(t *testing.T) {
 		factory.On("WithExchange", nil)
 		factory.On("Build", nil).Return(exchange, nil)
 
-		target := New(manager, factory, nil, &conf)
+		target := &Connector{
+			client: nil,
+			conf:   &conf,
 
-		err := target.Run()
-		assert.NoError(t, err, "")
+			factory:    factory,
+			conManager: manager,
 
-		waitgroup.Wait()
+			exchanges: []rabbitmq.ExchangeOrganizer{exchange},
+		}
 
-		manager.AssertExpectations(t)
-		factory.AssertExpectations(t)
+		target.HandleConnectionError(makeErrorStream(&amqp.Error{
+			Code:    200,
+			Reason:  "Recoverable",
+			Server:  true,
+			Recover: true,
+		}))
+
 		exchange.AssertExpectations(t)
+		factory.AssertExpectations(t)
+		manager.AssertExpectations(t)
+	})
 
-		manager.AssertNumberOfCalls(t, "Connect", 2)
-		exchange.AssertNumberOfCalls(t, "Start", 2)
-		factory.AssertNumberOfCalls(t, "Build", 2)
+	t.Run("Should panic if observed error is not recoverable", func(t *testing.T) {
+		manager := new(managerMock)
+		exchange := new(exchangeMock)
+		factory := new(factoryMock)
+
+		target := &Connector{
+			client: nil,
+			conf:   &conf,
+
+			factory:    factory,
+			conManager: manager,
+
+			exchanges: []rabbitmq.ExchangeOrganizer{exchange},
+		}
+
+		assert.Panics(t, func() {
+			target.HandleConnectionError(makeErrorStream(&amqp.Error{
+				Code:    200,
+				Reason:  "Fatal",
+				Server:  true,
+				Recover: false,
+			}))
+		}, "should panic")
+	})
+
+	t.Run("Should panic if recovery attempt fails", func(t *testing.T) {
+		manager := new(managerMock)
+		manager.On("Connect", conf.RabbitConnectionURL).Return(make(<-chan *amqp.Error), errors.New("could not establish connection to Rabbit MQ Cluster"))
+
+		exchange := new(exchangeMock)
+		exchange.On("Stop", nil)
+
+		factory := new(factoryMock)
+
+		target := &Connector{
+			client: nil,
+			conf:   &conf,
+
+			factory:    factory,
+			conManager: manager,
+
+			exchanges: []rabbitmq.ExchangeOrganizer{exchange},
+		}
+
+		assert.Panics(t, func() {
+			target.HandleConnectionError(makeErrorStream(&amqp.Error{
+				Code:    200,
+				Reason:  "Recoverable",
+				Server:  true,
+				Recover: true,
+			}))
+		}, "should panic")
 	})
 }

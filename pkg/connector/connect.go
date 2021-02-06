@@ -47,7 +47,7 @@ func (c *Connector) Run() error {
 		return conErr
 	}
 
-	go c.handleConnectionError(failureChan)
+	go c.HandleConnectionError(failureChan)
 
 	genErr := c.generateExchangesFrom(c.conf.Topology)
 	if genErr != nil {
@@ -64,7 +64,7 @@ func (c *Connector) Run() error {
 	return nil
 }
 
-func (c *Connector) handleConnectionError(ch <-chan *amqp.Error) {
+func (c *Connector) HandleConnectionError(ch <-chan *amqp.Error) {
 	err := <-ch
 	log.Printf("Rabbit MQ Connection failed with %s Code: %d [Server=%t Recover=%t]", err.Reason, err.Code, err.Server, err.Recover)
 
@@ -77,10 +77,10 @@ func (c *Connector) handleConnectionError(ch <-chan *amqp.Error) {
 		c.exchanges = nil
 		err := c.Run()
 		if err != nil {
-			log.Fatalf("Received critical error: %s during restart, shutting down", err)
+			log.Panicf("Received critical error: %s during restart, shutting down", err)
 		}
 	} else {
-		log.Fatalf("Received critical error: %s, shutting down", err)
+		log.Panicf("Received critical error: %s, shutting down", err)
 	}
 }
 
