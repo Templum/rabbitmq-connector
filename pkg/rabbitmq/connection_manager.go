@@ -61,6 +61,12 @@ func (m *ConnectionManager) Connect(connectionUrl string) (<-chan *amqp.Error, e
 }
 
 func (m *ConnectionManager) Reconnect(connectionUrl string) (<-chan *amqp.Error, error) {
+	m.lock.Lock()
+	// We ignore error here since we anyways create a new connection
+	_ = m.con.Close()
+	m.con = nil
+	m.lock.Unlock()
+
 	return m.Connect(connectionUrl) // TODO: Need to test how this behaves when running life
 }
 

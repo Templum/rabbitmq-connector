@@ -56,9 +56,8 @@ func (c *Connector) Run() error {
 
 	for _, ex := range c.exchanges {
 		err := ex.Start()
-
 		if err != nil {
-			log.Printf("Failed to start exchange due to %s", err)
+			return err
 		}
 	}
 
