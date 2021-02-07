@@ -32,9 +32,6 @@ type Exchange struct {
 
 	definition *types.Exchange
 	lock       sync.RWMutex
-
-	isRunning   bool
-	isConnected bool
 }
 
 func NewExchange(channel Channel, client types.Invoker, definition *types.Exchange) ExchangeOrganizer {
@@ -44,9 +41,6 @@ func NewExchange(channel Channel, client types.Invoker, definition *types.Exchan
 
 		definition: definition,
 		lock:       sync.RWMutex{},
-
-		isConnected: true,
-		isRunning:   false,
 	}
 }
 
@@ -60,15 +54,14 @@ func (e *Exchange) Start() error {
 
 	for _, topic := range e.definition.Topics {
 		queueName := GenerateQueueName(e.definition.Name, topic)
-		deliveries, err := e.channel.Consume(queueName, "", true, false, false, false, nil)
+		deliveries, err := e.channel.Consume(queueName, "", true, false, false, false, amqp.Table{})
 		if err != nil {
 			return err
 		}
 
-		go e.startConsuming(topic, deliveries)
+		go e.StartConsuming(topic, deliveries)
 	}
 
-	e.isRunning = true
 	return nil
 }
 
@@ -78,7 +71,6 @@ func (e *Exchange) Stop() {
 
 	// We ignore the issue since this method is usually called after connection failure.
 	_ = e.channel.Close()
-	e.isRunning = false
 }
 
 func (e *Exchange) handleChanFailure(ch <-chan *amqp.Error) {
@@ -86,7 +78,7 @@ func (e *Exchange) handleChanFailure(ch <-chan *amqp.Error) {
 	log.Printf("Received following error %s on channel for exchange %s", err, e.definition.Name)
 }
 
-func (e *Exchange) startConsuming(topic string, deliveries <-chan amqp.Delivery) {
+func (e *Exchange) StartConsuming(topic string, deliveries <-chan amqp.Delivery) {
 	for delivery := range deliveries {
 		if topic == delivery.RoutingKey {
 			// TODO: Maybe we want to send the deliveries into a general queue
