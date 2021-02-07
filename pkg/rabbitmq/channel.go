@@ -14,7 +14,7 @@ type RBChannelCreator interface {
 }
 
 type Channel interface {
-	Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args amqp.Table) (<-chan amqp.Delivery, error)
+	Consume(queue string, consumer string, autoAck bool, exclusive bool, noLocal bool, noWait bool, args amqp.Table) (<-chan amqp.Delivery, error)
 	NotifyClose(c chan *amqp.Error) chan *amqp.Error
 	Close() error
 }
