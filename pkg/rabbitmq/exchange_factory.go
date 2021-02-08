@@ -16,7 +16,7 @@ import (
 
 type Factory interface {
 	WithInvoker(client types.Invoker) Factory
-	WithChanCreator(creator RBChannelCreator) Factory
+	WithChanCreator(creator ChannelCreator) Factory
 	WithExchange(ex *types.Exchange) Factory
 	Build() (ExchangeOrganizer, error)
 }
@@ -26,12 +26,12 @@ func NewFactory() Factory {
 }
 
 type ExchangeFactory struct {
-	creator  RBChannelCreator
+	creator  ChannelCreator
 	client   types.Invoker
 	exchange *types.Exchange
 }
 
-func (f *ExchangeFactory) WithChanCreator(creator RBChannelCreator) Factory {
+func (f *ExchangeFactory) WithChanCreator(creator ChannelCreator) Factory {
 	f.creator = creator
 	return f
 }
@@ -72,9 +72,9 @@ func (f *ExchangeFactory) Build() (ExchangeOrganizer, error) {
 	return NewExchange(channel, f.client, f.exchange), nil
 }
 
-func declareTopology(con *amqp.Channel, ex *types.Exchange) error {
+func declareTopology(con RabbitChannel, ex *types.Exchange) error {
 	if ex.Declare {
-		err := con.ExchangeDeclare(ex.Name, ex.Type, ex.Durable, ex.AutoDeleted, false, false, nil)
+		err := con.ExchangeDeclare(ex.Name, ex.Type, ex.Durable, ex.AutoDeleted, false, false, amqp.Table{})
 		if err != nil {
 			return err
 		}
@@ -90,7 +90,7 @@ func declareTopology(con *amqp.Channel, ex *types.Exchange) error {
 			ex.AutoDeleted,
 			false,
 			false,
-			nil,
+			amqp.Table{},
 		)
 		if declareErr != nil {
 			return declareErr
@@ -102,7 +102,7 @@ func declareTopology(con *amqp.Channel, ex *types.Exchange) error {
 			topic,
 			ex.Name,
 			false,
-			nil,
+			amqp.Table{},
 		)
 
 		if bindErr != nil {
