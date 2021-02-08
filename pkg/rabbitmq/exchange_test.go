@@ -24,25 +24,6 @@ func (i *invokerMock) Invoke(topic string, invocation *types.OpenFaaSInvocation)
 	i.Called(topic, invocation)
 }
 
-type channelMock struct {
-	mock.Mock
-}
-
-func (c *channelMock) Consume(queue string, consumer string, autoAck, exclusive bool, noLocal bool, noWait bool, args amqp.Table) (<-chan amqp.Delivery, error) {
-	params := c.Called(queue, consumer, autoAck, exclusive, noLocal, noWait, args)
-	return params.Get(0).(<-chan amqp.Delivery), params.Error(1)
-}
-
-func (c *channelMock) NotifyClose(ch chan *amqp.Error) chan *amqp.Error {
-	args := c.Called(ch)
-	return args.Get(0).(chan *amqp.Error)
-}
-
-func (c *channelMock) Close() error {
-	args := c.Called(nil)
-	return args.Error(0)
-}
-
 func TestExchange_Start(t *testing.T) {
 	definition := types.Exchange{
 		Name:   "Nasdaq",
