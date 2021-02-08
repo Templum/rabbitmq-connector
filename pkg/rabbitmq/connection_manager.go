@@ -16,13 +16,12 @@ import (
 
 type Connector interface {
 	Connect(connectionUrl string) (<-chan *amqp.Error, error)
-	Reconnect(connectionUrl string) (<-chan *amqp.Error, error)
 	Disconnect()
 }
 
 type Manager interface {
 	Connector
-	RBChannelCreator
+	ChannelCreator
 }
 
 type ConnectionManager struct {
@@ -60,16 +59,6 @@ func (m *ConnectionManager) Connect(connectionUrl string) (<-chan *amqp.Error, e
 	return nil, errors.New("could not establish connection to Rabbit MQ Cluster")
 }
 
-func (m *ConnectionManager) Reconnect(connectionUrl string) (<-chan *amqp.Error, error) {
-	m.lock.Lock()
-	// We ignore error here since we anyways create a new connection
-	_ = m.con.Close()
-	m.con = nil
-	m.lock.Unlock()
-
-	return m.Connect(connectionUrl) // TODO: Need to test how this behaves when running life
-}
-
 func (m *ConnectionManager) Disconnect() {
 	m.lock.Lock()
 
@@ -82,7 +71,7 @@ func (m *ConnectionManager) Disconnect() {
 	m.lock.Unlock()
 }
 
-func (m *ConnectionManager) Channel() (*amqp.Channel, error) {
+func (m *ConnectionManager) Channel() (RabbitChannel, error) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 	return m.con.Channel()

@@ -26,18 +26,13 @@ func (m *managerMock) Connect(connectionUrl string) (<-chan *amqp.Error, error) 
 	return args.Get(0).(<-chan *amqp.Error), args.Error(1)
 }
 
-func (m *managerMock) Reconnect(connectionUrl string) (<-chan *amqp.Error, error) {
-	args := m.Called(connectionUrl)
-	return args.Get(0).(<-chan *amqp.Error), args.Error(1)
-}
-
 func (m *managerMock) Disconnect() {
 	_ = m.Called(nil)
 }
 
-func (m *managerMock) Channel() (*amqp.Channel, error) {
+func (m *managerMock) Channel() (rabbitmq.RabbitChannel, error) {
 	args := m.Called(nil)
-	return args.Get(0).(*amqp.Channel), args.Error(1)
+	return args.Get(0).(rabbitmq.RabbitChannel), args.Error(1)
 }
 
 type factoryMock struct {
@@ -49,7 +44,7 @@ func (f *factoryMock) WithInvoker(client types.Invoker) rabbitmq.Factory {
 	return f
 }
 
-func (f *factoryMock) WithChanCreator(creator rabbitmq.RBChannelCreator) rabbitmq.Factory {
+func (f *factoryMock) WithChanCreator(creator rabbitmq.ChannelCreator) rabbitmq.Factory {
 	f.Called(nil)
 	return f
 }
