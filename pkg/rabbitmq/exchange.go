@@ -27,14 +27,14 @@ type ExchangeOrganizer interface {
 }
 
 type Exchange struct {
-	channel Channel
+	channel ChannelConsumer
 	client  types.Invoker
 
 	definition *types.Exchange
 	lock       sync.RWMutex
 }
 
-func NewExchange(channel Channel, client types.Invoker, definition *types.Exchange) ExchangeOrganizer {
+func NewExchange(channel ChannelConsumer, client types.Invoker, definition *types.Exchange) ExchangeOrganizer {
 	return &Exchange{
 		channel: channel,
 		client:  client,
