@@ -25,21 +25,23 @@ type Manager interface {
 }
 
 type ConnectionManager struct {
-	con  *amqp.Connection // TODO: Create Top Level interface as discussed here: https://github.com/streadway/amqp/issues/164#issuecomment-271523006
-	lock sync.RWMutex
+	con    *amqp.Connection //TODO: Create Top Level interface as discussed here: https://github.com/streadway/amqp/issues/164#issuecomment-271523006
+	lock   sync.RWMutex
+	dialer RBDialer
 }
 
-func NewConnectionManager() Manager {
+func NewConnectionManager(dialer RBDialer) Manager {
 	return &ConnectionManager{
-		lock: sync.RWMutex{},
-		con:  nil,
+		lock:   sync.RWMutex{},
+		con:    nil,
+		dialer: dialer,
 	}
 }
 
 func (m *ConnectionManager) Connect(connectionUrl string) (<-chan *amqp.Error, error) {
 	for attempt := 0; attempt < 3; attempt++ {
 
-		con, err := amqp.Dial(connectionUrl)
+		con, err := m.dialer.Dial(connectionUrl)
 
 		if err == nil {
 			log.Println("Successfully established connection to Rabbit MQ Cluster")

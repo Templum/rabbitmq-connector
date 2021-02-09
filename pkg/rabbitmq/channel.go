@@ -32,7 +32,7 @@ type QueueHandler interface {
 
 type RBDialer interface {
 	Dial(url string) (*amqp.Connection, error)
-	DialTLS(url string, amqps *tls.Config) (*amqp.Connection, error)
+	DialTLS(url string, conf *tls.Config) (*amqp.Connection, error)
 }
 
 type RabbitChannel interface {
