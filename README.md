@@ -75,13 +75,6 @@ deployed using this [script](https://github.com/openfaas/faas/blob/master/deploy
 RabbitMQ node and an producer, you might want to remove them. If you want to use an existing Rabbit MQ setup make sure to
 override `RMQ` accordingly.
 
-### Local
-
-1. Start an local Rabbit MQ Broker, this can be done with`/hack/development_env_setup.sh`.
-2. Expose the necessary environment variables, in GoLand this can be done as part of the configuration
-3. Deploy at least one function that listens to a topic: `$ faas-cli store deploy figlet --annotation topic="account"`
-4. Start a producer to generate messages
-
 ## Bug Reporting & Feature Requests
 
 Please feel free to report any issues or Feature request on the [Issue Tab](https://github.com/Templum/rabbitmq-connector/issues).
