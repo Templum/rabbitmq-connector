@@ -1,33 +1,9 @@
-## Global Docker image parameters
-## Please, note that this will override the image parameters, including dependencies, configured to use the global value
-## Current available global Docker image parameters: imageRegistry and imagePullSecrets
-##
-# global:
-#   imageRegistry: myRegistryName
-#   imagePullSecrets:
-#     - myRegistryKeySecretName
-#   storageClass: myStorageClass
-
-## Bitnami RabbitMQ image version
-## ref: https://hub.docker.com/r/bitnami/rabbitmq/tags/
-##
 image:
   registry: docker.io
   repository: bitnami/rabbitmq
   tag: 3.8.11
   pullPolicy: IfNotPresent
 rbacEnabled: true
-
-## RabbitMQ should be initialized one by one when building cluster for the first time.
-## Therefore, the default value of podManagementPolicy is 'OrderedReady'
-## Once the RabbitMQ participates in the cluster, it waits for a response from another
-## RabbitMQ in the same cluster at reboot, except the last RabbitMQ of the same cluster.
-## If the cluster exits gracefully, you do not need to change the podManagementPolicy
-## because the first RabbitMQ of the statefulset always will be last of the cluster.
-## However if the last RabbitMQ of the cluster is not the first RabbitMQ due to a failure,
-## you must change podManagementPolicy to 'Parallel'.
-## ref : https://www.rabbitmq.com/clustering.html#restarting
-##
 podManagementPolicy: OrderedReady
 
 ## section of specific values for rabbitmq
@@ -37,7 +13,7 @@ rabbitmq:
   ## RabbitMQ application password
   ## ref: https://github.com/bitnami/bitnami-docker-rabbitmq#environment-variables
   ##
-  password: pass
+  ## password: pass
   ## Plugins to enable
   plugins: "rabbitmq_management rabbitmq_peer_discovery_k8s"
 
@@ -52,12 +28,6 @@ rabbitmq:
   loadDefinition:
     enabled: false
     secretName: load-definition
-
-  ## environment variables to configure rabbitmq
-  ## ref: https://www.rabbitmq.com/configure.html#customise-environment
-  env: {}
-
-
 
 ## LDAP configuration
 ##
@@ -121,9 +91,9 @@ metrics:
   enabled: false
   serviceMonitor:
     enabled: false
- 
+
   prometheusRule:
     enabled: false
- 
+
 volumePermissions:
   enabled: false
