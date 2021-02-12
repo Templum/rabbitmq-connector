@@ -31,12 +31,18 @@ type QueueHandler interface {
 }
 
 type RBDialer interface {
-	Dial(url string) (*amqp.Connection, error)
-	DialTLS(url string, conf *tls.Config) (*amqp.Connection, error)
+	Dial(url string) (RBConnection, error)
+	DialTLS(url string, conf *tls.Config) (RBConnection, error)
 }
 
 type RabbitChannel interface {
 	ExchangeHandler
 	QueueHandler
 	ChannelConsumer
+}
+
+type RBConnection interface {
+	NotifyClose(receiver chan *amqp.Error) chan *amqp.Error
+	Close() error
+	Channel() (*amqp.Channel, error)
 }

@@ -25,7 +25,7 @@ type Manager interface {
 }
 
 type ConnectionManager struct {
-	con    *amqp.Connection //TODO: Create Top Level interface as discussed here: https://github.com/streadway/amqp/issues/164#issuecomment-271523006
+	con    RBConnection
 	lock   sync.RWMutex
 	dialer RBDialer
 }

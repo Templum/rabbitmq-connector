@@ -17,10 +17,11 @@ func NewBroker() RBDialer {
 
 type Broker struct{}
 
-func (b *Broker) Dial(url string) (*amqp.Connection, error) {
+func (b *Broker) Dial(url string) (RBConnection, error) {
 	return amqp.Dial(url)
 }
 
-func (b *Broker) DialTLS(url string, conf *tls.Config) (*amqp.Connection, error) {
-	return amqp.DialTLS(url, conf)
+func (b *Broker) DialTLS(url string, conf *tls.Config) (RBConnection, error) {
+	test, err := amqp.DialTLS(url, conf)
+	return test , err
 }
