@@ -83,8 +83,10 @@ func (e *Exchange) StartConsuming(topic string, deliveries <-chan amqp.Delivery)
 		if topic == delivery.RoutingKey {
 			// TODO: Maybe we want to send the deliveries into a general queue
 			// https://medium.com/justforfunc/two-ways-of-merging-n-channels-in-go-43c0b57cd1de
+			// TODO: Switch from autoack to ensure no data loss
 			go e.client.Invoke(topic, types.NewInvocation(delivery))
 		} else {
+			// TODO: Reject 
 			// TODO: Debug Log
 			log.Printf("Received message for topic %s that did not match subsribed topic %s", delivery.RoutingKey, topic)
 		}
