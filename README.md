@@ -68,13 +68,6 @@ deployed as described [here](https://github.com/openfaas/faas-netes/blob/master/
 setup to work with OpenFaaS as described there. Further within [connector-cfg.yaml](./artifacts/connector-cfg.yaml) there
 are values that need to be override with your Rabbit MQ setup, they are marked with `replace_me`.
 
-### Docker
-
-The required file to deploy OpenFaaS RabbitMQ connector can be found under `artifacts`. It assumes that OpenFaaS was
-deployed using this [script](https://github.com/openfaas/faas/blob/master/deploy_stack.sh). The [docker-compose.yml](./artifacts/docker-compose.yml) ships with an
-RabbitMQ node and an producer, you might want to remove them. If you want to use an existing Rabbit MQ setup make sure to
-override `RMQ` accordingly.
-
 ## Bug Reporting & Feature Requests
 
 Please feel free to report any issues or Feature request on the [Issue Tab](https://github.com/Templum/rabbitmq-connector/issues).
