@@ -12,10 +12,9 @@
             "program": "${workspaceFolder}/main.go",
             "env": {
                 "basic_auth": "false",
-                "RMQ_TOPICS": "billing",
                 "OPEN_FAAS_GW_URL": "http://localhost:8080",
                 "RMQ_USER": "user",
-                "RMQ_PASS": "0Xhnb5zYSZ",
+                "RMQ_PASS": "SDsozNEnN1",
                 "RMQ_HOST": "localhost",
                 "PATH_TO_TOPOLOGY":"${workspaceFolder}/artifacts/example_topology.yaml"
             },
