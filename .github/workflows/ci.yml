@@ -23,15 +23,6 @@ jobs:
     - run: git checkout HEAD^2
       if: ${{ github.event_name == 'pull_request' }}
 
-    # Should hopefully give enough time for it to start prior to testing
-    - name: Start RabbitMQ
-      uses: getong/rabbitmq-action@v1.2
-      with:
-        rabbitmq version: '3.8.11'
-        host port: 5672
-        rabbitmq user: 'user'
-        rabbitmq password: 'pass'
-
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
