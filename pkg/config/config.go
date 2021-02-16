@@ -1,7 +1,7 @@
-package config
-
 // Copyright (c) Simon Pelczer 2019. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+package config
 
 import (
 	"errors"
@@ -12,7 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openfaas-incubator/connector-sdk/types"
+	internal "github.com/Templum/rabbitmq-connector/pkg/types"
+	"github.com/openfaas/connector-sdk/types"
 	"github.com/openfaas/faas-provider/auth"
 )
 
@@ -22,8 +23,7 @@ type Controller struct {
 	RabbitConnectionURL string
 	RabbitSanitizedURL  string
 
-	ExchangeName string
-	Topics       []string
+	Topology internal.Topology
 
 	TopicRefreshTime   time.Duration
 	BasicAuth          *auth.BasicAuthCredentials
@@ -44,16 +44,14 @@ func NewConfig() (*Controller, error) {
 		return nil, err
 	}
 
-	exchange := readFromEnv(envRabbitExchange, "OpenFaasEx")
-
-	topics, err := getTopics()
-	if err != nil {
-		return nil, err
-	}
-
 	skipVerify, err := strconv.ParseBool(readFromEnv(envSkipVerify, "false"))
 	if err != nil {
 		skipVerify = false
+	}
+
+	topology, err := getTopology()
+	if err != nil {
+		return nil, err
 	}
 
 	return &Controller{
@@ -63,8 +61,7 @@ func NewConfig() (*Controller, error) {
 		RabbitConnectionURL: rabbitURL,
 		RabbitSanitizedURL:  sanitizedURL,
 
-		ExchangeName: exchange,
-		Topics:       topics,
+		Topology: topology,
 
 		TopicRefreshTime:   getRefreshTime(),
 		InsecureSkipVerify: skipVerify,
@@ -80,8 +77,7 @@ const (
 	envRabbitHost = "RMQ_HOST"
 	envRabbitPort = "RMQ_PORT"
 
-	envRabbitTopics   = "RMQ_TOPICS"
-	envRabbitExchange = "RMQ_EXCHANGE"
+	envPathToTopology = "PATH_TO_TOPOLOGY"
 	envRefreshTime    = "TOPIC_MAP_REFRESH_TIME"
 )
 
@@ -95,8 +91,8 @@ func getOpenFaaSUrl() (string, error) {
 }
 
 func getRabbitMQConnectionURL() (string, error) {
-	user := readFromEnv(envRabbitUser, "guest")
-	pass := readFromEnv(envRabbitPass, "guest")
+	user := readFromEnv(envRabbitUser, "user")
+	pass := readFromEnv(envRabbitPass, "pass")
 	host := readFromEnv(envRabbitHost, "localhost")
 	port := readFromEnv(envRabbitPort, "5672")
 
@@ -121,15 +117,14 @@ func getSanitizedRabbitMQURL() string {
 	return fmt.Sprintf("amqp://%s:%s", host, port)
 }
 
-func getTopics() ([]string, error) {
-	topicsString := readFromEnv(envRabbitTopics, "")
-	topics := strings.Split(topicsString, ",")
+func getTopology() (internal.Topology, error) {
+	path := readFromEnv(envPathToTopology, ".")
 
-	if topicsString == "" || len(topics) < 1 {
-		return nil, errors.New("no Topic was specified. Provide them via Env RMQ_TOPICS=account,billing,support")
+	if info, err := os.Stat(path); os.IsNotExist(err) || !strings.HasSuffix(info.Name(), "yaml") {
+		return internal.Topology{}, errors.New("provided topology is either non existing or does not end with .yaml")
 	}
 
-	return topics, nil
+	return internal.ReadTopologyFromFile(path)
 }
 
 func getRefreshTime() time.Duration {

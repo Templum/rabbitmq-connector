@@ -1,0 +1,99 @@
+image:
+  registry: docker.io
+  repository: bitnami/rabbitmq
+  tag: 3.8.11
+  pullPolicy: IfNotPresent
+rbacEnabled: true
+podManagementPolicy: OrderedReady
+
+auth:
+  username: user
+  password: pass
+
+## section of specific values for rabbitmq
+rabbitmq:
+  username: user
+
+  ## Plugins to enable
+  plugins: "rabbitmq_management rabbitmq_peer_discovery_k8s"
+
+  ## Clustering settings
+  clustering:
+    address_type: hostname
+    k8s_domain: cluster.local
+    ## Rebalance master for queues in cluster when new replica is created
+    ## ref: https://www.rabbitmq.com/rabbitmq-queues.8.html#rebalance
+    rebalance: false
+
+  loadDefinition:
+    enabled: false
+    secretName: load-definition
+
+## LDAP configuration
+##
+ldap:
+  enabled: false
+
+## Kubernetes service type
+service:
+  port: 5672
+  distPort: 25672
+  managerPort: 15672
+
+
+## Pod Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+securityContext:
+  enabled: true
+  fsGroup: 1001
+  runAsUser: 1001
+  extra: {}
+
+persistence:
+  ## this enables PVC templates that will create one per pod
+  enabled: false
+
+networkPolicy:
+  ## Enable creation of NetworkPolicy resources. Only Ingress traffic is filtered for now.
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/network-policies/
+  ##
+  enabled: false
+
+## Replica count, set to 1 to provide a default available cluster
+replicas: 1
+
+updateStrategy:
+  type: RollingUpdate
+
+#
+ingress:
+  ## Set to true to enable ingress record generation
+  enabled: false
+
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 120
+  timeoutSeconds: 20
+  periodSeconds: 30
+  failureThreshold: 6
+  successThreshold: 1
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 10
+  timeoutSeconds: 20
+  periodSeconds: 30
+  failureThreshold: 3
+  successThreshold: 1
+
+metrics:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+
+  prometheusRule:
+    enabled: false
+
+volumePermissions:
+  enabled: false

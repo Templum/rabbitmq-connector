@@ -1,207 +1,109 @@
-// +build !race
+// +build integration
+
+/*
+ * Copyright (c) Simon Pelczer 2021. All rights reserved.
+ *  Licensed under the MIT license. See LICENSE file in the project root for full license information.
+ */
 
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
-	"github.com/Templum/rabbitmq-connector/pkg/types"
-	"log"
+	"net/http"
 	"os"
-	"sync"
+	"path"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/Templum/rabbitmq-connector/pkg/config"
-	"github.com/Templum/rabbitmq-connector/pkg/rabbitmq"
-	"github.com/Templum/rabbitmq-connector/pkg/subscriber"
-	"github.com/streadway/amqp"
+	"github.com/Templum/rabbitmq-connector/pkg/openfaas"
+	"github.com/Templum/rabbitmq-connector/pkg/types"
+	t "github.com/openfaas/faas-provider/types"
+	"github.com/stretchr/testify/assert"
 )
 
-var (
-	connector      subscriber.Connector
-	mockClient     *invokerMock
-	producerClient *Producer
-)
-
-type Invocation struct {
-	Topic      string
-	Message    *[]byte
-	ReceivedNo uint
+func getPathToExampleTopology() string {
+	dir, _ := os.Getwd()
+	return path.Join(dir, "artifacts", "example_topology.yaml")
 }
 
-func NewInvocation(topic string, message *[]byte, receivedNo uint) *Invocation {
-	return &Invocation{Topic: topic, Message: message, ReceivedNo: receivedNo}
-}
-
-//---- Producer ----//
-type Producer struct {
-	channel *amqp.Channel
-
-	exchange string
-	topic    string
-
-	mutex sync.Mutex
-}
-
-func NewProducer(cfg *config.Controller) (*Producer, error) {
-	prod := &Producer{}
-	err := prod.setup(cfg)
-	return prod, err
-}
-
-func (p *Producer) setup(cfg *config.Controller) error {
-	var err error
-	con, _ := amqp.Dial(cfg.RabbitConnectionURL)
-
-	channel, _ := con.Channel()
-
-	err = channel.ExchangeDeclare(
-		cfg.ExchangeName,
-		"direct",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-
-	if err != nil {
-		return err
-	}
-	p.exchange = cfg.ExchangeName
-	p.topic = cfg.Topics[0]
-	p.channel = channel
-	return nil
-}
-
-func (p *Producer) SendMessage(body *[]byte) error {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-
-	err := p.channel.Publish(
-		p.exchange,
-		p.topic,
-		false,
-		false,
-		amqp.Publishing{
-			DeliveryMode: amqp.Persistent,
-			ContentType:  "text/plain",
-			Body:         *body,
-			Timestamp:    time.Now(),
-		})
-
-	return err
-}
-
-//---- Invoker Mock ----//
-type invokerMock struct {
-	invocations []*Invocation
-	counter     uint
-	mutex       sync.Mutex
-}
-
-func newInvokerMock() *invokerMock {
-	return &invokerMock{counter: 0}
-}
-
-func (m *invokerMock) Invoke(topic string, invoke *types.OpenFaaSInvocation) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	m.counter++
-	invocation := NewInvocation(topic, invoke.Message, m.counter)
-	m.invocations = append(m.invocations, invocation)
-}
-
-func (m *invokerMock) GetInvocations() []*Invocation {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	return m.invocations
-}
-
-//---- Invoker Mock ----//
+const TOPIC = "Foo"
 
 func TestMain(m *testing.M) {
-	os.Setenv("RMQ_TOPICS", "unit_test,another_topic")
-	os.Setenv("RMQ_EXCHANGE", "Ex")
-	os.Setenv("RMQ_HOST", "localhost")
-	os.Setenv("RMQ_PORT", "5672")
-	os.Setenv("RMQ_USER", "user")
-	os.Setenv("RMQ_PASS", "pass")
 
-	defer os.Unsetenv("RMQ_TOPICS")
-	defer os.Unsetenv("RMQ_EXCHANGE")
-	defer os.Unsetenv("RMQ_HOST")
-	defer os.Unsetenv("RMQ_PORT")
+	fmt.Print("Integration Test")
+	_ = os.Setenv("basic_auth", "false")
+	_ = os.Setenv("OPEN_FAAS_GW_URL", "http://localhost:8080")
+	_ = os.Setenv("RMQ_USER", "user")
+	_ = os.Setenv("RMQ_PASS", "pass")
+	_ = os.Setenv("RMQ_HOST", "localhost")
+	_ = os.Setenv("PATH_TO_TOPOLOGY", getPathToExampleTopology())
+
+	defer os.Unsetenv("basic_auth")
+	defer os.Unsetenv("OPEN_FAAS_GW_URL")
 	defer os.Unsetenv("RMQ_USER")
 	defer os.Unsetenv("RMQ_PASS")
-
-	connectorCfg, err := config.NewConfig()
-	if err != nil {
-		log.Printf("Received %s during config building", err)
-		os.Exit(1)
-	}
-	factory, err := rabbitmq.NewQueueConsumerFactory(connectorCfg)
-	if err != nil {
-		log.Printf("Received %s during factory creation", err)
-		os.Exit(1)
-	}
-	producerClient, err = NewProducer(connectorCfg)
-	if err != nil {
-		log.Printf("Received %s during producer creation", err)
-		os.Exit(1)
-	}
-	mockClient = newInvokerMock()
-	connector = subscriber.NewConnector(connectorCfg, mockClient, factory)
+	defer os.Unsetenv("RMQ_HOST")
+	defer os.Unsetenv("PATH_TO_TOPOLOGY")
 
 	os.Exit(m.Run())
 }
 
-func TestSystem(t *testing.T) {
-	connector.Start()
-	time.Sleep(10 * time.Second)
+func getOpenFaaSClient() openfaas.FunctionFetcher {
+	httpClient := types.MakeHTTPClient(false, 60*time.Second)
+	ofClient := openfaas.NewClient(httpClient, nil, os.Getenv("OPEN_FAAS_GW_URL"))
+	return ofClient
+}
 
-	t.Run("Should receive 500 messages without losses", func(t *testing.T) {
-		for i := 0; i < 500; i++ {
-			message := []byte(fmt.Sprintf("I'm Message %d", i))
-			err := producerClient.SendMessage(&message)
+func getIntegrationFaaSFunction(client openfaas.FunctionFetcher) t.FunctionStatus {
+	functions, _ := client.GetFunctions(context.Background(), "")
+	return functions[0]
+}
 
-			if err != nil {
-				log.Printf("Received error %s for message %d", err, i)
-				i--
-			}
+func publishMessage(client http.Client, topic string, message string) error {
+	body := fmt.Sprintf("{\"properties\":{},\"routing_key\":\"%s\",\"payload\":\"%s\",\"payload_encoding\":\"string\"}", topic, message)
+
+	req, _ := http.NewRequest(http.MethodPost, "http://localhost:15672/api/exchanges/%2f/AEx/publish", strings.NewReader(body))
+	req.SetBasicAuth("user", "pass")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != 200 {
+		return errors.New("unexpected status code")
+	}
+
+	return nil
+}
+
+func Test_main(t *testing.T) {
+	go main()
+
+	time.Sleep(1 * time.Second)
+
+	client := getOpenFaaSClient()
+	before := getIntegrationFaaSFunction(client)
+
+	assert.GreaterOrEqual(t, before.InvocationCount, float64(0), "should be 0 or more")
+	assert.Contains(t, (*before.Annotations)["topic"], TOPIC, "should listend for TOPIC Foo")
+
+	httpClient := types.MakeHTTPClient(false, 5*time.Second)
+	publishedMessages := 0
+
+	for i := 0; i < 1000; i++ {
+		err := publishMessage(*httpClient, TOPIC, "Hello World!")
+		if err == nil {
+			publishedMessages += 1
 		}
+	}
 
-		time.Sleep(10 * time.Second)
-		receivedInvocations := mockClient.GetInvocations()
+	time.Sleep(5 * time.Second)
 
-		if len(receivedInvocations) != 500 {
-			t.Errorf("Expected to receive 500 Messages, only received %d", len(receivedInvocations))
-		}
-
-		mockClient.invocations = nil
-	})
-
-	connector.End()
-	time.Sleep(10 * time.Second)
-
-	t.Run("Should process messages send while being inactive", func(t *testing.T) {
-		for i := 0; i < 100; i++ {
-			message := []byte(fmt.Sprintf("I'm Message %d send while being inactive", i))
-			err := producerClient.SendMessage(&message)
-
-			if err != nil {
-				log.Printf("Received error %s for message %d", err, i)
-				i--
-			}
-		}
-
-		connector.Start()
-		time.Sleep(10 * time.Second)
-
-		receivedInvocations := mockClient.GetInvocations()
-		if len(receivedInvocations) != 100 {
-			t.Errorf("Expected to receive 500 Messages, only received %d", len(receivedInvocations))
-		}
-
-	})
+	after := getIntegrationFaaSFunction(client)
+	assert.Greater(t, after.InvocationCount, before.InvocationCount)
+	assert.GreaterOrEqual(t, after.InvocationCount, float64(1000), "should invoked at least 1000 times")
 }

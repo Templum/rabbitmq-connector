@@ -4,6 +4,9 @@ package config
 
 import (
 	"os"
+	"path"
+	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -11,6 +14,18 @@ import (
 )
 
 func TestNewConfig(t *testing.T) {
+	dir, _ := os.Getwd()
+
+	var relativePath string
+	// Workaround for Linux
+	if runtime.GOOS == "windows" {
+		relativePath = path.Join(dir, "..", "..", "..", "artifacts", "example_topology.yaml")
+	} else {
+		relativePath = path.Join(dir, "..", "..", "artifacts", "example_topology.yaml")
+	}
+
+	pathToExampleToplogy, _ := filepath.Abs(relativePath)
+
 	t.Run("With invalid Gateway Url", func(t *testing.T) {
 		os.Setenv("OPEN_FAAS_GW_URL", "gateway:8080")
 		defer os.Unsetenv("OPEN_FAAS_GW_URL")
@@ -64,10 +79,10 @@ func TestNewConfig(t *testing.T) {
 	})
 
 	t.Run("With invalid SkipVerify", func(t *testing.T) {
-		os.Setenv("RMQ_TOPICS", "test")
+		os.Setenv("PATH_TO_TOPOLOGY", pathToExampleToplogy)
+		defer os.Unsetenv("PATH_TO_TOPOLOGY")
 		os.Setenv("INSECURE_SKIP_VERIFY", "is_string")
 		defer os.Unsetenv("INSECURE_SKIP_VERIFY")
-		defer os.Unsetenv("RMQ_TOPICS")
 
 		config, err := NewConfig()
 
@@ -75,35 +90,38 @@ func TestNewConfig(t *testing.T) {
 		assert.False(t, config.InsecureSkipVerify, "Expected default value")
 	})
 
-	t.Run("Empty Topics", func(t *testing.T) {
-		os.Setenv("RMQ_TOPICS", "")
-		defer os.Unsetenv("RMQ_TOPICS")
+	t.Run("With non existing Topology", func(t *testing.T) {
+		_, err := NewConfig()
+		assert.Error(t, err, "Should throw err")
+		assert.Contains(t, err.Error(), "provided topology is either non existing or does not end with .yaml")
+	})
+
+	t.Run("With invalid Topology", func(t *testing.T) {
+		os.Setenv("PATH_TO_TOPOLOGY", "../../artifacts/connector-cfg.yaml")
+		defer os.Unsetenv("PATH_TO_TOPOLOGY")
 
 		_, err := NewConfig()
 		assert.NotNil(t, err, "Should throw err")
-		assert.Contains(t, err.Error(), "no Topic was specified. Provide them via Env RMQ_TOPICS=account,billing,support", "Did not throw correct error")
+		assert.Contains(t, err.Error(), " cannot unmarshal")
 	})
 
 	t.Run("Default Config", func(t *testing.T) {
-		os.Setenv("RMQ_TOPICS", "test")
-		defer os.Unsetenv("RMQ_TOPICS")
+		os.Setenv("PATH_TO_TOPOLOGY", pathToExampleToplogy)
+		defer os.Unsetenv("PATH_TO_TOPOLOGY")
 
 		config, err := NewConfig()
 
 		assert.Nil(t, err, "Should not throw")
 		assert.Equal(t, config.GatewayURL, "http://gateway:8080", "Expected default value")
-		assert.Equal(t, config.RabbitConnectionURL, "amqp://guest:guest@localhost:5672/", "Expected default value")
-		assert.NotContains(t, config.RabbitSanitizedURL, "guest:guest", "Expected credentials not to be present")
+		assert.Equal(t, config.RabbitConnectionURL, "amqp://user:pass@localhost:5672/", "Expected default value")
+		assert.NotContains(t, config.RabbitSanitizedURL, "user:pass", "Expected credentials not to be present")
 		assert.Equal(t, config.RabbitSanitizedURL, "amqp://localhost:5672", "Expected default value")
-		assert.Equal(t, config.ExchangeName, "OpenFaasEx", "Expected default value")
-		assert.Len(t, config.Topics, 1, "Expected the one defined topic to be present")
 		assert.Equal(t, config.TopicRefreshTime, 30*time.Second, "Expected default value")
 		assert.False(t, config.InsecureSkipVerify, "Expected default value")
 	})
 
 	t.Run("Override Config", func(t *testing.T) {
-		os.Setenv("RMQ_TOPICS", "test")
-		os.Setenv("RMQ_EXCHANGE", "Ex")
+		os.Setenv("PATH_TO_TOPOLOGY", pathToExampleToplogy)
 		os.Setenv("RMQ_HOST", "rabbit")
 		os.Setenv("RMQ_PORT", "1337")
 		os.Setenv("RMQ_USER", "username")
@@ -112,8 +130,7 @@ func TestNewConfig(t *testing.T) {
 		os.Setenv("TOPIC_MAP_REFRESH_TIME", "40s")
 		os.Setenv("INSECURE_SKIP_VERIFY", "true")
 
-		defer os.Unsetenv("RMQ_TOPICS")
-		defer os.Unsetenv("RMQ_EXCHANGE")
+		defer os.Unsetenv("PATH_TO_TOPOLOGY")
 		defer os.Unsetenv("RMQ_HOST")
 		defer os.Unsetenv("RMQ_PORT")
 		defer os.Unsetenv("RMQ_USER")
@@ -129,8 +146,6 @@ func TestNewConfig(t *testing.T) {
 		assert.Equal(t, config.RabbitConnectionURL, "amqp://username:password@rabbit:1337/", "Expected override value")
 		assert.NotContains(t, config.RabbitSanitizedURL, "username:password", "Expected credentials not to be present")
 		assert.Equal(t, config.RabbitSanitizedURL, "amqp://rabbit:1337", "Expected override value")
-		assert.Equal(t, config.ExchangeName, "Ex", "Expected override value")
-		assert.Len(t, config.Topics, 1, "Expected the one defined topic to be present")
 		assert.Equal(t, config.TopicRefreshTime, 40*time.Second, "Expected override value")
 		assert.True(t, config.InsecureSkipVerify, "Expected override value")
 	})
