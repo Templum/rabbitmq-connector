@@ -1,13 +1,19 @@
+/*
+ * Copyright (c) Simon Pelczer 2021. All rights reserved.
+ *  Licensed under the MIT license. See LICENSE file in the project root for full license information.
+ */
+
 package openfaas
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	types2 "github.com/Templum/rabbitmq-connector/pkg/types"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	types2 "github.com/Templum/rabbitmq-connector/pkg/types"
 
 	"github.com/openfaas/faas-provider/auth"
 	"github.com/openfaas/faas-provider/types"
@@ -388,7 +394,7 @@ func TestClient_GetNamespaces(t *testing.T) {
 		if user, pass, ok := r.BasicAuth(); ok {
 			if user == "User" && pass == "Pass" {
 				w.WriteHeader(502)
-				_, _ =  w.Write(nil)
+				_, _ = w.Write(nil)
 				return
 			}
 			w.WriteHeader(401)
