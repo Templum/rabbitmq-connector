@@ -1,11 +1,17 @@
+/*
+ * Copyright (c) Simon Pelczer 2021. All rights reserved.
+ *  Licensed under the MIT license. See LICENSE file in the project root for full license information.
+ */
+
 package openfaas
 
 import (
 	"context"
-	types2 "github.com/Templum/rabbitmq-connector/pkg/types"
 	"log"
 	"strings"
 	"time"
+
+	types2 "github.com/Templum/rabbitmq-connector/pkg/types"
 
 	"github.com/Templum/rabbitmq-connector/pkg/config"
 	"github.com/openfaas/faas-provider/types"
