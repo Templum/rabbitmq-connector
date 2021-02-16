@@ -11,4 +11,4 @@ Please follow the following instruction to setup the necessary E2E Testing envir
 6. Deploy RabbitMQ using helm `$ helm install rabbit -f ./hack/rabbit-values.yaml bitnami/rabbitmq`.
 7. Now you can forward the relevant ports from openfaas (8080) & rabbitmq (5672).
 8. Deploy Function listening under the relevant Topics `$ faas-cli store deploy figlet --annotation topic="Foo,Bar,Dead,Beef"`
-9. You can use the HTTP Api exposed via 15672 to publish messages
+9. You can use the HTTP Api exposed via 15672 to publish messages (*Username:* user *Password:* pass)

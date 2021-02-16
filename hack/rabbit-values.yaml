@@ -6,14 +6,14 @@ image:
 rbacEnabled: true
 podManagementPolicy: OrderedReady
 
+auth:
+  username: user
+  password: pass
+
 ## section of specific values for rabbitmq
 rabbitmq:
   username: user
 
-  ## RabbitMQ application password
-  ## ref: https://github.com/bitnami/bitnami-docker-rabbitmq#environment-variables
-  ##
-  ## password: pass
   ## Plugins to enable
   plugins: "rabbitmq_management rabbitmq_peer_discovery_k8s"
 

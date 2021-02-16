@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 	_ = os.Setenv("basic_auth", "false")
 	_ = os.Setenv("OPEN_FAAS_GW_URL", "http://localhost:8080")
 	_ = os.Setenv("RMQ_USER", "user")
-	_ = os.Setenv("RMQ_PASS", "SDsozNEnN1")
+	_ = os.Setenv("RMQ_PASS", "pass")
 	_ = os.Setenv("RMQ_HOST", "localhost")
 	_ = os.Setenv("PATH_TO_TOPOLOGY", getPathToExampleTopology())
 
@@ -66,7 +66,7 @@ func publishMessage(client http.Client, topic string, message string) error {
 	body := fmt.Sprintf("{\"properties\":{},\"routing_key\":\"%s\",\"payload\":\"%s\",\"payload_encoding\":\"string\"}", topic, message)
 
 	req, _ := http.NewRequest(http.MethodPost, "http://localhost:15672/api/exchanges/%2f/AEx/publish", strings.NewReader(body))
-	req.SetBasicAuth("user", "SDsozNEnN1")
+	req.SetBasicAuth("user", "pass")
 
 	resp, err := client.Do(req)
 	if err != nil {
