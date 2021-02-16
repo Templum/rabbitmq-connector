@@ -1,16 +1,13 @@
-name: "CodeQL"
+name: "CodeAnalysis"
 
 on:
   push:
     branches: [develop, master]
-  pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [develop]
   schedule:
     - cron: '0 22 * * 3'
 
 jobs:
-  analyse:
+  code:
     name: Analyse
     runs-on: ubuntu-latest
 
@@ -33,3 +30,25 @@ jobs:
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
+  docker:
+    name: Analyse
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build an image from Dockerfile
+        run: docker build -t templum/rabbitmq-connector:${{ github.sha }} .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'templum/rabbitmq-connector:${{ github.sha }}'
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: 'trivy-results.sarif'
