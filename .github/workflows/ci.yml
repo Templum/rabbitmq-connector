@@ -113,16 +113,19 @@ jobs:
       run: ark install openfaas --basic-auth=false
 
     - name: Await Port listening
-      run: kubectl -n default  wait --for=condition=ready --timeout=600s pod/rabbit-rabbitmq-0 && kubectl -n openfaas wait --for=condition=available --timeout=600s deployment/gateway
+      run: kubectl -n default wait --for=condition=ready --timeout=600s pod/rabbit-rabbitmq-0 && kubectl -n openfaas wait --for=condition=available --timeout=600s deployment/gateway
 
     - name: Forward RabbitMQ Port
-      run: kubectl port-forward --address 127.0.0.1 -n default svc/rabbit-rabbitmq 5672:5672 15672:15672 &
+      run: kubectl port-forward --address localhost,127.0.0.1 -n default svc/rabbit-rabbitmq 5672:5672 15672:15672 &
 
     - name: Forward OpenFaaS Port
-      run: kubectl port-forward --address 127.0.0.1 -n openfaas svc/gateway 8080:8080 &
+      run: kubectl port-forward --address localhost,127.0.0.1 -n openfaas svc/gateway 8080:8080 &
 
     - name: Spawn Function
       run: faas-cli store deploy figlet --annotation topic="Foo,Bar,Dead,Beef" --name integration
+
+    - name: Await Port listening
+      run: kubectl -n openfaas-fn wait --for=condition=available --timeout=600s deploy/integration
 
     - name: Integration Test
       run: go test --tags=integration ./...
