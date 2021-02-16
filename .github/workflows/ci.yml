@@ -102,7 +102,7 @@ jobs:
 
     - name: Get Arkade
       run: curl -sLS https://dl.get-arkade.dev | sudo sh
-    
+
     - name: Get FaaS CLI
       run: ark get faas-cli && sudo mv /home/runner/.arkade/bin/faas-cli /usr/local/bin/
 
