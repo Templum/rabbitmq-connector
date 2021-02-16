@@ -54,3 +54,44 @@ jobs:
         version: v1.29
         # Optional: show only new issues if it's a pull request. The default value is `false`.
         only-new-issues: true
+  Integration:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        # We must fetch at least the immediate parents so that if this is
+        # a pull request then we can checkout the head.
+        fetch-depth: 2
+        # If this run was triggered by a pull request event, then checkout
+        # the head of the pull request instead of the merge commit.
+    - run: git checkout HEAD^2
+      if: ${{ github.event_name == 'pull_request' }}
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.15
+
+    - name: K3D Setup
+      uses: nolar/setup-k3d-k3s@v1
+      with:
+        k3d-name: Integration
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Get Arkade
+      run: curl -sLS https://dl.get-arkade.dev | sudo sh
+    
+    - name: Get FaaS CLI
+      run: ark get faas-cli
+
+    - name: Setup Rabbit MQ
+      run: helm repo add bitnami https://charts.bitnami.com/bitnami && helm install rabbit -f ./hack/rabbit-values.yaml bitnami/rabbitmq
+
+    - name: Setup OpenFaaS
+      run: ark install openfaas --basic-auth=false
+
+    - name: Spawn Function
+      run: faas-cli store deploy figlet --annotation topic="Foo,Bar,Dead,Beef" --name integration
+
+    - name: Integration Test
+      run: go test --tags=integration ./...
