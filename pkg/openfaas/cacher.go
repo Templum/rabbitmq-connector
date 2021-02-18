@@ -2,10 +2,12 @@ package openfaas
 
 import (
 	"context"
-	types2 "github.com/Templum/rabbitmq-connector/pkg/types"
+	"fmt"
 	"log"
 	"strings"
 	"time"
+
+	types2 "github.com/Templum/rabbitmq-connector/pkg/types"
 
 	"github.com/Templum/rabbitmq-connector/pkg/config"
 	"github.com/openfaas/faas-provider/types"
@@ -102,7 +104,11 @@ func (c *Controller) crawlFunctions(ctx context.Context, namespaces []string, bu
 			topics := c.extractTopicsFromAnnotations(fn)
 
 			for _, topic := range topics {
-				builder.Append(topic, fn.Name)
+				if len(ns) > 0 {
+					builder.Append(topic, fmt.Sprintf("%s.%s", fn.Name, ns)) // Include Namespace to call the correct function
+				} else {
+					builder.Append(topic, fn.Name)
+				}
 			}
 		}
 	}
