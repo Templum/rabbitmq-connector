@@ -7,6 +7,7 @@ package openfaas
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -108,7 +109,11 @@ func (c *Controller) crawlFunctions(ctx context.Context, namespaces []string, bu
 			topics := c.extractTopicsFromAnnotations(fn)
 
 			for _, topic := range topics {
-				builder.Append(topic, fn.Name)
+				if len(ns) > 0 {
+					builder.Append(topic, fmt.Sprintf("%s.%s", fn.Name, ns)) // Include Namespace to call the correct function
+				} else {
+					builder.Append(topic, fn.Name)
+				}
 			}
 		}
 	}
