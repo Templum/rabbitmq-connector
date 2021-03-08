@@ -91,11 +91,10 @@ func Test_main(t *testing.T) {
 	assert.GreaterOrEqual(t, before.InvocationCount, float64(0), "should be 0 or more")
 	assert.Contains(t, (*before.Annotations)["topic"], TOPIC, "should listend for TOPIC Foo")
 
-	httpClient := types.MakeHTTPClient(false, 5*time.Second)
 	publishedMessages := 0
 
 	for i := 0; i < 1000; i++ {
-		err := publishMessage(*httpClient, TOPIC, "Hello World!")
+		err := publishMessage(http.Client, TOPIC, "Hello World!")
 		if err == nil {
 			publishedMessages += 1
 		}
