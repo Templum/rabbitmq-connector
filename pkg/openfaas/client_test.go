@@ -12,13 +12,21 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	types2 "github.com/Templum/rabbitmq-connector/pkg/types"
+	"github.com/valyala/fasthttp"
 
 	"github.com/openfaas/faas-provider/auth"
 	"github.com/openfaas/faas-provider/types"
 	"github.com/stretchr/testify/assert"
 )
+
+func CreateClient(server *httptest.Server) *fasthttp.Client {
+	client := types2.MakeHTTPClient(true, 30*time.Second)
+	// TODO: For the future configure client with cert pool from the server
+	return client
+}
 
 func TestClient_InvokeSync(t *testing.T) {
 	expectedResponse := "Hello World"
@@ -49,9 +57,9 @@ func TestClient_InvokeSync(t *testing.T) {
 	}))
 	defer server.Close()
 
-	openfaasClient := NewClient(server.Client(), nil, server.URL)
+	openfaasClient := NewClient(CreateClient(server), nil, server.URL)
 
-	authenticatedOpenFaaSClient := NewClient(server.Client(), &auth.BasicAuthCredentials{
+	authenticatedOpenFaaSClient := NewClient(CreateClient(server), &auth.BasicAuthCredentials{
 		User:     "User",
 		Password: "Invalid",
 	}, server.URL)
@@ -133,9 +141,9 @@ func TestClient_InvokeAsync(t *testing.T) {
 	}))
 	defer server.Close()
 
-	openfaasClient := NewClient(server.Client(), nil, server.URL)
+	openfaasClient := NewClient(CreateClient(server), nil, server.URL)
 
-	authenticatedOpenFaaSClient := NewClient(server.Client(), &auth.BasicAuthCredentials{
+	authenticatedOpenFaaSClient := NewClient(CreateClient(server), &auth.BasicAuthCredentials{
 		User:     "User",
 		Password: "Invalid",
 	}, server.URL)
@@ -219,16 +227,16 @@ func TestClient_HasNamespaceSupport(t *testing.T) {
 		_, _ = w.Write(out)
 	}))
 
-	ofK8SClient := NewClient(k8sOF.Client(), nil, k8sOF.URL)
+	ofK8SClient := NewClient(CreateClient(k8sOF), nil, k8sOF.URL)
 
-	ofSwarmClient := NewClient(swarmOF.Client(), nil, swarmOF.URL)
+	ofSwarmClient := NewClient(CreateClient(swarmOF), nil, swarmOF.URL)
 
-	authenticatedOpenFaaSClient := NewClient(k8sOF.Client(), &auth.BasicAuthCredentials{
+	authenticatedOpenFaaSClient := NewClient(CreateClient(k8sOF), &auth.BasicAuthCredentials{
 		User:     "User",
 		Password: "Invalid",
 	}, k8sOF.URL)
 
-	failingOpenFaaSClient := NewClient(k8sOF.Client(), &auth.BasicAuthCredentials{
+	failingOpenFaaSClient := NewClient(CreateClient(k8sOF), &auth.BasicAuthCredentials{
 		User:     "User",
 		Password: "Pass",
 	}, k8sOF.URL)
@@ -336,9 +344,9 @@ func TestClient_GetFunctions(t *testing.T) {
 	}))
 	defer server.Close()
 
-	openfaasClient := NewClient(server.Client(), nil, server.URL)
+	openfaasClient := NewClient(CreateClient(server), nil, server.URL)
 
-	authenticatedOpenFaaSClient := NewClient(server.Client(), &auth.BasicAuthCredentials{
+	authenticatedOpenFaaSClient := NewClient(CreateClient(server), &auth.BasicAuthCredentials{
 		User:     "User",
 		Password: "Invalid",
 	}, server.URL)
@@ -408,14 +416,14 @@ func TestClient_GetNamespaces(t *testing.T) {
 	}))
 	defer server.Close()
 
-	openfaasClient := NewClient(server.Client(), nil, server.URL)
+	openfaasClient := NewClient(CreateClient(server), nil, server.URL)
 
-	authenticatedOpenFaaSClient := NewClient(server.Client(), &auth.BasicAuthCredentials{
+	authenticatedOpenFaaSClient := NewClient(CreateClient(server), &auth.BasicAuthCredentials{
 		User:     "User",
 		Password: "Invalid",
 	}, server.URL)
 
-	failingOpenFaaSClient := NewClient(server.Client(), &auth.BasicAuthCredentials{
+	failingOpenFaaSClient := NewClient(CreateClient(server), &auth.BasicAuthCredentials{
 		User:     "User",
 		Password: "Pass",
 	}, server.URL)
