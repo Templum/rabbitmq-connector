@@ -127,5 +127,11 @@ jobs:
     - name: Await Port listening
       run: kubectl -n openfaas-fn wait --for=condition=available --timeout=600s deploy/integration
 
+      # Sometimes the Integration test failed although port was available, probably Rabbit MQ did not yet finish starting up
+    - name: Sleep for 30 seconds
+      uses: jakejarvis/wait-action@master
+      with:
+        time: '20s'
+
     - name: Integration Test
       run: go test --tags=integration ./...

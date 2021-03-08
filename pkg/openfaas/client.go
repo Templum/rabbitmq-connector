@@ -6,15 +6,14 @@
 package openfaas
 
 import (
-	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"net/http"
+	"log"
 
 	internal "github.com/Templum/rabbitmq-connector/pkg/types"
+	"github.com/valyala/fasthttp"
 
 	"github.com/openfaas/faas-provider/auth"
 	"github.com/openfaas/faas-provider/types"
@@ -47,14 +46,14 @@ type FunctionCrawler interface {
 
 // Client is used for interacting with Open FaaS
 type Client struct {
-	client      *http.Client
+	client      *fasthttp.Client
 	credentials *auth.BasicAuthCredentials
 	url         string
 }
 
 // NewClient creates a new instance of an OpenFaaS Client using
 // the provided information
-func NewClient(client *http.Client, creds *auth.BasicAuthCredentials, gatewayURL string) *Client {
+func NewClient(client *fasthttp.Client, creds *auth.BasicAuthCredentials, gatewayURL string) *Client {
 	return &Client{
 		client:      client,
 		credentials: creds,
@@ -63,124 +62,119 @@ func NewClient(client *http.Client, creds *auth.BasicAuthCredentials, gatewayURL
 }
 
 // InvokeSync calls a given function in a synchronous way waiting for the response using the provided payload while considering the provided context
-func (c *Client) InvokeSync(ctx context.Context, name string, invocation *internal.OpenFaaSInvocation) ([]byte, error) { // TODO: either reuse provided payload or make it parseable
+func (c *Client) InvokeSync(ctx context.Context, name string, invocation *internal.OpenFaaSInvocation) ([]byte, error) {
 	functionURL := fmt.Sprintf("%s/function/%s", c.url, name)
+	req := fasthttp.AcquireRequest()
+	resp := fasthttp.AcquireResponse()
 
-	var body io.Reader
+	defer fasthttp.ReleaseRequest(req)
+	defer fasthttp.ReleaseResponse(resp)
+
+	req.SetRequestURI(functionURL)
 	if invocation.Message != nil {
-		body = bytes.NewReader(*invocation.Message)
+		req.SetBody(*invocation.Message)
 	} else {
-		body = nil
+		req.SetBody(nil)
 	}
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, functionURL, body)
 	req.Header.Set("Content-Type", invocation.ContentType)
 	req.Header.Set("Content-Encoding", invocation.ContentEncoding)
-
+	req.Header.SetUserAgent("OpenFaaS - Rabbit MQ Connector")
 	if c.credentials != nil {
-		req.SetBasicAuth(c.credentials.User, c.credentials.Password)
+		credentials := c.credentials.User + ":" + c.credentials.Password
+		req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(credentials)))
 	}
 
-	if req.Body != nil {
-		defer req.Body.Close()
-	}
-
-	res, err := c.client.Do(req)
+	err := c.client.Do(req, resp)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to invoke function %s", name)
 	}
 
-	var output []byte
-
-	if res.Body != nil {
-		defer res.Body.Close()
-		output, _ = ioutil.ReadAll(res.Body)
-	}
-
-	switch res.StatusCode {
-	case 200:
-		return output, nil
-	case 401:
+	switch resp.StatusCode() {
+	case fasthttp.StatusOK:
+		return resp.Body(), nil
+	case fasthttp.StatusUnauthorized:
 		return nil, errors.New("OpenFaaS Credentials are invalid")
-	case 404:
+	case fasthttp.StatusNotFound:
 		return nil, errors.New(fmt.Sprintf("Function %s is not deployed", name))
 	default:
-		return nil, errors.New(fmt.Sprintf("Received unexpected Status Code %d", res.StatusCode))
+		return nil, errors.New(fmt.Sprintf("Received unexpected Status Code %d", resp.StatusCode()))
 	}
 }
 
 // InvokeAsync calls a given function in a asynchronous way waiting for the response using the provided payload while considering the provided context
 func (c *Client) InvokeAsync(ctx context.Context, name string, invocation *internal.OpenFaaSInvocation) (bool, error) {
 	functionURL := fmt.Sprintf("%s/async-function/%s", c.url, name)
+	req := fasthttp.AcquireRequest()
+	resp := fasthttp.AcquireResponse()
 
-	var body io.Reader
+	defer fasthttp.ReleaseRequest(req)
+	defer fasthttp.ReleaseResponse(resp)
+
+	req.SetRequestURI(functionURL)
 	if invocation.Message != nil {
-		body = bytes.NewReader(*invocation.Message)
+		req.SetBody(*invocation.Message)
 	} else {
-		body = nil
+		req.SetBody(nil)
 	}
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, functionURL, body)
 	req.Header.Set("Content-Type", invocation.ContentType)
 	req.Header.Set("Content-Encoding", invocation.ContentEncoding)
-
+	req.Header.SetUserAgent("OpenFaaS - Rabbit MQ Connector")
 	if c.credentials != nil {
-		req.SetBasicAuth(c.credentials.User, c.credentials.Password)
+		credentials := c.credentials.User + ":" + c.credentials.Password
+		req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(credentials)))
 	}
 
-	if req.Body != nil {
-		defer req.Body.Close()
-	}
-
-	res, err := c.client.Do(req)
+	err := c.client.Do(req, resp)
 	if err != nil {
 		return false, errors.Wrapf(err, "unable to invoke function %s", name)
 	}
 
-	if res.Body != nil {
-		defer res.Body.Close()
-	}
-
-	switch res.StatusCode {
-	case 202:
+	switch resp.StatusCode() {
+	case fasthttp.StatusAccepted:
 		return true, nil
-	case 401:
+	case fasthttp.StatusUnauthorized:
 		return false, errors.New("OpenFaaS Credentials are invalid")
-	case 404:
+	case fasthttp.StatusNotFound:
 		return false, errors.New(fmt.Sprintf("Function %s is not deployed", name))
 	default:
-		return false, errors.New(fmt.Sprintf("Received unexpected Status Code %d", res.StatusCode))
+		return false, errors.New(fmt.Sprintf("Received unexpected Status Code %d", resp.StatusCode()))
 	}
 }
 
 // HasNamespaceSupport Checks if the version of OpenFaaS does support Namespace
 func (c *Client) HasNamespaceSupport(ctx context.Context) (bool, error) {
 	getNamespaces := fmt.Sprintf("%s/system/namespaces", c.url)
+	req := fasthttp.AcquireRequest()
+	resp := fasthttp.AcquireResponse()
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, getNamespaces, nil)
+	defer fasthttp.ReleaseRequest(req)
+	defer fasthttp.ReleaseResponse(resp)
+
+	req.SetRequestURI(getNamespaces)
+
+	req.Header.SetUserAgent("OpenFaaS - Rabbit MQ Connector")
 	if c.credentials != nil {
-		req.SetBasicAuth(c.credentials.User, c.credentials.Password)
+		credentials := c.credentials.User + ":" + c.credentials.Password
+		req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(credentials)))
 	}
 
-	res, err := c.client.Do(req)
+	err := c.client.Do(req, resp)
 	if err != nil {
 		return false, errors.Wrapf(err, "unable to determine namespace support")
 	}
 
-	if res.Body != nil {
-		defer res.Body.Close()
-	}
-
-	switch res.StatusCode {
-	case 200:
-		resp, _ := ioutil.ReadAll(res.Body)
+	switch resp.StatusCode() {
+	case fasthttp.StatusOK:
 		var namespaces []string
-		_ = json.Unmarshal(resp, &namespaces)
+		_ = json.Unmarshal(resp.Body(), &namespaces)
 		// Swarm edition of OF does not support namespaces and is simply returning empty array
 		return len(namespaces) > 0, nil
-	case 401:
+	case fasthttp.StatusUnauthorized:
 		return false, errors.New("OpenFaaS Credentials are invalid")
 	default:
+		log.Println(fmt.Sprintf("Received unexpected Status Code %d while fetching namespaces", resp.StatusCode()))
 		return false, nil
 	}
 }
@@ -188,69 +182,74 @@ func (c *Client) HasNamespaceSupport(ctx context.Context) (bool, error) {
 // GetNamespaces returns all namespaces where Functions are deployed on
 func (c *Client) GetNamespaces(ctx context.Context) ([]string, error) {
 	getNamespaces := fmt.Sprintf("%s/system/namespaces", c.url)
+	req := fasthttp.AcquireRequest()
+	resp := fasthttp.AcquireResponse()
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, getNamespaces, nil)
+	defer fasthttp.ReleaseRequest(req)
+	defer fasthttp.ReleaseResponse(resp)
+
+	req.SetRequestURI(getNamespaces)
+
+	req.Header.SetUserAgent("OpenFaaS - Rabbit MQ Connector")
 	if c.credentials != nil {
-		req.SetBasicAuth(c.credentials.User, c.credentials.Password)
+		credentials := c.credentials.User + ":" + c.credentials.Password
+		req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(credentials)))
 	}
 
-	res, err := c.client.Do(req)
+	err := c.client.Do(req, resp)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to obtain namespaces")
+		return nil, errors.Wrapf(err, "unable to fetch namespaces")
 	}
 
-	if res.Body != nil {
-		defer res.Body.Close()
-	}
-
-	resp, _ := ioutil.ReadAll(res.Body)
-	var namespaces []string
-	err = json.Unmarshal(resp, &namespaces)
-
-	if err != nil {
-		if res.StatusCode == 401 {
-			return nil, errors.New("OpenFaaS Credentials are invalid")
-		}
+	switch resp.StatusCode() {
+	case fasthttp.StatusOK:
+		var namespaces []string
+		_ = json.Unmarshal(resp.Body(), &namespaces)
+		// Swarm edition of OF does not support namespaces and is simply returning empty array
 		return namespaces, nil
+	case fasthttp.StatusUnauthorized:
+		return nil, errors.New("OpenFaaS Credentials are invalid")
+	default:
+		log.Println(fmt.Sprintf("Received unexpected Status Code %d while fetching namespaces", resp.StatusCode()))
+		return nil, nil
 	}
-
-	return namespaces, nil
 }
 
 // GetFunctions returns a list of all functions in the given namespace or in the default namespace
 func (c *Client) GetFunctions(ctx context.Context, namespace string) ([]types.FunctionStatus, error) {
 	getFunctions := fmt.Sprintf("%s/system/functions", c.url)
+	req := fasthttp.AcquireRequest()
+	resp := fasthttp.AcquireResponse()
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, getFunctions, nil)
+	defer fasthttp.ReleaseRequest(req)
+	defer fasthttp.ReleaseResponse(resp)
+
+	req.SetRequestURI(getFunctions)
+
+	req.Header.SetUserAgent("OpenFaaS - Rabbit MQ Connector")
 	if c.credentials != nil {
-		req.SetBasicAuth(c.credentials.User, c.credentials.Password)
+		credentials := c.credentials.User + ":" + c.credentials.Password
+		req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(credentials)))
 	}
 
 	if len(namespace) > 0 {
-		q := req.URL.Query()
-		q.Add("namespace", namespace)
-		req.URL.RawQuery = q.Encode()
+		req.URI().QueryArgs().Add("namespace", namespace)
 	}
 
-	res, err := c.client.Do(req)
+	err := c.client.Do(req, resp)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to obtain functions")
 	}
 
-	if res.Body != nil {
-		defer res.Body.Close()
+	switch resp.StatusCode() {
+	case fasthttp.StatusOK:
+		var functions []types.FunctionStatus
+		_ = json.Unmarshal(resp.Body(), &functions)
+		// Swarm edition of OF does not support namespaces and is simply returning empty array
+		return functions, nil
+	case fasthttp.StatusUnauthorized:
+		return nil, errors.New("OpenFaaS Credentials are invalid")
+	default:
+		return nil, errors.New(fmt.Sprintf("Received unexpected Status Code %d", resp.StatusCode()))
 	}
-
-	resp, _ := ioutil.ReadAll(res.Body)
-	var functions []types.FunctionStatus
-	err = json.Unmarshal(resp, &functions)
-
-	if err != nil {
-		if res.StatusCode == 401 {
-			return nil, errors.New("OpenFaaS Credentials are invalid")
-		}
-		return nil, errors.New(fmt.Sprintf("Received unexpected Status Code %d", res.StatusCode))
-	}
-
-	return functions, nil
 }
