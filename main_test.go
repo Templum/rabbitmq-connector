@@ -94,7 +94,7 @@ func Test_main(t *testing.T) {
 	publishedMessages := 0
 
 	for i := 0; i < 1000; i++ {
-		err := publishMessage(http.Client, TOPIC, "Hello World!")
+		err := publishMessage(http.Client{}, TOPIC, "Hello World!")
 		if err == nil {
 			publishedMessages += 1
 		}
