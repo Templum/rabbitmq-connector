@@ -7,25 +7,30 @@ package types
 
 import (
 	"crypto/tls"
-	"net"
-	"net/http"
 	"time"
+
+	"github.com/valyala/fasthttp"
+	"github.com/valyala/fasthttp/fasthttpproxy"
 )
 
 // MakeHTTPClient generates an HTTP Client setting basic properties including timeouts
-func MakeHTTPClient(insecure bool, timeout time.Duration) *http.Client {
-	/* #nosec G402 as default is false*/
-	return &http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			DialContext: (&net.Dialer{
-				Timeout:   timeout,
-				KeepAlive: 10 * time.Second,
-			}).DialContext,
-			MaxIdleConns:        512,
-			MaxIdleConnsPerHost: 512,
-			IdleConnTimeout:     120 * time.Millisecond,
-			TLSClientConfig:     &tls.Config{InsecureSkipVerify: insecure},
-		},
+func MakeHTTPClient(insecure bool, timeout time.Duration) *fasthttp.Client {
+	client := fasthttp.Client{
+		Name: "Main_Client",
+
+		NoDefaultUserAgentHeader: false,
+
+		Dial: fasthttpproxy.FasthttpProxyHTTPDialer(),
+
+		ReadTimeout:  timeout,
+		WriteTimeout: timeout,
+
+		MaxIdleConnDuration: 5 * time.Second,
+		/* #nosec G402 as default is false*/
+		TLSConfig: &tls.Config{InsecureSkipVerify: insecure},
+
+		MaxConnsPerHost: 256,
 	}
+
+	return &client
 }
