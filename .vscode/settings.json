@@ -6,9 +6,11 @@
         "faas",
         "golint",
         "nolint",
+        "nosec",
         "openfaas",
         "rabbitmq",
         "streadway",
-        "stretchr"
+        "stretchr",
+        "valyala"
     ]
 }
