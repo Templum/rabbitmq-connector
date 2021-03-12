@@ -54,7 +54,7 @@ func (e *Exchange) Start() error {
 
 	for _, topic := range e.definition.Topics {
 		queueName := GenerateQueueName(e.definition.Name, topic)
-		deliveries, err := e.channel.Consume(queueName, "", true, false, false, false, amqp.Table{})
+		deliveries, err := e.channel.Consume(queueName, "", false, false, false, false, amqp.Table{})
 		if err != nil {
 			return err
 		}
@@ -83,12 +83,31 @@ func (e *Exchange) StartConsuming(topic string, deliveries <-chan amqp.Delivery)
 		if topic == delivery.RoutingKey {
 			// TODO: Maybe we want to send the deliveries into a general queue
 			// https://medium.com/justforfunc/two-ways-of-merging-n-channels-in-go-43c0b57cd1de
-			// TODO: Switch from autoack to ensure no data loss
-			go e.client.Invoke(topic, types.NewInvocation(delivery))
+			go e.handleInvocation(topic, delivery)
 		} else {
-			// TODO: Reject 
-			// TODO: Debug Log
-			log.Printf("Received message for topic %s that did not match subsribed topic %s", delivery.RoutingKey, topic)
+			log.Printf("Received message for topic %s that did not match subscribed topic %s will reject it", delivery.RoutingKey, topic)
+			err := delivery.Reject(true)
+			if err != nil {
+				log.Printf("Failed to reject delivery %d due to %s", delivery.DeliveryTag, err)
+			}
 		}
 	}
+}
+
+func (e *Exchange) handleInvocation(topic string, delivery amqp.Delivery) {
+	// Call Function via Client
+	err := e.client.Invoke(topic, types.NewInvocation(delivery))
+	if err == nil {
+		ackErr := delivery.Ack(false)
+		if ackErr != nil {
+			log.Printf("Failed to acknowledge delivery %d due to %s", delivery.DeliveryTag, ackErr)
+		}
+
+	} else {
+		nackErr := delivery.Nack(false, true)
+		if nackErr != nil {
+			log.Printf("Failed to nack delivery %d due to %s", delivery.DeliveryTag, nackErr)
+		}
+	}
+
 }
