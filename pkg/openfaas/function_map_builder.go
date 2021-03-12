@@ -42,7 +42,7 @@ func (b *FunctionMapBuilder) Append(topic string, function string) {
 	b.target[key] = append(b.target[key], function)
 }
 
-// Build returns a map containing values based on privous Append calls
+// Build returns a map containing values based on previous Append calls
 func (b *FunctionMapBuilder) Build() map[string][]string {
 	return b.target
 }
