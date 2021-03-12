@@ -20,8 +20,9 @@ type invokerMock struct {
 	mock.Mock
 }
 
-func (i *invokerMock) Invoke(topic string, invocation *types.OpenFaaSInvocation) {
+func (i *invokerMock) Invoke(topic string, invocation *types.OpenFaaSInvocation) error {
 	i.Called(topic, invocation)
+	return nil
 }
 
 func TestExchange_Start(t *testing.T) {
