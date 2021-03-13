@@ -8,6 +8,7 @@ package rabbitmq
 import (
 	"log"
 	"sync"
+	"time"
 
 	"github.com/Templum/rabbitmq-connector/pkg/types"
 	"github.com/streadway/amqp"
@@ -33,6 +34,8 @@ type Exchange struct {
 	definition *types.Exchange
 	lock       sync.RWMutex
 }
+
+const MAX_ATTEMPTS = 3
 
 func NewExchange(channel ChannelConsumer, client types.Invoker, definition *types.Exchange) ExchangeOrganizer {
 	return &Exchange{
@@ -86,10 +89,18 @@ func (e *Exchange) StartConsuming(topic string, deliveries <-chan amqp.Delivery)
 			go e.handleInvocation(topic, delivery)
 		} else {
 			log.Printf("Received message for topic %s that did not match subscribed topic %s will reject it", delivery.RoutingKey, topic)
-			err := delivery.Reject(true)
-			if err != nil {
-				log.Printf("Failed to reject delivery %d due to %s", delivery.DeliveryTag, err)
+
+			for retry := 0; retry < MAX_ATTEMPTS; retry++ {
+				err := delivery.Reject(true)
+				if err == nil {
+					return
+				}
+
+				log.Printf("Failed to reject delivery %d due to %s. Attemp %d/3", delivery.DeliveryTag, err, retry+1)
+				time.Sleep(time.Duration(retry+1*250) * time.Millisecond)
 			}
+
+			log.Printf("Failed to reject delivery %d, will abort reject now", delivery.DeliveryTag)
 		}
 	}
 }
@@ -98,16 +109,29 @@ func (e *Exchange) handleInvocation(topic string, delivery amqp.Delivery) {
 	// Call Function via Client
 	err := e.client.Invoke(topic, types.NewInvocation(delivery))
 	if err == nil {
-		ackErr := delivery.Ack(false)
-		if ackErr != nil {
-			log.Printf("Failed to acknowledge delivery %d due to %s", delivery.DeliveryTag, ackErr)
+		for retry := 0; retry < MAX_ATTEMPTS; retry++ {
+			ackErr := delivery.Ack(false)
+			if ackErr == nil {
+				return
+			}
+
+			log.Printf("Failed to acknowledge delivery %d due to %s. Attemp %d/3", delivery.DeliveryTag, ackErr, retry+1)
+			time.Sleep(time.Duration(retry+1*250) * time.Millisecond)
 		}
 
+		log.Printf("Failed to acknowledge delivery %d, will abort ack now", delivery.DeliveryTag)
 	} else {
-		nackErr := delivery.Nack(false, true)
-		if nackErr != nil {
-			log.Printf("Failed to nack delivery %d due to %s", delivery.DeliveryTag, nackErr)
+		for retry := 0; retry < MAX_ATTEMPTS; retry++ {
+			nackErr := delivery.Nack(false, true)
+			if nackErr == nil {
+				return
+			}
+
+			log.Printf("Failed to nack delivery %d due to %s. Attemp %d/3", delivery.DeliveryTag, nackErr, retry+1)
+			time.Sleep(time.Duration(retry+1*250) * time.Millisecond)
 		}
+
+		log.Printf("Failed to nack delivery %d, will abort nack now", delivery.DeliveryTag)
 	}
 
 }
