@@ -7,7 +7,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.7.0
-	github.com/testcontainers/testcontainers-go v0.9.0
+	github.com/testcontainers/testcontainers-go v0.10.0
 	github.com/valyala/fasthttp v1.22.0
 	gopkg.in/yaml.v2 v2.4.0
 )
