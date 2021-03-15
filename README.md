@@ -15,6 +15,10 @@ Using the [OpenFaaS CLI](https://github.com/openfaas/faas-cli) or [Rest API](htt
 deploy a function which has an `annotation` named `topic`, this has to be a comma-separated string of the relevant topics.
 E.g. `log,monitoring,billing`.
 
+In case an error occurred during the invocation of the function(s) the message is attempted to be transferred back to the Queue. Therefore you should ensure your functions can handle being called potentially twice with the same payload.
+
+Further the returned output from the function is ignored, as the connector currently only supports fire & forget flows.
+
 Please also make sure to check out the official Rabbit MQ documentation [here](https://www.rabbitmq.com/production-checklist.html) and [here](https://www.rabbitmq.com/monitoring.html) in order to avoid message dropping.
 
 ### Configuration

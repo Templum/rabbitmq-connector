@@ -46,26 +46,16 @@ func (s *MockTopicMap) Refresh(update map[string][]string) {
 
 type MockOpenFaaSClient struct {
 	mock.Mock
-	lock       sync.RWMutex
-	invocation int
-}
-
-func (m *MockOpenFaaSClient) InvokeCalledNTimes() int {
-	m.lock.RLock()
-	defer m.lock.RUnlock()
-	return m.invocation
 }
 
 func (m *MockOpenFaaSClient) InvokeAsync(ctx context.Context, name string, invocation *types2.OpenFaaSInvocation) (bool, error) {
-	return true, nil
+	args := m.Called(ctx, name, invocation)
+	return args.Bool(0), args.Error(1)
 }
 
 func (m *MockOpenFaaSClient) InvokeSync(ctx context.Context, name string, invocation *types2.OpenFaaSInvocation) ([]byte, error) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-
-	m.invocation++
-	return nil, nil
+	args := m.Called(ctx, name, invocation)
+	return args.Get(0).([]byte), args.Error(1)
 }
 
 func (m *MockOpenFaaSClient) HasNamespaceSupport(ctx context.Context) (bool, error) {
@@ -272,24 +262,43 @@ func TestCacher_Invoke(t *testing.T) {
 	cacheMock.On("GetCachedValues", "Security").Return([]string{})
 	cacheMock.On("GetCachedValues", "Billing").Return([]string{"billing", "secret", "transport"})
 
+	const TOPIC = "Billing"
+
 	t.Run("Should invoke all functions for specified Topic", func(t *testing.T) {
 		clientMock := new(MockOpenFaaSClient)
-		clientMock.On("HasNamespaceSupport", mock.Anything).Return(false, nil)
+		clientMock.On("InvokeSync", mock.Anything, mock.Anything, mock.Anything).Return([]byte{}, nil)
 
 		cacher := NewController(nil, clientMock, cacheMock)
 
-		cacher.Invoke("Billing", nil)
-		time.Sleep(2 * time.Second) // Dirty trick as we don't really wait for go routines
-		assert.Equal(t, clientMock.InvokeCalledNTimes(), 3)
+		err := cacher.Invoke(TOPIC, nil)
+
+		assert.NoError(t, err, "should not throw")
+		clientMock.AssertNumberOfCalls(t, "InvokeSync", 3)
+		clientMock.AssertExpectations(t)
+	})
+
+	t.Run("Should abort invocation of functions on receiving first error further returning it", func(t *testing.T) {
+		clientMock := new(MockOpenFaaSClient)
+		clientMock.On("InvokeSync", mock.Anything, mock.Anything, mock.Anything).Return([]byte{}, errors.New("failed"))
+
+		cacher := NewController(nil, clientMock, cacheMock)
+
+		err := cacher.Invoke(TOPIC, nil)
+
+		assert.Error(t, err, "failed")
+		clientMock.AssertNumberOfCalls(t, "InvokeSync", 1)
+		clientMock.AssertExpectations(t)
 	})
 
 	t.Run("Should not invoke if there is no function for specified Topic", func(t *testing.T) {
 		clientMock := new(MockOpenFaaSClient)
-		clientMock.On("HasNamespaceSupport", mock.Anything).Return(false, nil)
+		clientMock.On("InvokeSync", mock.Anything, mock.Anything, mock.Anything).Return([]byte{}, nil)
 
 		cacher := NewController(nil, clientMock, cacheMock)
 
-		cacher.Invoke("Security", nil)
-		assert.Equal(t, clientMock.InvokeCalledNTimes(), 0)
+		err := cacher.Invoke("Security", nil)
+
+		assert.NoError(t, err, "should not throw")
+		clientMock.AssertNotCalled(t, "InvokeSync")
 	})
 }

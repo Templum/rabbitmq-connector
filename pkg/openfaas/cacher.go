@@ -49,15 +49,19 @@ func (c *Controller) Start(ctx context.Context) {
 	go c.refresh(ctx, timer, hasNamespaceSupport)
 }
 
-// Invoke triggers a call to all functions registered to the specified topic
-func (c *Controller) Invoke(topic string, invocation *types2.OpenFaaSInvocation) {
+// Invoke triggers a call to all functions registered to the specified topic. It will abort invocation in case it encounters an error
+func (c *Controller) Invoke(topic string, invocation *types2.OpenFaaSInvocation) error {
 	functions := c.cache.GetCachedValues(topic)
 
 	for _, fn := range functions {
-
-		//nolint:golint,errcheck
-		go c.client.InvokeSync(context.Background(), fn, invocation)
+		_, err := c.client.InvokeSync(context.Background(), fn, invocation)
+		if err != nil {
+			log.Printf("Invocation for topic %s failed due to err %s", topic, err)
+			return err
+		}
 	}
+	log.Printf("Invocation for topic %s finished on %d function(s)", topic, len(functions))
+	return nil
 }
 
 func (c *Controller) refresh(ctx context.Context, ticker *time.Ticker, hasNamespaceSupport bool) {

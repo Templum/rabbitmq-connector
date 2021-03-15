@@ -8,6 +8,7 @@ package rabbitmq
 import (
 	"log"
 	"sync"
+	"time"
 
 	"github.com/Templum/rabbitmq-connector/pkg/types"
 	"github.com/streadway/amqp"
@@ -34,6 +35,8 @@ type Exchange struct {
 	lock       sync.RWMutex
 }
 
+const MAX_ATTEMPTS = 3
+
 func NewExchange(channel ChannelConsumer, client types.Invoker, definition *types.Exchange) ExchangeOrganizer {
 	return &Exchange{
 		channel: channel,
@@ -54,7 +57,7 @@ func (e *Exchange) Start() error {
 
 	for _, topic := range e.definition.Topics {
 		queueName := GenerateQueueName(e.definition.Name, topic)
-		deliveries, err := e.channel.Consume(queueName, "", true, false, false, false, amqp.Table{})
+		deliveries, err := e.channel.Consume(queueName, "", false, false, false, false, amqp.Table{})
 		if err != nil {
 			return err
 		}
@@ -83,12 +86,52 @@ func (e *Exchange) StartConsuming(topic string, deliveries <-chan amqp.Delivery)
 		if topic == delivery.RoutingKey {
 			// TODO: Maybe we want to send the deliveries into a general queue
 			// https://medium.com/justforfunc/two-ways-of-merging-n-channels-in-go-43c0b57cd1de
-			// TODO: Switch from autoack to ensure no data loss
-			go e.client.Invoke(topic, types.NewInvocation(delivery))
+			go e.handleInvocation(topic, delivery)
 		} else {
-			// TODO: Reject 
-			// TODO: Debug Log
-			log.Printf("Received message for topic %s that did not match subsribed topic %s", delivery.RoutingKey, topic)
+			log.Printf("Received message for topic %s that did not match subscribed topic %s will reject it", delivery.RoutingKey, topic)
+
+			for retry := 0; retry < MAX_ATTEMPTS; retry++ {
+				err := delivery.Reject(true)
+				if err == nil {
+					return
+				}
+
+				log.Printf("Failed to reject delivery %d due to %s. Attemp %d/3", delivery.DeliveryTag, err, retry+1)
+				time.Sleep(time.Duration(retry+1*250) * time.Millisecond)
+			}
+
+			log.Printf("Failed to reject delivery %d, will abort reject now", delivery.DeliveryTag)
 		}
 	}
+}
+
+func (e *Exchange) handleInvocation(topic string, delivery amqp.Delivery) {
+	// Call Function via Client
+	err := e.client.Invoke(topic, types.NewInvocation(delivery))
+	if err == nil {
+		for retry := 0; retry < MAX_ATTEMPTS; retry++ {
+			ackErr := delivery.Ack(false)
+			if ackErr == nil {
+				return
+			}
+
+			log.Printf("Failed to acknowledge delivery %d due to %s. Attemp %d/3", delivery.DeliveryTag, ackErr, retry+1)
+			time.Sleep(time.Duration(retry+1*250) * time.Millisecond)
+		}
+
+		log.Printf("Failed to acknowledge delivery %d, will abort ack now", delivery.DeliveryTag)
+	} else {
+		for retry := 0; retry < MAX_ATTEMPTS; retry++ {
+			nackErr := delivery.Nack(false, true)
+			if nackErr == nil {
+				return
+			}
+
+			log.Printf("Failed to nack delivery %d due to %s. Attemp %d/3", delivery.DeliveryTag, nackErr, retry+1)
+			time.Sleep(time.Duration(retry+1*250) * time.Millisecond)
+		}
+
+		log.Printf("Failed to nack delivery %d, will abort nack now", delivery.DeliveryTag)
+	}
+
 }

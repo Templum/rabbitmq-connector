@@ -14,7 +14,7 @@
                 "basic_auth": "false",
                 "OPEN_FAAS_GW_URL": "http://localhost:8080",
                 "RMQ_USER": "user",
-                "RMQ_PASS": "SDsozNEnN1",
+                "RMQ_PASS": "pass",
                 "RMQ_HOST": "localhost",
                 "PATH_TO_TOPOLOGY":"${workspaceFolder}/artifacts/example_topology.yaml"
             },
