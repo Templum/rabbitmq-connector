@@ -20,6 +20,8 @@ import (
 	"github.com/Templum/rabbitmq-connector/pkg/rabbitmq"
 	"github.com/Templum/rabbitmq-connector/pkg/types"
 	"github.com/Templum/rabbitmq-connector/pkg/version"
+
+	_ "go.uber.org/automaxprocs"
 )
 
 func main() {
