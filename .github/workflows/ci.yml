@@ -118,13 +118,16 @@ jobs:
       - name: Setup OpenFaaS
         run: ark install openfaas --basic-auth=false
 
+      - name: Await OpenFaaS Port
+        run: kubectl -n openfaas wait --for=condition=available --timeout=600s deploy/gateway
+
       - name: Forward OpenFaaS Port
         run: kubectl port-forward --address localhost,127.0.0.1 -n openfaas svc/gateway 8080:8080 &
 
       - name: Spawn Function
         run: faas-cli store deploy figlet --annotation topic="Foo,Bar,Dead,Beef" --name integration
 
-      - name: Await Port listening
+      - name: Await Lambda Port
         run: kubectl -n openfaas-fn wait --for=condition=available --timeout=600s deploy/integration
 
         # Sometimes the Integration test failed although port was available, probably Rabbit MQ did not yet finish starting up
