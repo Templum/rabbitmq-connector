@@ -96,7 +96,7 @@ func (e *Exchange) StartConsuming(topic string, deliveries <-chan amqp.Delivery)
 					return
 				}
 
-				log.Printf("Failed to reject delivery %d due to %s. Attemp %d/3", delivery.DeliveryTag, err, retry+1)
+				log.Printf("Failed to reject delivery %d due to %s. Attempt %d/3", delivery.DeliveryTag, err, retry+1)
 				time.Sleep(time.Duration(retry+1*250) * time.Millisecond)
 			}
 
@@ -115,7 +115,7 @@ func (e *Exchange) handleInvocation(topic string, delivery amqp.Delivery) {
 				return
 			}
 
-			log.Printf("Failed to acknowledge delivery %d due to %s. Attemp %d/3", delivery.DeliveryTag, ackErr, retry+1)
+			log.Printf("Failed to acknowledge delivery %d due to %s. Attempt %d/3", delivery.DeliveryTag, ackErr, retry+1)
 			time.Sleep(time.Duration(retry+1*250) * time.Millisecond)
 		}
 
@@ -127,7 +127,7 @@ func (e *Exchange) handleInvocation(topic string, delivery amqp.Delivery) {
 				return
 			}
 
-			log.Printf("Failed to nack delivery %d due to %s. Attemp %d/3", delivery.DeliveryTag, nackErr, retry+1)
+			log.Printf("Failed to nack delivery %d due to %s. Attempt %d/3", delivery.DeliveryTag, nackErr, retry+1)
 			time.Sleep(time.Duration(retry+1*250) * time.Millisecond)
 		}
 

@@ -89,7 +89,7 @@ func Test_main(t *testing.T) {
 	before := getIntegrationFaaSFunction(client)
 
 	assert.GreaterOrEqual(t, before.InvocationCount, float64(0), "should be 0 or more")
-	assert.Contains(t, (*before.Annotations)["topic"], TOPIC, "should listend for TOPIC Foo")
+	assert.Contains(t, (*before.Annotations)["topic"], TOPIC, "should listen for TOPIC Foo")
 
 	publishedMessages := 0
 
