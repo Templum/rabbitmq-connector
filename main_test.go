@@ -50,7 +50,7 @@ func TestMain(m *testing.M) {
 }
 
 func getOpenFaaSClient() openfaas.FunctionFetcher {
-	httpClient := types.MakeHTTPClient(false, 60*time.Second)
+	httpClient := types.MakeHTTPClient(false, 256, 60*time.Second)
 	ofClient := openfaas.NewClient(httpClient, nil, os.Getenv("OPEN_FAAS_GW_URL"))
 	return ofClient
 }
@@ -93,7 +93,7 @@ func Test_main(t *testing.T) {
 	before := getIntegrationFaaSFunction(client)
 
 	assert.GreaterOrEqual(t, before.InvocationCount, float64(0), "should be 0 or more")
-	assert.Contains(t, (*before.Annotations)["topic"], TOPIC, "should listend for TOPIC Foo")
+	assert.Contains(t, (*before.Annotations)["topic"], TOPIC, "should listen for TOPIC Foo")
 
 	publishedMessages := 0
 

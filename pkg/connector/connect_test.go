@@ -21,8 +21,8 @@ type managerMock struct {
 	mock.Mock
 }
 
-func (m *managerMock) Connect(connectionUrl string) (<-chan *amqp.Error, error) {
-	args := m.Called(connectionUrl)
+func (m *managerMock) Connect(connectionURL string) (<-chan *amqp.Error, error) {
+	args := m.Called(connectionURL)
 	return args.Get(0).(<-chan *amqp.Error), args.Error(1)
 }
 
@@ -60,9 +60,9 @@ func (f *factoryMock) Build() (rabbitmq.ExchangeOrganizer, error) {
 
 	if tmp == nil {
 		return nil, args.Error(1)
-	} else {
-		return tmp.(rabbitmq.ExchangeOrganizer), args.Error(1)
 	}
+
+	return tmp.(rabbitmq.ExchangeOrganizer), args.Error(1)
 }
 
 type exchangeMock struct {
