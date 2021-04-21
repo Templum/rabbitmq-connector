@@ -83,14 +83,28 @@ func TestNewConfig(t *testing.T) {
 
 	t.Run("With invalid SkipVerify", func(t *testing.T) {
 		os.Setenv("PATH_TO_TOPOLOGY", pathToExampleToplogy)
-		defer os.Unsetenv("PATH_TO_TOPOLOGY")
 		os.Setenv("INSECURE_SKIP_VERIFY", "is_string")
+
+		defer os.Unsetenv("PATH_TO_TOPOLOGY")
 		defer os.Unsetenv("INSECURE_SKIP_VERIFY")
 
 		config, err := NewConfig()
 
 		assert.Nil(t, err, "Should not throw")
 		assert.False(t, config.InsecureSkipVerify, "Expected default value")
+	})
+
+	t.Run("With invalid max clients", func(t *testing.T) {
+		os.Setenv("PATH_TO_TOPOLOGY", pathToExampleToplogy)
+		os.Setenv("MAX_CLIENT_PER_HOST", "fifty")
+
+		defer os.Unsetenv("PATH_TO_TOPOLOGY")
+		defer os.Unsetenv("MAX_CLIENT_PER_HOST")
+
+		config, err := NewConfig()
+
+		assert.Nil(t, err, "Should not throw")
+		assert.Equal(t, config.MaxClientsPerHost, 256, "Expected default value")
 	})
 
 	t.Run("With non existing Topology", func(t *testing.T) {
