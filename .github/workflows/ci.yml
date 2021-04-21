@@ -5,8 +5,8 @@ on:
     branches: [develop, v0, v1]
 
   pull_request:
-    branches: [ develop ]
-    
+    branches: [develop]
+
   workflow_dispatch:
 
 jobs:
@@ -17,121 +17,118 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'go' ]
+        language: ["go"]
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    # Initializes the CodeQL tools for scanning.
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v1
-      with:
-        languages: ${{ matrix.language }}
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v1
+      # Initializes the CodeQL tools for scanning.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          languages: ${{ matrix.language }}
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v1
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v1
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v1
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-      with:
-        # We must fetch at least the immediate parents so that if this is
-        # a pull request then we can checkout the head.
-        fetch-depth: 2
-    # If this run was triggered by a pull request event, then checkout
-    # the head of the pull request instead of the merge commit.
-    - run: git checkout HEAD^2
-      if: ${{ github.event_name == 'pull_request' }}
+      - uses: actions/checkout@v2
+        with:
+          # We must fetch at least the immediate parents so that if this is
+          # a pull request then we can checkout the head.
+          fetch-depth: 2
+      # If this run was triggered by a pull request event, then checkout
+      # the head of the pull request instead of the merge commit.
+      - run: git checkout HEAD^2
+        if: ${{ github.event_name == 'pull_request' }}
 
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.15
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.15
 
-    - name: Build
-      run: go build -v ./...
+      - name: Build
+        run: go build -v ./...
 
-    - name: Test for Race Conditions
-      run: go test -race ./...
+      - name: Test for Race Conditions
+        run: go test -race ./...
 
-    - name: Test with Coverage
-      run: go test -coverprofile=coverage.txt -covermode=atomic -v ./...
+      - name: Test with Coverage
+        run: go test -coverprofile=coverage.txt -covermode=atomic -v ./...
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        files: coverage.txt
-        flags: unit-tests
-        name: codecov-umbrella
-        fail_ci_if_error: false
-        verbose: true
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.txt
+          flags: unit-tests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          verbose: true
 
-    - name: golangci-lint
-      uses: golangci/golangci-lint-action@v2.5.2
-      with:
-        # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-        version: v1.29
-        # Optional: show only new issues if it's a pull request. The default value is `false`.
-        only-new-issues: true
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2.5.2
+        with:
+          # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
+          version: v1.29
+          # Optional: show only new issues if it's a pull request. The default value is `false`.
+          only-new-issues: true
   integration:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-      with:
-        # We must fetch at least the immediate parents so that if this is
-        # a pull request then we can checkout the head.
-        fetch-depth: 2
-        # If this run was triggered by a pull request event, then checkout
-        # the head of the pull request instead of the merge commit.
-    - run: git checkout HEAD^2
-      if: ${{ github.event_name == 'pull_request' }}
+      - uses: actions/checkout@v2
+        with:
+          # We must fetch at least the immediate parents so that if this is
+          # a pull request then we can checkout the head.
+          fetch-depth: 2
+          # If this run was triggered by a pull request event, then checkout
+          # the head of the pull request instead of the merge commit.
+      - run: git checkout HEAD^2
+        if: ${{ github.event_name == 'pull_request' }}
 
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.15
+      # Should hopefully give enough time for it to start prior to testing
+      - name: Start RabbitMQ
+        uses: getong/rabbitmq-action@v1.2
+        with:
+          rabbitmq version: "3.8.11"
+          host port: 5672
+          rabbitmq user: "user"
+          rabbitmq password: "pass"
 
-    - name: K3D Setup
-      uses: debianmaster/actions-k3s@master
-      with:
-        version: v1.18.2-k3s1
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.15
 
-    - name: Get Arkade
-      run: curl -sLS https://dl.get-arkade.dev | sudo sh
+      - name: K3D Setup
+        uses: debianmaster/actions-k3s@master
+        with:
+          version: v1.18.2-k3s1
 
-    - name: Get FaaS CLI
-      run: ark get faas-cli && sudo mv /home/runner/.arkade/bin/faas-cli /usr/local/bin/
+      - name: Get Arkade
+        run: curl -sLS https://dl.get-arkade.dev | sudo sh
 
-    - name: Setup Rabbit MQ
-      run: helm repo add bitnami https://charts.bitnami.com/bitnami && helm install rabbit -f ./hack/rabbit-values.yaml bitnami/rabbitmq
+      - name: Get FaaS CLI
+        run: ark get faas-cli && sudo mv /home/runner/.arkade/bin/faas-cli /usr/local/bin/
 
-    - name: Setup OpenFaaS
-      run: ark install openfaas --basic-auth=false
+      - name: Setup OpenFaaS
+        run: ark install openfaas --basic-auth=false
 
-    - name: Await Port listening
-      run: kubectl -n default wait --for=condition=ready --timeout=600s pod/rabbit-rabbitmq-0 && kubectl -n openfaas wait --for=condition=available --timeout=600s deployment/gateway
+      - name: Await OpenFaaS Port
+        run: kubectl -n openfaas wait --for=condition=available --timeout=600s deploy/gateway
 
-    - name: Forward RabbitMQ Port
-      run: kubectl port-forward --address localhost,127.0.0.1 -n default svc/rabbit-rabbitmq 5672:5672 15672:15672 &
+      - name: Forward OpenFaaS Port
+        run: kubectl port-forward --address localhost,127.0.0.1 -n openfaas svc/gateway 8080:8080 &
 
-    - name: Forward OpenFaaS Port
-      run: kubectl port-forward --address localhost,127.0.0.1 -n openfaas svc/gateway 8080:8080 &
+      - name: Spawn Function
+        run: faas-cli store deploy figlet --annotation topic="Foo,Bar,Dead,Beef" --name integration
 
-    - name: Spawn Function
-      run: faas-cli store deploy figlet --annotation topic="Foo,Bar,Dead,Beef" --name integration
+      - name: Await Lambda Port
+        run: kubectl -n openfaas-fn wait --for=condition=available --timeout=600s deploy/integration
 
-    - name: Await Port listening
-      run: kubectl -n openfaas-fn wait --for=condition=available --timeout=600s deploy/integration
-
-      # Sometimes the Integration test failed although port was available, probably Rabbit MQ did not yet finish starting up
-    - name: Sleep for 30 seconds
-      uses: jakejarvis/wait-action@master
-      with:
-        time: '20s'
-
-    - name: Integration Test
-      run: go test --tags=integration ./...
+      - name: Integration Test
+        run: go test --tags=integration ./...
