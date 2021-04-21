@@ -14,7 +14,7 @@ import (
 )
 
 // MakeHTTPClient generates an HTTP Client setting basic properties including timeouts
-func MakeHTTPClient(insecure bool, timeout time.Duration) *fasthttp.Client {
+func MakeHTTPClient(insecure bool, maxConnections int, timeout time.Duration) *fasthttp.Client {
 	client := fasthttp.Client{
 		Name: "Main_Client",
 
@@ -29,7 +29,7 @@ func MakeHTTPClient(insecure bool, timeout time.Duration) *fasthttp.Client {
 		/* #nosec G402 as default is false*/
 		TLSConfig: &tls.Config{InsecureSkipVerify: insecure},
 
-		MaxConnsPerHost: 256,
+		MaxConnsPerHost: maxConnections,
 	}
 
 	return &client

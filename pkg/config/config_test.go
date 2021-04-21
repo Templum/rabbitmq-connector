@@ -121,6 +121,7 @@ func TestNewConfig(t *testing.T) {
 		assert.Equal(t, config.RabbitSanitizedURL, "amqp://localhost:5672", "Expected default value")
 		assert.Equal(t, config.TopicRefreshTime, 30*time.Second, "Expected default value")
 		assert.False(t, config.InsecureSkipVerify, "Expected default value")
+		assert.Equal(t, config.MaxClientsPerHost, 256, "Expected default value")
 	})
 
 	t.Run("Override Config", func(t *testing.T) {
@@ -132,6 +133,7 @@ func TestNewConfig(t *testing.T) {
 		os.Setenv("OPEN_FAAS_GW_URL", "https://gateway")
 		os.Setenv("TOPIC_MAP_REFRESH_TIME", "40s")
 		os.Setenv("INSECURE_SKIP_VERIFY", "true")
+		os.Setenv("MAX_CLIENT_PER_HOST", "512")
 
 		defer os.Unsetenv("PATH_TO_TOPOLOGY")
 		defer os.Unsetenv("RMQ_HOST")
@@ -141,6 +143,7 @@ func TestNewConfig(t *testing.T) {
 		defer os.Unsetenv("OPEN_FAAS_GW_URL")
 		defer os.Unsetenv("TOPIC_MAP_REFRESH_TIME")
 		defer os.Unsetenv("INSECURE_SKIP_VERIFY")
+		defer os.Unsetenv("MAX_CLIENT_PER_HOST")
 
 		config, err := NewConfig()
 
@@ -151,5 +154,6 @@ func TestNewConfig(t *testing.T) {
 		assert.Equal(t, config.RabbitSanitizedURL, "amqp://rabbit:1337", "Expected override value")
 		assert.Equal(t, config.TopicRefreshTime, 40*time.Second, "Expected override value")
 		assert.True(t, config.InsecureSkipVerify, "Expected override value")
+		assert.Equal(t, config.MaxClientsPerHost, 512, "Expected override value")
 	})
 }

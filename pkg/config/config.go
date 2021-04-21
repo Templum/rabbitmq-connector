@@ -30,6 +30,7 @@ type Controller struct {
 	TopicRefreshTime   time.Duration
 	BasicAuth          *auth.BasicAuthCredentials
 	InsecureSkipVerify bool
+	MaxClientsPerHost  int
 }
 
 // NewConfig reads the connector config from environment variables and further validates them,
@@ -56,6 +57,11 @@ func NewConfig() (*Controller, error) {
 		return nil, err
 	}
 
+	maxClients, err := getMaxClients()
+	if err != nil {
+		maxClients = 256
+	}
+
 	return &Controller{
 		GatewayURL: gatewayURL,
 		BasicAuth:  types.GetCredentials(),
@@ -67,12 +73,14 @@ func NewConfig() (*Controller, error) {
 
 		TopicRefreshTime:   getRefreshTime(),
 		InsecureSkipVerify: skipVerify,
+		MaxClientsPerHost:  maxClients,
 	}, nil
 }
 
 const (
-	envFaaSGwURL  = "OPEN_FAAS_GW_URL"
-	envSkipVerify = "INSECURE_SKIP_VERIFY"
+	envFaaSGwURL         = "OPEN_FAAS_GW_URL"
+	envSkipVerify        = "INSECURE_SKIP_VERIFY"
+	envMaxClientsPerHost = "MAX_CLIENT_PER_HOST"
 
 	envRabbitUser = "RMQ_USER"
 	envRabbitPass = "RMQ_PASS"
@@ -82,6 +90,10 @@ const (
 	envPathToTopology = "PATH_TO_TOPOLOGY"
 	envRefreshTime    = "TOPIC_MAP_REFRESH_TIME"
 )
+
+func getMaxClients() (int, error) {
+	return strconv.Atoi(readFromEnv(envMaxClientsPerHost, "256"))
+}
 
 func getOpenFaaSUrl() (string, error) {
 	url := readFromEnv(envFaaSGwURL, "http://gateway:8080")
