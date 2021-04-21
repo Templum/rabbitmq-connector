@@ -15,11 +15,10 @@ func failOnError(err error, msg string) {
 
 var (
 	connectionString string
-	exchangeName string
-	topicName string
+	exchangeName     string
+	topicName        string
 	amountOfMessages uint
 )
-
 
 func init() {
 
@@ -29,7 +28,6 @@ func init() {
 	flag.UintVar(&amountOfMessages, "amount", 256, "amount of messages to publish")
 	flag.Parse()
 }
-
 
 func main() {
 	conn, err := amqp.Dial(connectionString)
@@ -45,9 +43,9 @@ func main() {
 	for i := uint(0); i < amountOfMessages; i++ {
 		err = ch.Publish(
 			exchangeName, // exchange
-			topicName, // routing key
-			false, // mandatory
-			false, // immediate
+			topicName,    // routing key
+			false,        // mandatory
+			false,        // immediate
 			amqp.Publishing{
 				ContentType: "text/plain",
 				Body:        []byte(body),
