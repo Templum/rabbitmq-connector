@@ -9,18 +9,16 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"path"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/Templum/rabbitmq-connector/pkg/openfaas"
 	"github.com/Templum/rabbitmq-connector/pkg/types"
 	t "github.com/openfaas/faas-provider/types"
+	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -62,22 +60,25 @@ func getIntegrationFaaSFunction(client openfaas.FunctionFetcher) t.FunctionStatu
 	return functions[0]
 }
 
-func publishMessage(client http.Client, topic string, message string) error {
-	body := fmt.Sprintf("{\"properties\":{},\"routing_key\":\"%s\",\"payload\":\"%s\",\"payload_encoding\":\"string\"}", topic, message)
-
-	req, _ := http.NewRequest(http.MethodPost, "http://localhost:15672/api/exchanges/%2f/AEx/publish", strings.NewReader(body))
-	req.SetBasicAuth("user", "pass")
-
-	resp, err := client.Do(req)
+func establishChannel(connectionURL string) (*amqp.Channel, error) {
+	conn, err := amqp.Dial(connectionURL)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if resp.StatusCode != 200 {
-		return errors.New("unexpected status code")
-	}
+	return conn.Channel()
+}
 
-	return nil
+func publishMessage(channel *amqp.Channel, topic string, message string) error {
+	return channel.Publish(
+		"AEx", // exchange
+		topic, // routing key
+		false, // mandatory
+		false, // immediate
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body:        []byte(message),
+		})
 }
 
 func Test_main(t *testing.T) {
@@ -86,6 +87,9 @@ func Test_main(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	client := getOpenFaaSClient()
+	channel, err := establishChannel("amqp://user:pass@localhost:5672")
+	assert.NoError(t, err, "failed to establish connection with RabbitMQ. Will abort integration test here")
+
 	before := getIntegrationFaaSFunction(client)
 
 	assert.GreaterOrEqual(t, before.InvocationCount, float64(0), "should be 0 or more")
@@ -94,15 +98,17 @@ func Test_main(t *testing.T) {
 	publishedMessages := 0
 
 	for i := 0; i < 1000; i++ {
-		err := publishMessage(http.Client{}, TOPIC, "Hello World!")
+		err := publishMessage(channel, TOPIC, "Hello World!")
 		if err == nil {
 			publishedMessages += 1
 		}
+
+		time.Sleep(50 * time.Millisecond)
 	}
 
 	time.Sleep(5 * time.Second)
 
 	after := getIntegrationFaaSFunction(client)
 	assert.Greater(t, after.InvocationCount, before.InvocationCount)
-	assert.GreaterOrEqual(t, after.InvocationCount, float64(1000), "should invoked at least 1000 times")
+	assert.GreaterOrEqual(t, after.InvocationCount, float64(publishedMessages), "should invoked at least published amount times")
 }
