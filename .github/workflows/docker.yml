@@ -4,7 +4,7 @@ on:
   push:
     branches: [develop, v0, v1]
     tags:
-    - 'v*'
+      - "v*"
 
   workflow_dispatch:
 
@@ -12,52 +12,52 @@ jobs:
   Docker-Hub:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Docker meta
-      id: docker_meta
-      uses: crazy-max/ghaction-docker-meta@v2.3.0
-      with:
-        images: templum/rabbitmq-connector, ghcr.io/templum/rabbitmq-connector
-        label-custom: |
+      - name: Docker meta
+        id: docker_meta
+        uses: crazy-max/ghaction-docker-meta@v2.3.0
+        with:
+          images: templum/rabbitmq-connector, ghcr.io/templum/rabbitmq-connector
+          label-custom: |
             maintainer=Templum
             org.opencontainers.image.title=rabbitmq-connector
             org.opencontainers.image.description=An RabbitMQ Connector for OpenFaaS
             org.opencontainers.image.vendor=Templum
-        tag-semver: |
+          tag-semver: |
             {{version}}
             {{major}}.{{minor}}
             {{major}}
 
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v1
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
 
-    - name: Set up Docker Buildx
-      id: buildx
-      uses: docker/setup-buildx-action@v1
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
 
-    - name: Available platforms
-      run: echo ${{ steps.buildx.outputs.platforms }}
+      - name: Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v1
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Login to GitHub Container Registry
-      uses: docker/login-action@v1
-      with:
-        registry: ghcr.io
-        username: ${{ github.repository_owner }}
-        password: ${{ secrets.CR_TOKEN }}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_TOKEN }}
 
-    - name: Build and push
-      uses: docker/build-push-action@v2
-      with:
-        context: .
-        file: ./Dockerfile
-        platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
-        push: true
-        tags: ${{ steps.docker_meta.outputs.tags }}
-        labels: ${{ steps.docker_meta.outputs.labels }}
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
+          push: true
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
