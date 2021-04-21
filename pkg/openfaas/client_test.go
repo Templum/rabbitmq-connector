@@ -23,7 +23,7 @@ import (
 )
 
 func CreateClient(server *httptest.Server) *fasthttp.Client {
-	client := types2.MakeHTTPClient(true, 30*time.Second)
+	client := types2.MakeHTTPClient(true, 256, 30*time.Second)
 	// TODO: For the future configure client with cert pool from the server
 	return client
 }

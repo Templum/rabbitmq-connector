@@ -14,22 +14,27 @@ import (
 	"github.com/streadway/amqp"
 )
 
+// Connector is a high level interface for connection related methods
 type Connector interface {
-	Connect(connectionUrl string) (<-chan *amqp.Error, error)
+	Connect(connectionURL string) (<-chan *amqp.Error, error)
 	Disconnect()
 }
 
+// Manager is a interface that combines the relevant methods to connect to Rabbit MQ
+// And create a new channel on an existing connection.
 type Manager interface {
 	Connector
 	ChannelCreator
 }
 
+// ConnectionManager is tasked with managing the connection Rabbit MQ
 type ConnectionManager struct {
 	con    RBConnection
 	lock   sync.RWMutex
 	dialer RBDialer
 }
 
+// NewConnectionManager creates a new instance using the provided dialer
 func NewConnectionManager(dialer RBDialer) Manager {
 	return &ConnectionManager{
 		lock:   sync.RWMutex{},
@@ -38,10 +43,12 @@ func NewConnectionManager(dialer RBDialer) Manager {
 	}
 }
 
-func (m *ConnectionManager) Connect(connectionUrl string) (<-chan *amqp.Error, error) {
+// Connect uses the provided connection urls and tries up to 3 times to establish a connection.
+// The retries are performed exponentially starting with 2s. It also creates a listener for close notifications.
+func (m *ConnectionManager) Connect(connectionURL string) (<-chan *amqp.Error, error) {
 	for attempt := 0; attempt < 3; attempt++ {
 
-		con, err := m.dialer.Dial(connectionUrl)
+		con, err := m.dialer.Dial(connectionURL)
 
 		if err == nil {
 			log.Println("Successfully established connection to Rabbit MQ Cluster")
@@ -61,6 +68,7 @@ func (m *ConnectionManager) Connect(connectionUrl string) (<-chan *amqp.Error, e
 	return nil, errors.New("could not establish connection to Rabbit MQ Cluster")
 }
 
+// Disconnect closes the connection and frees up the reference
 func (m *ConnectionManager) Disconnect() {
 	m.lock.Lock()
 
@@ -73,6 +81,7 @@ func (m *ConnectionManager) Disconnect() {
 	m.lock.Unlock()
 }
 
+// Channel creates a new Rabbit MQ channel on the existing connection
 func (m *ConnectionManager) Channel() (RabbitChannel, error) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()

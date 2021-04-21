@@ -12,6 +12,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// Topology definition
 type Topology []struct {
 	Name        string   `json:"name"`
 	Topics      []string `json:"topics"`
@@ -21,6 +22,7 @@ type Topology []struct {
 	AutoDeleted bool     `json:"auto-deleted,omitempty"`
 }
 
+// Exchange Definition of a RabbitMQ Exchange
 type Exchange struct {
 	Name        string
 	Topics      []string
@@ -30,6 +32,8 @@ type Exchange struct {
 	AutoDeleted bool
 }
 
+// EnsureCorrectType is responsible to make sure that the read-in type is one of the allowed
+// which right now is direct or topic. If it is not a valid type, will default to direct.
 func (e *Exchange) EnsureCorrectType() {
 	switch strings.ToLower(e.Type) {
 	case "direct":
@@ -41,6 +45,8 @@ func (e *Exchange) EnsureCorrectType() {
 	}
 }
 
+// ReadTopologyFromFile reads a topology file in yaml format from the specified path.
+// Further it parses the file and returns it already in the Topology struct format.
 func ReadTopologyFromFile(path string) (Topology, error) {
 	yamlFile, err := ioutil.ReadFile(path)
 	if err != nil {

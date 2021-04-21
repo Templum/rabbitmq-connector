@@ -14,11 +14,13 @@ import (
 	"github.com/streadway/amqp"
 )
 
+// RabbitToOpenFaaS defines the basic interactions for the connector
 type RabbitToOpenFaaS interface {
 	Run() error
 	Shutdown()
 }
 
+// New creates a new connector instance using the provided parameters & config to build it up
 func New(manager rabbitmq.Manager, factory rabbitmq.Factory, invoker types.Invoker, conf *config.Controller) RabbitToOpenFaaS {
 	return &Connector{
 		client: invoker,
@@ -29,6 +31,7 @@ func New(manager rabbitmq.Manager, factory rabbitmq.Factory, invoker types.Invok
 	}
 }
 
+// Connector includes all relevant information that the connector needs to hold and maintain
 type Connector struct {
 	client types.Invoker
 
@@ -38,6 +41,8 @@ type Connector struct {
 	exchanges  []rabbitmq.ExchangeOrganizer
 }
 
+// Run starts the connector and creates a connection RabbitMQ. Further it implements the defined Topology.
+// Also it adds a listener that handles connection failures.
 func (c *Connector) Run() error {
 	log.Println("Started RabbitMQ <=> OpenFaaS Connector")
 	log.Printf("Will now establish connection to %s", c.conf.RabbitSanitizedURL)
@@ -64,6 +69,8 @@ func (c *Connector) Run() error {
 	return nil
 }
 
+// HandleConnectionError listens for incoming connection errors. If it is recoverable it will attempt a self-heal.
+// Otherwise it shutsdown the whole connector
 func (c *Connector) HandleConnectionError(ch <-chan *amqp.Error) {
 	err := <-ch
 	log.Printf("Rabbit MQ Connection failed with %s Code: %d [Server=%t Recover=%t]", err.Reason, err.Code, err.Server, err.Recover)
@@ -84,6 +91,8 @@ func (c *Connector) HandleConnectionError(ch <-chan *amqp.Error) {
 	}
 }
 
+// Shutdown is usually called during graceful shutdown. It stops all exchanges and finally closes the connection
+// to RabbitMQ
 func (c *Connector) Shutdown() {
 	log.Println("Shutdown RabbitMQ <=> OpenFaaS Connector")
 

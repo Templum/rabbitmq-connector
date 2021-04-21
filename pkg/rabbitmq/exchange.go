@@ -14,19 +14,23 @@ import (
 	"github.com/streadway/amqp"
 )
 
+// Starter defines something that can be started
 type Starter interface {
 	Start() error
 }
 
+// Stopper defines something that can be stopped
 type Stopper interface {
 	Stop()
 }
 
+// ExchangeOrganizer combines the ability to start & stop exchanges
 type ExchangeOrganizer interface {
 	Starter
 	Stopper
 }
 
+// Exchange contains all of the relevant units to handle communication with an exchange
 type Exchange struct {
 	channel ChannelConsumer
 	client  types.Invoker
@@ -35,8 +39,10 @@ type Exchange struct {
 	lock       sync.RWMutex
 }
 
-const MAX_ATTEMPTS = 3
+// MaxAttempts of retries that will be performed
+const MaxAttempts = 3
 
+// NewExchange creates a new exchange instance using the provided parameter
 func NewExchange(channel ChannelConsumer, client types.Invoker, definition *types.Exchange) ExchangeOrganizer {
 	return &Exchange{
 		channel: channel,
@@ -47,6 +53,8 @@ func NewExchange(channel ChannelConsumer, client types.Invoker, definition *type
 	}
 }
 
+// Start s consuming deliveries from a unique queue for the specific exchange.
+// Further creating a listener for channel errors
 func (e *Exchange) Start() error {
 	e.lock.Lock()
 	defer e.lock.Unlock()
@@ -68,6 +76,7 @@ func (e *Exchange) Start() error {
 	return nil
 }
 
+// Stop s consuming messages
 func (e *Exchange) Stop() {
 	e.lock.Lock()
 	defer e.lock.Unlock()
@@ -81,6 +90,9 @@ func (e *Exchange) handleChanFailure(ch <-chan *amqp.Error) {
 	log.Printf("Received following error %s on channel for exchange %s", err, e.definition.Name)
 }
 
+// StartConsuming will consume deliveries from the provided channel and if the received delivery
+// is for the target topic it will invoke it. If the delivery is not for the correct topic it will
+// reject it so that the delivery is returned to the exchange. Retries are exponential and up to 3 times.
 func (e *Exchange) StartConsuming(topic string, deliveries <-chan amqp.Delivery) {
 	for delivery := range deliveries {
 		if topic == delivery.RoutingKey {
@@ -90,7 +102,7 @@ func (e *Exchange) StartConsuming(topic string, deliveries <-chan amqp.Delivery)
 		} else {
 			log.Printf("Received message for topic %s that did not match subscribed topic %s will reject it", delivery.RoutingKey, topic)
 
-			for retry := 0; retry < MAX_ATTEMPTS; retry++ {
+			for retry := 0; retry < MaxAttempts; retry++ {
 				err := delivery.Reject(true)
 				if err == nil {
 					return
@@ -109,7 +121,7 @@ func (e *Exchange) handleInvocation(topic string, delivery amqp.Delivery) {
 	// Call Function via Client
 	err := e.client.Invoke(topic, types.NewInvocation(delivery))
 	if err == nil {
-		for retry := 0; retry < MAX_ATTEMPTS; retry++ {
+		for retry := 0; retry < MaxAttempts; retry++ {
 			ackErr := delivery.Ack(false)
 			if ackErr == nil {
 				return
@@ -121,7 +133,7 @@ func (e *Exchange) handleInvocation(topic string, delivery amqp.Delivery) {
 
 		log.Printf("Failed to acknowledge delivery %d, will abort ack now", delivery.DeliveryTag)
 	} else {
-		for retry := 0; retry < MAX_ATTEMPTS; retry++ {
+		for retry := 0; retry < MaxAttempts; retry++ {
 			nackErr := delivery.Nack(false, true)
 			if nackErr == nil {
 				return
