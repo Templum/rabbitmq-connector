@@ -52,7 +52,7 @@ func TestMain(m *testing.M) {
 }
 
 func getOpenFaaSClient() openfaas.FunctionFetcher {
-	httpClient := types.MakeHTTPClient(false, 60*time.Second)
+	httpClient := types.MakeHTTPClient(false, 256, 60*time.Second)
 	ofClient := openfaas.NewClient(httpClient, nil, os.Getenv("OPEN_FAAS_GW_URL"))
 	return ofClient
 }
