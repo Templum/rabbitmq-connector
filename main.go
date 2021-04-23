@@ -45,7 +45,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	httpClient := types.MakeHTTPClient(conf.InsecureSkipVerify, 60*time.Second)
+	httpClient := types.MakeHTTPClient(conf.InsecureSkipVerify, conf.MaxClientsPerHost, 60*time.Second)
 	// Setup OpenFaaS Controller which is used for querying and more
 	ofSDK := openfaas.NewController(conf, openfaas.NewClient(httpClient, conf.BasicAuth, conf.GatewayURL), openfaas.NewTopicFunctionCache())
 	go ofSDK.Start(ctx)

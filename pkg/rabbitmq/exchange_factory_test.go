@@ -152,7 +152,7 @@ func TestExchangeFactory_Build(t *testing.T) {
 		creator.AssertExpectations(t)
 	})
 
-	t.Run("Should raise error if exchange decleration fails", func(t *testing.T) {
+	t.Run("Should raise error if exchange declaration fails", func(t *testing.T) {
 		invoker := new(invokerMock)
 		channel := new(channelMock)
 		channel.On("ExchangeDeclare", "Dax", "direct", true, true, false, false, amqp.Table{}).Return(errors.New("failure"))
@@ -173,7 +173,7 @@ func TestExchangeFactory_Build(t *testing.T) {
 		channel.AssertExpectations(t)
 	})
 
-	t.Run("Should raise error if queue decleration fails", func(t *testing.T) {
+	t.Run("Should raise error if queue declaration fails", func(t *testing.T) {
 		invoker := new(invokerMock)
 		channel := new(channelMock)
 		channel.On("ExchangeDeclare", "Dax", "direct", true, true, false, false, amqp.Table{}).Return(nil)
