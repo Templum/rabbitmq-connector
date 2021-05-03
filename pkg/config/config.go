@@ -82,10 +82,11 @@ const (
 	envSkipVerify        = "INSECURE_SKIP_VERIFY"
 	envMaxClientsPerHost = "MAX_CLIENT_PER_HOST"
 
-	envRabbitUser = "RMQ_USER"
-	envRabbitPass = "RMQ_PASS"
-	envRabbitHost = "RMQ_HOST"
-	envRabbitPort = "RMQ_PORT"
+	envRabbitUser  = "RMQ_USER"
+	envRabbitPass  = "RMQ_PASS"
+	envRabbitHost  = "RMQ_HOST"
+	envRabbitPort  = "RMQ_PORT"
+	envRabbitVHost = "RMQ_VHOST"
 
 	envPathToTopology = "PATH_TO_TOPOLOGY"
 	envRefreshTime    = "TOPIC_MAP_REFRESH_TIME"
@@ -109,6 +110,7 @@ func getRabbitMQConnectionURL() (string, error) {
 	pass := readFromEnv(envRabbitPass, "pass")
 	host := readFromEnv(envRabbitHost, "localhost")
 	port := readFromEnv(envRabbitPort, "5672")
+	vhost := readFromEnv(envRabbitVHost, "")
 
 	parsedPort, err := strconv.Atoi(port)
 
@@ -122,13 +124,14 @@ func getRabbitMQConnectionURL() (string, error) {
 		return "", errors.New(message)
 	}
 
-	return fmt.Sprintf("amqp://%s:%s@%s:%s/", user, pass, host, port), nil
+	return fmt.Sprintf("amqp://%s:%s@%s:%s/%s", user, pass, host, port, vhost), nil
 }
 
 func getSanitizedRabbitMQURL() string {
 	host := readFromEnv(envRabbitHost, "localhost")
 	port := readFromEnv(envRabbitPort, "5672")
-	return fmt.Sprintf("amqp://%s:%s", host, port)
+	vhost := readFromEnv(envRabbitVHost, "")
+	return fmt.Sprintf("amqp://%s:%s/%s", host, port, vhost)
 }
 
 func getTopology() (internal.Topology, error) {
