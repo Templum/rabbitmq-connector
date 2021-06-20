@@ -6,8 +6,11 @@
 package config
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -25,6 +28,9 @@ type Controller struct {
 	RabbitConnectionURL string
 	RabbitSanitizedURL  string
 
+	IsTLSEnabled bool
+	TLSConfig    *tls.Config
+
 	Topology internal.Topology
 
 	TopicRefreshTime   time.Duration
@@ -41,8 +47,24 @@ func NewConfig() (*Controller, error) {
 		return nil, err
 	}
 
-	rabbitURL, err := getRabbitMQConnectionURL()
-	sanitizedURL := getSanitizedRabbitMQURL()
+	var rabbitURL, sanitizedURL string
+	var tlsConfig *tls.Config = nil
+
+	if readFromEnv(envUseTLS, "false") == "true" {
+		rabbitURL, err = getRabbitMQTLSConnectionURL()
+		sanitizedURL = getSanitizedRabbitMQURL(true)
+
+		if cfg, confErr := generateTlsConfig(); confErr == nil {
+			tlsConfig = cfg
+		} else {
+			return nil, confErr
+		}
+
+	} else {
+		rabbitURL, err = getRabbitMQConnectionURL()
+		sanitizedURL = getSanitizedRabbitMQURL(false)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -66,6 +88,8 @@ func NewConfig() (*Controller, error) {
 		GatewayURL: gatewayURL,
 		BasicAuth:  types.GetCredentials(),
 
+		TLSConfig: tlsConfig,
+
 		RabbitConnectionURL: rabbitURL,
 		RabbitSanitizedURL:  sanitizedURL,
 
@@ -81,6 +105,11 @@ const (
 	envFaaSGwURL         = "OPEN_FAAS_GW_URL"
 	envSkipVerify        = "INSECURE_SKIP_VERIFY"
 	envMaxClientsPerHost = "MAX_CLIENT_PER_HOST"
+
+	envUseTLS           = "TLS_ENABLED"
+	envPathToCACert     = "TLS_CA_CERT_PATH"
+	envPathToClientCert = "TLS_CLIENT_CERT_PATH"
+	envPathToClientKey  = "TLS_CLIENT_KEY_PATH"
 
 	envRabbitUser  = "RMQ_USER"
 	envRabbitPass  = "RMQ_PASS"
@@ -105,6 +134,70 @@ func getOpenFaaSUrl() (string, error) {
 	return url, nil
 }
 
+func getRabbitMQTLSConnectionURL() (string, error) {
+	host := readFromEnv(envRabbitHost, "localhost")
+	port := readFromEnv(envRabbitPort, "5672")
+	vhost := readFromEnv(envRabbitVHost, "")
+
+	parsedPort, err := strconv.Atoi(port)
+
+	if err != nil {
+		message := fmt.Sprintf("Provided port %s is not a valid port", port)
+		return "", errors.New(message)
+	}
+
+	if parsedPort <= 0 || parsedPort > 65535 {
+		message := fmt.Sprintf("Provided port %s is outside of the allowed port range", port)
+		return "", errors.New(message)
+	}
+
+	return fmt.Sprintf("amqps://%s:%s/%s", host, port, vhost), nil
+}
+
+func generateTlsConfig() (*tls.Config, error) {
+	caCertPath := readFromEnv(envPathToCACert, "")
+	if caCertPath == "" {
+		return nil, errors.New("no path to CA cert was provided")
+	}
+	if exists, err := doesFileExist(caCertPath); !exists {
+		return nil, err
+	}
+
+	clientCertPath := readFromEnv(envPathToClientCert, "")
+	if clientCertPath == "" {
+		return nil, errors.New("no path to Client cert was provided")
+	}
+	if exists, err := doesFileExist(clientCertPath); !exists {
+		return nil, err
+	}
+
+	clientKeyPath := readFromEnv(envPathToClientKey, "")
+	if clientKeyPath == "" {
+		return nil, errors.New("no path to Client key was provided")
+	}
+	if exists, err := doesFileExist(clientKeyPath); !exists {
+		return nil, err
+	}
+
+	// At this point we know every required file is present and accessible
+	cfg := new(tls.Config)
+	cfg.RootCAs = x509.NewCertPool()
+
+	if ca, err := ioutil.ReadFile(caCertPath); err == nil {
+		cfg.RootCAs.AppendCertsFromPEM(ca)
+	} else {
+		return nil, err
+	}
+
+	if cert, err := tls.LoadX509KeyPair(clientCertPath, clientKeyPath); err == nil {
+		cfg.Certificates = append(cfg.Certificates, cert)
+	} else {
+		return nil, err
+	}
+
+	return cfg, nil
+}
+
 func getRabbitMQConnectionURL() (string, error) {
 	user := readFromEnv(envRabbitUser, "user")
 	pass := readFromEnv(envRabbitPass, "pass")
@@ -127,10 +220,15 @@ func getRabbitMQConnectionURL() (string, error) {
 	return fmt.Sprintf("amqp://%s:%s@%s:%s/%s", user, pass, host, port, vhost), nil
 }
 
-func getSanitizedRabbitMQURL() string {
+func getSanitizedRabbitMQURL(isTls bool) string {
 	host := readFromEnv(envRabbitHost, "localhost")
 	port := readFromEnv(envRabbitPort, "5672")
 	vhost := readFromEnv(envRabbitVHost, "")
+
+	if isTls {
+		return fmt.Sprintf("amqps://%s:%s/%s", host, port, vhost)
+	}
+
 	return fmt.Sprintf("amqp://%s:%s/%s", host, port, vhost)
 }
 
@@ -161,4 +259,20 @@ func readFromEnv(env string, fallback string) string {
 	}
 
 	return fallback
+}
+
+func doesFileExist(path string) (bool, error) {
+	stat, err := os.Stat(path)
+	if err == nil {
+		if stat.IsDir() {
+			return false, fmt.Errorf("%s is a directory and not a file", path)
+		}
+		return true, nil
+	}
+
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+
+	return false, err
 }

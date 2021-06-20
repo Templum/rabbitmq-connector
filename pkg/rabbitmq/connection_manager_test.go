@@ -57,7 +57,7 @@ func TestConnectionManager_Connect(t *testing.T) {
 		broker := new(brokerMocker)
 		broker.On("Dial", "amqp://user:pass@localhost:5672/").Return(con, nil)
 
-		target := NewConnectionManager(broker)
+		target := NewConnectionManager(broker, nil)
 
 		ch, err := target.Connect("amqp://user:pass@localhost:5672/")
 
@@ -73,7 +73,7 @@ func TestConnectionManager_Connect(t *testing.T) {
 		broker := new(brokerMocker)
 		broker.On("Dial", "amqp://user:pass@localhost:5672/").Return(con, errors.New("expected"))
 
-		target := NewConnectionManager(broker)
+		target := NewConnectionManager(broker, nil)
 
 		ch, err := target.Connect("amqp://user:pass@localhost:5672/")
 

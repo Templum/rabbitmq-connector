@@ -51,7 +51,7 @@ func main() {
 	go ofSDK.Start(ctx)
 	log.Printf("Started Cache Task which populates the topic map")
 
-	c := connector.New(rabbitmq.NewConnectionManager(rabbitmq.NewBroker()), rabbitmq.NewFactory(), ofSDK, conf)
+	c := connector.New(rabbitmq.NewConnectionManager(rabbitmq.NewBroker(), conf.TLSConfig), rabbitmq.NewFactory(), ofSDK, conf)
 	err := c.Run()
 
 	if err != nil {
