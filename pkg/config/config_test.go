@@ -8,8 +8,6 @@ package config
 import (
 	"os"
 	"path"
-	"path/filepath"
-	"runtime"
 	"testing"
 	"time"
 
@@ -18,17 +16,35 @@ import (
 )
 
 func TestNewConfig(t *testing.T) {
-	dir, _ := os.Getwd()
+	testFS := afero.NewMemMapFs()
 
-	var relativePath string
-	// Workaround for Linux
-	if runtime.GOOS == "windows" {
-		relativePath = path.Join(dir, "..", "..", "..", "artifacts", "example_topology.yaml")
-	} else {
-		relativePath = path.Join(dir, "..", "..", "artifacts", "example_topology.yaml")
-	}
+	// Creating relevant structure
+	_ = testFS.MkdirAll("config", 0755)
+	_ = afero.WriteFile(testFS, "config/topology.yaml", []byte(`- name: AEx
+  topics: [Foo, Bar]
+  declare: true
+  type: "direct"
+  durable: false
+  auto-deleted: false
+- name: BEx
+  topics: [Dead, Beef]
+  declare: true`), 0644)
 
-	pathToExampleToplogy, _ := filepath.Abs(relativePath)
+	_ = afero.WriteFile(testFS, "config/not-topology.yaml", []byte(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-connector-configmap
+data:
+  OPEN_FAAS_GW_URL: "http://gateway.openfaas:8080"
+  RMQ_TOPICS: "account,billing,support"
+  RMQ_HOST: "replace_me"
+  RMQ_PORT: "replace_me"
+  RMQ_USER: "replace_me"
+  RMQ_PASS: "replace_me"
+  REQ_TIMEOUT: "30s"
+  TOPIC_MAP_REFRESH_TIME: "30s"`), 0644)
+
+	pathToExampleToplogy := path.Join("config", "topology.yaml")
 
 	t.Run("With invalid Gateway Url", func(t *testing.T) {
 		os.Setenv("OPEN_FAAS_GW_URL", "gateway:8080")
@@ -36,13 +52,13 @@ func TestNewConfig(t *testing.T) {
 
 		var err error
 
-		_, err = NewConfig(afero.NewMemMapFs())
+		_, err = NewConfig(testFS)
 
 		assert.NotNil(t, err, "Should throw err")
 		assert.Contains(t, err.Error(), "does not include the protocol http / https", "Did not throw correct error")
 
 		os.Setenv("OPEN_FAAS_GW_URL", "tcp://gateway:8080")
-		_, err = NewConfig(afero.NewMemMapFs())
+		_, err = NewConfig(testFS)
 		assert.NotNil(t, err, "Should throw err")
 		assert.Contains(t, err.Error(), "does not include the protocol http / https", "Did not throw correct error")
 	})
@@ -53,17 +69,17 @@ func TestNewConfig(t *testing.T) {
 
 		var err error
 
-		_, err = NewConfig(afero.NewMemMapFs())
+		_, err = NewConfig(testFS)
 		assert.NotNil(t, err, "Should throw err")
 		assert.Contains(t, err.Error(), "is not a valid port", "Did not throw correct error")
 
 		os.Setenv("RMQ_PORT", "-1")
-		_, err = NewConfig(afero.NewMemMapFs())
+		_, err = NewConfig(testFS)
 		assert.NotNil(t, err, "Should throw err")
 		assert.Contains(t, err.Error(), "is outside of the allowed port range", "Did not throw correct error")
 
 		os.Setenv("RMQ_PORT", "65536")
-		_, err = NewConfig(afero.NewMemMapFs())
+		_, err = NewConfig(testFS)
 		assert.NotNil(t, err, "Should throw err")
 		assert.Contains(t, err.Error(), "is outside of the allowed port range", "Did not throw correct error")
 	})
@@ -89,7 +105,7 @@ func TestNewConfig(t *testing.T) {
 		defer os.Unsetenv("PATH_TO_TOPOLOGY")
 		defer os.Unsetenv("INSECURE_SKIP_VERIFY")
 
-		config, err := NewConfig(afero.NewMemMapFs())
+		config, err := NewConfig(testFS)
 
 		assert.Nil(t, err, "Should not throw")
 		assert.False(t, config.InsecureSkipVerify, "Expected default value")
@@ -102,23 +118,23 @@ func TestNewConfig(t *testing.T) {
 		defer os.Unsetenv("PATH_TO_TOPOLOGY")
 		defer os.Unsetenv("MAX_CLIENT_PER_HOST")
 
-		config, err := NewConfig(afero.NewMemMapFs())
+		config, err := NewConfig(testFS)
 
 		assert.Nil(t, err, "Should not throw")
 		assert.Equal(t, config.MaxClientsPerHost, 256, "Expected default value")
 	})
 
 	t.Run("With non existing Topology", func(t *testing.T) {
-		_, err := NewConfig(afero.NewMemMapFs())
+		_, err := NewConfig(testFS)
 		assert.Error(t, err, "Should throw err")
 		assert.Contains(t, err.Error(), "provided topology is either non existing or does not end with .yaml")
 	})
 
 	t.Run("With invalid Topology", func(t *testing.T) {
-		os.Setenv("PATH_TO_TOPOLOGY", "../../artifacts/connector-cfg.yaml")
+		os.Setenv("PATH_TO_TOPOLOGY", "config/not-topology.yaml")
 		defer os.Unsetenv("PATH_TO_TOPOLOGY")
 
-		_, err := NewConfig(afero.NewMemMapFs())
+		_, err := NewConfig(testFS)
 		assert.NotNil(t, err, "Should throw err")
 		assert.Contains(t, err.Error(), " cannot unmarshal")
 	})
@@ -127,7 +143,7 @@ func TestNewConfig(t *testing.T) {
 		os.Setenv("PATH_TO_TOPOLOGY", pathToExampleToplogy)
 		defer os.Unsetenv("PATH_TO_TOPOLOGY")
 
-		config, err := NewConfig(afero.NewMemMapFs())
+		config, err := NewConfig(testFS)
 
 		assert.Nil(t, err, "Should not throw")
 		assert.Equal(t, config.GatewayURL, "http://gateway:8080", "Expected default value")
@@ -162,7 +178,7 @@ func TestNewConfig(t *testing.T) {
 		defer os.Unsetenv("INSECURE_SKIP_VERIFY")
 		defer os.Unsetenv("MAX_CLIENT_PER_HOST")
 
-		config, err := NewConfig(afero.NewMemMapFs())
+		config, err := NewConfig(testFS)
 
 		assert.Nil(t, err, "Should not throw")
 		assert.Equal(t, config.GatewayURL, "https://gateway", "Expected override value")

@@ -247,7 +247,7 @@ func getTopology(fs afero.Fs) (internal.Topology, error) {
 		return internal.Topology{}, errors.New("provided topology is either non existing or does not end with .yaml")
 	}
 
-	return internal.ReadTopologyFromFile(path)
+	return internal.ReadTopologyFromFile(fs, path)
 }
 
 func getRefreshTime() time.Duration {
