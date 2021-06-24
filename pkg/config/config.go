@@ -10,7 +10,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -20,6 +19,7 @@ import (
 	internal "github.com/Templum/rabbitmq-connector/pkg/types"
 	"github.com/openfaas/connector-sdk/types"
 	"github.com/openfaas/faas-provider/auth"
+	"github.com/spf13/afero"
 )
 
 // Controller is the config needed for the connector
@@ -41,7 +41,7 @@ type Controller struct {
 
 // NewConfig reads the connector config from environment variables and further validates them,
 // in some cases it will leverage default values.
-func NewConfig() (*Controller, error) {
+func NewConfig(fs afero.Fs) (*Controller, error) {
 	gatewayURL, err := getOpenFaaSUrl()
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func NewConfig() (*Controller, error) {
 		rabbitURL, err = getRabbitMQTLSConnectionURL()
 		sanitizedURL = getSanitizedRabbitMQURL(true)
 
-		if cfg, confErr := generateTlsConfig(); confErr == nil {
+		if cfg, confErr := generateTlsConfig(fs); confErr == nil {
 			tlsConfig = cfg
 		} else {
 			return nil, confErr
@@ -74,7 +74,7 @@ func NewConfig() (*Controller, error) {
 		skipVerify = false
 	}
 
-	topology, err := getTopology()
+	topology, err := getTopology(fs)
 	if err != nil {
 		return nil, err
 	}
@@ -154,12 +154,12 @@ func getRabbitMQTLSConnectionURL() (string, error) {
 	return fmt.Sprintf("amqps://%s:%s/%s", host, port, vhost), nil
 }
 
-func generateTlsConfig() (*tls.Config, error) {
+func generateTlsConfig(fs afero.Fs) (*tls.Config, error) {
 	caCertPath := readFromEnv(envPathToCACert, "")
 	if caCertPath == "" {
 		return nil, errors.New("no path to CA cert was provided")
 	}
-	if exists, err := doesFileExist(caCertPath); !exists {
+	if exists, err := afero.Exists(fs, caCertPath); !exists {
 		return nil, err
 	}
 
@@ -167,7 +167,7 @@ func generateTlsConfig() (*tls.Config, error) {
 	if clientCertPath == "" {
 		return nil, errors.New("no path to Client cert was provided")
 	}
-	if exists, err := doesFileExist(clientCertPath); !exists {
+	if exists, err := afero.Exists(fs, clientCertPath); !exists {
 		return nil, err
 	}
 
@@ -175,7 +175,7 @@ func generateTlsConfig() (*tls.Config, error) {
 	if clientKeyPath == "" {
 		return nil, errors.New("no path to Client key was provided")
 	}
-	if exists, err := doesFileExist(clientKeyPath); !exists {
+	if exists, err := afero.Exists(fs, clientKeyPath); !exists {
 		return nil, err
 	}
 
@@ -183,14 +183,22 @@ func generateTlsConfig() (*tls.Config, error) {
 	cfg := new(tls.Config)
 	cfg.RootCAs = x509.NewCertPool()
 
-	if ca, err := ioutil.ReadFile(caCertPath); err == nil {
+	if ca, err := afero.ReadFile(fs, caCertPath); err == nil {
 		cfg.RootCAs.AppendCertsFromPEM(ca)
 	} else {
 		return nil, err
 	}
 
-	if cert, err := tls.LoadX509KeyPair(clientCertPath, clientKeyPath); err == nil {
-		cfg.Certificates = append(cfg.Certificates, cert)
+	if cert, err := afero.ReadFile(fs, clientCertPath); err == nil {
+		if key, err := afero.ReadFile(fs, clientKeyPath); err == nil {
+			if cert, err := tls.X509KeyPair(cert, key); err == nil {
+				cfg.Certificates = append(cfg.Certificates, cert)
+			} else {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
 	} else {
 		return nil, err
 	}
@@ -232,10 +240,10 @@ func getSanitizedRabbitMQURL(isTls bool) string {
 	return fmt.Sprintf("amqp://%s:%s/%s", host, port, vhost)
 }
 
-func getTopology() (internal.Topology, error) {
+func getTopology(fs afero.Fs) (internal.Topology, error) {
 	path := readFromEnv(envPathToTopology, ".")
 
-	if info, err := os.Stat(path); os.IsNotExist(err) || !strings.HasSuffix(info.Name(), "yaml") {
+	if info, err := fs.Stat(path); os.IsNotExist(err) || !strings.HasSuffix(info.Name(), "yaml") {
 		return internal.Topology{}, errors.New("provided topology is either non existing or does not end with .yaml")
 	}
 
@@ -259,20 +267,4 @@ func readFromEnv(env string, fallback string) string {
 	}
 
 	return fallback
-}
-
-func doesFileExist(path string) (bool, error) {
-	stat, err := os.Stat(path)
-	if err == nil {
-		if stat.IsDir() {
-			return false, fmt.Errorf("%s is a directory and not a file", path)
-		}
-		return true, nil
-	}
-
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-
-	return false, err
 }

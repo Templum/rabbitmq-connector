@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,13 +36,13 @@ func TestNewConfig(t *testing.T) {
 
 		var err error
 
-		_, err = NewConfig()
+		_, err = NewConfig(afero.NewMemMapFs())
 
 		assert.NotNil(t, err, "Should throw err")
 		assert.Contains(t, err.Error(), "does not include the protocol http / https", "Did not throw correct error")
 
 		os.Setenv("OPEN_FAAS_GW_URL", "tcp://gateway:8080")
-		_, err = NewConfig()
+		_, err = NewConfig(afero.NewMemMapFs())
 		assert.NotNil(t, err, "Should throw err")
 		assert.Contains(t, err.Error(), "does not include the protocol http / https", "Did not throw correct error")
 	})
@@ -52,17 +53,17 @@ func TestNewConfig(t *testing.T) {
 
 		var err error
 
-		_, err = NewConfig()
+		_, err = NewConfig(afero.NewMemMapFs())
 		assert.NotNil(t, err, "Should throw err")
 		assert.Contains(t, err.Error(), "is not a valid port", "Did not throw correct error")
 
 		os.Setenv("RMQ_PORT", "-1")
-		_, err = NewConfig()
+		_, err = NewConfig(afero.NewMemMapFs())
 		assert.NotNil(t, err, "Should throw err")
 		assert.Contains(t, err.Error(), "is outside of the allowed port range", "Did not throw correct error")
 
 		os.Setenv("RMQ_PORT", "65536")
-		_, err = NewConfig()
+		_, err = NewConfig(afero.NewMemMapFs())
 		assert.NotNil(t, err, "Should throw err")
 		assert.Contains(t, err.Error(), "is outside of the allowed port range", "Did not throw correct error")
 	})
@@ -88,7 +89,7 @@ func TestNewConfig(t *testing.T) {
 		defer os.Unsetenv("PATH_TO_TOPOLOGY")
 		defer os.Unsetenv("INSECURE_SKIP_VERIFY")
 
-		config, err := NewConfig()
+		config, err := NewConfig(afero.NewMemMapFs())
 
 		assert.Nil(t, err, "Should not throw")
 		assert.False(t, config.InsecureSkipVerify, "Expected default value")
@@ -101,14 +102,14 @@ func TestNewConfig(t *testing.T) {
 		defer os.Unsetenv("PATH_TO_TOPOLOGY")
 		defer os.Unsetenv("MAX_CLIENT_PER_HOST")
 
-		config, err := NewConfig()
+		config, err := NewConfig(afero.NewMemMapFs())
 
 		assert.Nil(t, err, "Should not throw")
 		assert.Equal(t, config.MaxClientsPerHost, 256, "Expected default value")
 	})
 
 	t.Run("With non existing Topology", func(t *testing.T) {
-		_, err := NewConfig()
+		_, err := NewConfig(afero.NewMemMapFs())
 		assert.Error(t, err, "Should throw err")
 		assert.Contains(t, err.Error(), "provided topology is either non existing or does not end with .yaml")
 	})
@@ -117,7 +118,7 @@ func TestNewConfig(t *testing.T) {
 		os.Setenv("PATH_TO_TOPOLOGY", "../../artifacts/connector-cfg.yaml")
 		defer os.Unsetenv("PATH_TO_TOPOLOGY")
 
-		_, err := NewConfig()
+		_, err := NewConfig(afero.NewMemMapFs())
 		assert.NotNil(t, err, "Should throw err")
 		assert.Contains(t, err.Error(), " cannot unmarshal")
 	})
@@ -126,7 +127,7 @@ func TestNewConfig(t *testing.T) {
 		os.Setenv("PATH_TO_TOPOLOGY", pathToExampleToplogy)
 		defer os.Unsetenv("PATH_TO_TOPOLOGY")
 
-		config, err := NewConfig()
+		config, err := NewConfig(afero.NewMemMapFs())
 
 		assert.Nil(t, err, "Should not throw")
 		assert.Equal(t, config.GatewayURL, "http://gateway:8080", "Expected default value")
@@ -161,7 +162,7 @@ func TestNewConfig(t *testing.T) {
 		defer os.Unsetenv("INSECURE_SKIP_VERIFY")
 		defer os.Unsetenv("MAX_CLIENT_PER_HOST")
 
-		config, err := NewConfig()
+		config, err := NewConfig(afero.NewMemMapFs())
 
 		assert.Nil(t, err, "Should not throw")
 		assert.Equal(t, config.GatewayURL, "https://gateway", "Expected override value")
@@ -171,5 +172,9 @@ func TestNewConfig(t *testing.T) {
 		assert.Equal(t, config.TopicRefreshTime, 40*time.Second, "Expected override value")
 		assert.True(t, config.InsecureSkipVerify, "Expected override value")
 		assert.Equal(t, config.MaxClientsPerHost, 512, "Expected override value")
+	})
+
+	t.Run("TLS based Config", func(t *testing.T) {
+
 	})
 }
