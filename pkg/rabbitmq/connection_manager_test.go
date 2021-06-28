@@ -67,6 +67,25 @@ func TestConnectionManager_Connect(t *testing.T) {
 		con.AssertExpectations(t)
 	})
 
+	t.Run("Should perform a TLS connect to the specified Rabbit MQ host if tlsconf is present and return close channel", func(t *testing.T) {
+		tlsConf := &tls.Config{}
+
+		con := new(conMock)
+		con.On("NotifyClose", nil).Return(make(chan *amqp.Error))
+
+		broker := new(brokerMocker)
+		broker.On("DialTLS", "amqps://localhost:5672/", tlsConf).Return(con, nil)
+
+		target := NewConnectionManager(broker, tlsConf)
+
+		ch, err := target.Connect("amqps://localhost:5672/")
+
+		assert.NoError(t, err, "should not throw")
+		assert.NotNil(t, ch, "should not be nil")
+		broker.AssertExpectations(t)
+		con.AssertExpectations(t)
+	})
+
 	t.Run("Should try at least 3 times to connect to Rabbit MQ before throwing error", func(t *testing.T) {
 		con := new(conMock)
 
