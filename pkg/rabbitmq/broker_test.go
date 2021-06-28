@@ -96,7 +96,7 @@ func TestBroker_DialTLS(t *testing.T) {
 	}
 
 	broker := NewBroker()
-	url := fmt.Sprintf("amqps://user:pass@%s:%s/", ip, port.Port())
+	url := fmt.Sprintf("amqps://%s:%s/", ip, port.Port())
 
 	con, err := broker.DialTLS(url, &tls.Config{})
 
