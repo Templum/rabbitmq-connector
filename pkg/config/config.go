@@ -51,7 +51,7 @@ func NewConfig(fs afero.Fs) (*Controller, error) {
 	var tlsConfig *tls.Config = nil
 
 	if readFromEnv(envUseTLS, "false") == "true" {
-		rabbitURL, err = getRabbitMQTLSConnectionURL()
+		rabbitURL, err = getRabbitMQConnectionURL(true)
 		sanitizedURL = getSanitizedRabbitMQURL(true)
 
 		if cfg, confErr := generateTlsConfig(fs); confErr == nil {
@@ -61,7 +61,7 @@ func NewConfig(fs afero.Fs) (*Controller, error) {
 		}
 
 	} else {
-		rabbitURL, err = getRabbitMQConnectionURL()
+		rabbitURL, err = getRabbitMQConnectionURL(false)
 		sanitizedURL = getSanitizedRabbitMQURL(false)
 	}
 
@@ -108,8 +108,8 @@ const (
 
 	envUseTLS           = "TLS_ENABLED"
 	envPathToCACert     = "TLS_CA_CERT_PATH"
-	envPathToClientCert = "TLS_CLIENT_CERT_PATH"
-	envPathToClientKey  = "TLS_CLIENT_KEY_PATH"
+	envPathToServerCert = "TLS_SERVER_CERT_PATH"
+	envPathToServerKey  = "TLS_SERVER_KEY_PATH"
 
 	envRabbitUser  = "RMQ_USER"
 	envRabbitPass  = "RMQ_PASS"
@@ -134,49 +134,20 @@ func getOpenFaaSUrl() (string, error) {
 	return url, nil
 }
 
-func getRabbitMQTLSConnectionURL() (string, error) {
-	host := readFromEnv(envRabbitHost, "localhost")
-	port := readFromEnv(envRabbitPort, "5672")
-	vhost := readFromEnv(envRabbitVHost, "")
-
-	parsedPort, err := strconv.Atoi(port)
-
-	if err != nil {
-		message := fmt.Sprintf("Provided port %s is not a valid port", port)
-		return "", errors.New(message)
-	}
-
-	if parsedPort <= 0 || parsedPort > 65535 {
-		message := fmt.Sprintf("Provided port %s is outside of the allowed port range", port)
-		return "", errors.New(message)
-	}
-
-	return fmt.Sprintf("amqps://%s:%s/%s", host, port, vhost), nil
-}
-
 func generateTlsConfig(fs afero.Fs) (*tls.Config, error) {
 	caCertPath := readFromEnv(envPathToCACert, "")
-	if caCertPath == "" {
-		return nil, errors.New("no path to CA cert was provided")
-	}
 	if exists, err := afero.Exists(fs, caCertPath); !exists {
-		return nil, err
+		return nil, fmt.Errorf("Ca Cert at %s does not exist or is not accessible %s", caCertPath, err)
 	}
 
-	clientCertPath := readFromEnv(envPathToClientCert, "")
-	if clientCertPath == "" {
-		return nil, errors.New("no path to Client cert was provided")
-	}
-	if exists, err := afero.Exists(fs, clientCertPath); !exists {
-		return nil, err
+	serverCertPath := readFromEnv(envPathToServerCert, "")
+	if exists, err := afero.Exists(fs, serverCertPath); !exists {
+		return nil, fmt.Errorf("Server Cert at %s does not exist or is not accessible %s", serverCertPath, err)
 	}
 
-	clientKeyPath := readFromEnv(envPathToClientKey, "")
-	if clientKeyPath == "" {
-		return nil, errors.New("no path to Client key was provided")
-	}
-	if exists, err := afero.Exists(fs, clientKeyPath); !exists {
-		return nil, err
+	serverKeyPath := readFromEnv(envPathToServerKey, "")
+	if exists, err := afero.Exists(fs, serverKeyPath); !exists {
+		return nil, fmt.Errorf("Server Key at %s does not exist or is not accessible %s", serverKeyPath, err)
 	}
 
 	// At this point we know every required file is present and accessible
@@ -189,8 +160,8 @@ func generateTlsConfig(fs afero.Fs) (*tls.Config, error) {
 		return nil, err
 	}
 
-	if cert, err := afero.ReadFile(fs, clientCertPath); err == nil {
-		if key, err := afero.ReadFile(fs, clientKeyPath); err == nil {
+	if cert, err := afero.ReadFile(fs, serverCertPath); err == nil {
+		if key, err := afero.ReadFile(fs, serverKeyPath); err == nil {
 			if cert, err := tls.X509KeyPair(cert, key); err == nil {
 				cfg.Certificates = append(cfg.Certificates, cert)
 			} else {
@@ -206,7 +177,7 @@ func generateTlsConfig(fs afero.Fs) (*tls.Config, error) {
 	return cfg, nil
 }
 
-func getRabbitMQConnectionURL() (string, error) {
+func getRabbitMQConnectionURL(isTls bool) (string, error) {
 	user := readFromEnv(envRabbitUser, "user")
 	pass := readFromEnv(envRabbitPass, "pass")
 	host := readFromEnv(envRabbitHost, "localhost")
@@ -223,6 +194,10 @@ func getRabbitMQConnectionURL() (string, error) {
 	if parsedPort <= 0 || parsedPort > 65535 {
 		message := fmt.Sprintf("Provided port %s is outside of the allowed port range", port)
 		return "", errors.New(message)
+	}
+
+	if isTls {
+		return fmt.Sprintf("amqps://%s:%s/%s", host, port, vhost), nil
 	}
 
 	return fmt.Sprintf("amqp://%s:%s@%s:%s/%s", user, pass, host, port, vhost), nil
