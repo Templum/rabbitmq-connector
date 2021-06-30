@@ -29,6 +29,5 @@ func (b *Broker) Dial(url string) (RBConnection, error) {
 // DialTLS tries to connect to the providing url using TLS, returning either a RBConnection or
 // the received connection error.
 func (b *Broker) DialTLS(url string, conf *tls.Config) (RBConnection, error) {
-	test, err := amqp.DialTLS(url, conf)
-	return test, err
+	return amqp.DialTLS(url, conf)
 }
