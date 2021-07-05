@@ -104,11 +104,15 @@ jobs:
         with:
           go-version: 1.15
 
-      - name: "Create Single Cluster"
-        uses: AbsaOSS/k3d-action@v1.3.1
+      - name: Create single k3d Cluster with Registry
+        uses: AbsaOSS/k3d-action@v1.4.0
         with:
-          cluster-name: "integration-test-cluster"
-          args: --agents 1
+          cluster-name: "test-cluster"
+          use-default-registry: true
+          args: >-
+            --agents 1
+            --no-lb
+            --k3s-server-arg "--no-deploy=traefik,servicelb,metrics-server"
 
       - name: Get Arkade
         run: curl -sLS https://dl.get-arkade.dev | sudo sh
