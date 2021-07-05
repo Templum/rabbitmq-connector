@@ -6,9 +6,9 @@
 package types
 
 import (
-	"io/ioutil"
 	"strings"
 
+	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 )
 
@@ -47,8 +47,8 @@ func (e *Exchange) EnsureCorrectType() {
 
 // ReadTopologyFromFile reads a topology file in yaml format from the specified path.
 // Further it parses the file and returns it already in the Topology struct format.
-func ReadTopologyFromFile(path string) (Topology, error) {
-	yamlFile, err := ioutil.ReadFile(path)
+func ReadTopologyFromFile(fs afero.Fs, path string) (Topology, error) {
+	yamlFile, err := afero.ReadFile(fs, path)
 	if err != nil {
 		return Topology{}, err
 	}

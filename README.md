@@ -33,6 +33,15 @@ General Connector:
 * `INSECURE_SKIP_VERIFY`: Allows to skip verification of HTTP Cert for Communication Connector <=> OpenFaaS default is `false`. It is recommended to keep false, as enabling it opens up the possibility of a man in the middle attack.
 * `MAX_CLIENT_PER_HOST`: Allows to specify the maximum number connections/clients that will be opened to an individual host (function), defaults to `256`.
 
+TLS Config:
+
+* `TLS_ENABLED`: Set this to `true` if your RabbitMQ requires a TLS connection. Default to `false` if not set.
+* `TLS_CA_CERT_PATH`: Path to your CA Cert, make sure golang process is allowed to access it.
+* `TLS_CLIENT_CERT_PATH`: Path to Client Cert, make sure golang process is allowed to access it.
+* `TLS_CLIENT_KEY_PATH`: Path to Client Key, make sure golang process is allowed to access it.
+
+> Make sure if TLS is enabled, the provided `RMQ_HOST` matches the common name from the certificate. Otherwise the connection will yield a error
+
 RabbitMQ Related:
 
 * `RMQ_HOST`: Hostname/ip of Rabbit MQ

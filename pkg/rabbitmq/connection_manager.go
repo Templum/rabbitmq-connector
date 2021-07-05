@@ -6,6 +6,7 @@
 package rabbitmq
 
 import (
+	"crypto/tls"
 	"log"
 	"sync"
 	"time"
@@ -29,17 +30,19 @@ type Manager interface {
 
 // ConnectionManager is tasked with managing the connection Rabbit MQ
 type ConnectionManager struct {
-	con    RBConnection
-	lock   sync.RWMutex
-	dialer RBDialer
+	con     RBConnection
+	lock    sync.RWMutex
+	dialer  RBDialer
+	tlsConf *tls.Config
 }
 
 // NewConnectionManager creates a new instance using the provided dialer
-func NewConnectionManager(dialer RBDialer) Manager {
+func NewConnectionManager(dialer RBDialer, conf *tls.Config) Manager {
 	return &ConnectionManager{
-		lock:   sync.RWMutex{},
-		con:    nil,
-		dialer: dialer,
+		lock:    sync.RWMutex{},
+		con:     nil,
+		dialer:  dialer,
+		tlsConf: conf,
 	}
 }
 
@@ -48,7 +51,7 @@ func NewConnectionManager(dialer RBDialer) Manager {
 func (m *ConnectionManager) Connect(connectionURL string) (<-chan *amqp.Error, error) {
 	for attempt := 0; attempt < 3; attempt++ {
 
-		con, err := m.dialer.Dial(connectionURL)
+		con, err := m.dial(connectionURL)
 
 		if err == nil {
 			log.Println("Successfully established connection to Rabbit MQ Cluster")
@@ -86,4 +89,12 @@ func (m *ConnectionManager) Channel() (RabbitChannel, error) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 	return m.con.Channel()
+}
+
+func (m *ConnectionManager) dial(connectionURL string) (RBConnection, error) {
+	if m.tlsConf == nil {
+		return m.dialer.Dial(connectionURL)
+	}
+
+	return m.dialer.DialTLS(connectionURL, m.tlsConf)
 }
