@@ -104,10 +104,11 @@ jobs:
         with:
           go-version: 1.15
 
-      - name: K3D Setup
-        uses: debianmaster/actions-k3s@master
+      - name: "Create Single Cluster"
+        uses: AbsaOSS/k3d-action@v1.4.0
         with:
-          version: v1.18.2-k3s1
+          cluster-name: "integration-test-cluster"
+          args: --agents 1
 
       - name: Get Arkade
         run: curl -sLS https://dl.get-arkade.dev | sudo sh
