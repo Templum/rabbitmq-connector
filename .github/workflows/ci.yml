@@ -104,14 +104,19 @@ jobs:
         with:
           go-version: 1.15
 
-      - name: Create single k3d Cluster with Registry
+      - name: Create single node k3s cluster
         uses: AbsaOSS/k3d-action@v1.4.0
         with:
           cluster-name: "test-cluster"
-          use-default-registry: true
+          use-default-registry: false
           args: >-
+            -p "80:80@agent[0]"
+            -p "443:443@agent[0]"
+            -p "5053:53/udp@agent[0]"
             --agents 1
             --no-lb
+            --network k3d-action-bridge-network
+            --image docker.io/rancher/k3s:v1.20.5-k3s1
             --k3s-server-arg "--no-deploy=traefik,servicelb,metrics-server"
 
       - name: Get Arkade
