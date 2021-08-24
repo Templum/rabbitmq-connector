@@ -25,7 +25,8 @@ jobs:
             org.opencontainers.image.description=An RabbitMQ Connector for OpenFaaS
             org.opencontainers.image.vendor=Templum
           tags: |
-            type=semver,enable=true,priority=900,pattern={{version}}
+            type=semver,pattern={{version}}
+            type=ref,event=branch,pattern={{branch}}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1.2.0
