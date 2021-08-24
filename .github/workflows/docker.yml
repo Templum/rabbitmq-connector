@@ -19,12 +19,12 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: templum/rabbitmq-connector, ghcr.io/templum/rabbitmq-connector
-          label-custom: |
+          labels: |
             maintainer=Templum
             org.opencontainers.image.title=rabbitmq-connector
             org.opencontainers.image.description=An RabbitMQ Connector for OpenFaaS
             org.opencontainers.image.vendor=Templum
-          tag: |
+          tags: |
             # minimal
             type=semver,enable=true,priority=900,pattern={{version}}
 
