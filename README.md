@@ -37,8 +37,8 @@ TLS Config:
 
 * `TLS_ENABLED`: Set this to `true` if your RabbitMQ requires a TLS connection. Default to `false` if not set.
 * `TLS_CA_CERT_PATH`: Path to your CA Cert, make sure golang process is allowed to access it.
-* `TLS_CLIENT_CERT_PATH`: Path to Client Cert, make sure golang process is allowed to access it.
-* `TLS_CLIENT_KEY_PATH`: Path to Client Key, make sure golang process is allowed to access it.
+* `TLS_SERVER_CERT_PATH`: Path to Client Cert, make sure golang process is allowed to access it.
+* `TLS_SERVER_KEY_PATH`: Path to Client Key, make sure golang process is allowed to access it.
 
 > Make sure if TLS is enabled, the provided `RMQ_HOST` matches the common name from the certificate. Otherwise the connection will yield a error
 
