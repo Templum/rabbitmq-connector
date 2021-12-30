@@ -244,7 +244,7 @@ data:
 		assert.Nil(t, err, "Should not throw")
 		assert.Nil(t, config.TLSConfig, "Should not have a TLS config")
 		assert.Equal(t, config.GatewayURL, "http://gateway:8080", "Expected default value")
-		assert.Equal(t, config.RabbitConnectionURL, "amqp://user:pass@localhost:5672/", "Expected default value")
+		assert.Equal(t, config.RabbitConnectionURL, "amqp://localhost:5672/", "Expected default value")
 		assert.NotContains(t, config.RabbitSanitizedURL, "user:pass", "Expected credentials not to be present")
 		assert.Equal(t, config.RabbitSanitizedURL, "amqp://localhost:5672/", "Expected default value")
 		assert.Equal(t, config.TopicRefreshTime, 30*time.Second, "Expected default value")

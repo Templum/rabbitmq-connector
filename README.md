@@ -47,8 +47,8 @@ RabbitMQ Related:
 * `RMQ_HOST`: Hostname/ip of Rabbit MQ
 * `RMQ_PORT`: Port of Rabbit MQ
 * `RMQ_VHOST`: Used to specify the vhost for Rabbit MQ, will default to `/`
-* `RMQ_USER`: Defaults to `guest`
-* `RMQ_PASS`: Defaults to `pass`
+* `RMQ_USER`: Defaults to "", if user and pass are both "" than no credentials will be used for connecting
+* `RMQ_PASS`: Defaults to "", if user and pass are both "" than no credentials will be used for connecting
 * `PATH_TO_TOPOLOGY`: Path to the yaml describing the topology, has _no_ default and is *required*
 
 ### Topology Configuration
