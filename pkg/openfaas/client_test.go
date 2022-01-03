@@ -450,3 +450,33 @@ func TestClient_GetNamespaces(t *testing.T) {
 		assert.Error(t, err, "OpenFaaS Credentials are invalid", "Did receive unexpected error")
 	})
 }
+
+func TestClient_Edge(t *testing.T) {
+	openfaasClient := NewClient(CreateClient(nil), nil, "ftp://localhost/")
+
+	payload := types2.OpenFaaSInvocation{
+		Topic:           "",
+		Message:         nil,
+		ContentEncoding: "gzip",
+		ContentType:     "text/plain",
+	}
+
+	t.Run("Should throw error if invalid base URL is provided", func(t *testing.T) {
+		var err error
+
+		_, err = openfaasClient.InvokeSync(context.Background(), "exists", &payload)
+		assert.Error(t, err, "unsupported protocol ftp. http and https are supported", "Did receive unexpected error")
+
+		_, err = openfaasClient.InvokeAsync(context.Background(), "exists", &payload)
+		assert.Error(t, err, "unsupported protocol ftp. http and https are supported", "Did receive unexpected error")
+
+		_, err = openfaasClient.GetNamespaces(context.Background())
+		assert.Error(t, err, "unsupported protocol ftp. http and https are supported", "Did receive unexpected error")
+
+		_, err = openfaasClient.GetFunctions(context.Background(), "")
+		assert.Error(t, err, "unsupported protocol ftp. http and https are supported", "Did receive unexpected error")
+
+		_, err = openfaasClient.HasNamespaceSupport(context.Background())
+		assert.Error(t, err, "unsupported protocol ftp. http and https are supported", "Did receive unexpected error")
+	})
+}
