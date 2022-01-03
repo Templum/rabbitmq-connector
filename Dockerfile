@@ -1,4 +1,4 @@
-FROM golang:1.17.3-alpine as base_builder
+FROM golang:1.17.5-alpine as base_builder
 
 RUN apk --no-cache add ca-certificates git
 
@@ -19,7 +19,7 @@ RUN VERSION=$(git describe --all --exact-match $(git rev-parse HEAD) | grep tags
   -X github.com/Templum/rabbitmq-connector/pkg/version.GitCommit=${GIT_COMMIT}" \
   -a -installsuffix cgo -o rmq-connector .
 
-FROM alpine:3.14.3
+FROM alpine:3.15.0
 
 RUN addgroup -S app \
   && adduser -S -g app app \

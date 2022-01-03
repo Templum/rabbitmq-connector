@@ -43,6 +43,12 @@ func TestClient_InvokeSync(t *testing.T) {
 			return
 		}
 
+		if r.Method != fasthttp.MethodPost {
+			w.WriteHeader(400)
+			fmt.Fprint(w, "Method not supported")
+			return
+		}
+
 		switch r.URL.Path {
 		case "/function/exists":
 			w.WriteHeader(200)
@@ -127,6 +133,12 @@ func TestClient_InvokeAsync(t *testing.T) {
 			return
 		}
 
+		if r.Method != fasthttp.MethodPost {
+			w.WriteHeader(400)
+			fmt.Fprint(w, "Method not supported")
+			return
+		}
+
 		switch r.URL.Path {
 		case "/async-function/exists":
 			w.WriteHeader(202)
@@ -207,6 +219,12 @@ func TestClient_HasNamespaceSupport(t *testing.T) {
 			}
 			w.WriteHeader(401)
 			fmt.Fprint(w, "unauthorized")
+			return
+		}
+
+		if r.Method != fasthttp.MethodGet {
+			w.WriteHeader(400)
+			fmt.Fprint(w, "Method not supported")
 			return
 		}
 
@@ -324,6 +342,12 @@ func TestClient_GetFunctions(t *testing.T) {
 			return
 		}
 
+		if r.Method != fasthttp.MethodGet {
+			w.WriteHeader(400)
+			fmt.Fprint(w, "Method not supported")
+			return
+		}
+
 		namespace := r.URL.Query().Get("namespace")
 		if len(namespace) > 0 {
 			if namespace == "special" {
@@ -410,6 +434,12 @@ func TestClient_GetNamespaces(t *testing.T) {
 			return
 		}
 
+		if r.Method != fasthttp.MethodGet {
+			w.WriteHeader(400)
+			fmt.Fprint(w, "Method not supported")
+			return
+		}
+
 		w.WriteHeader(200)
 		out, _ := json.Marshal(namespaces)
 		_, _ = w.Write(out)
@@ -448,5 +478,35 @@ func TestClient_GetNamespaces(t *testing.T) {
 		_, err := authenticatedOpenFaaSClient.GetNamespaces(context.Background())
 
 		assert.Error(t, err, "OpenFaaS Credentials are invalid", "Did receive unexpected error")
+	})
+}
+
+func TestClient_Edge(t *testing.T) {
+	openfaasClient := NewClient(CreateClient(nil), nil, "ftp://localhost/")
+
+	payload := types2.OpenFaaSInvocation{
+		Topic:           "",
+		Message:         nil,
+		ContentEncoding: "gzip",
+		ContentType:     "text/plain",
+	}
+
+	t.Run("Should throw error if invalid base URL is provided", func(t *testing.T) {
+		var err error
+
+		_, err = openfaasClient.InvokeSync(context.Background(), "exists", &payload)
+		assert.Error(t, err, "unsupported protocol ftp. http and https are supported", "Did receive unexpected error")
+
+		_, err = openfaasClient.InvokeAsync(context.Background(), "exists", &payload)
+		assert.Error(t, err, "unsupported protocol ftp. http and https are supported", "Did receive unexpected error")
+
+		_, err = openfaasClient.GetNamespaces(context.Background())
+		assert.Error(t, err, "unsupported protocol ftp. http and https are supported", "Did receive unexpected error")
+
+		_, err = openfaasClient.GetFunctions(context.Background(), "")
+		assert.Error(t, err, "unsupported protocol ftp. http and https are supported", "Did receive unexpected error")
+
+		_, err = openfaasClient.HasNamespaceSupport(context.Background())
+		assert.Error(t, err, "unsupported protocol ftp. http and https are supported", "Did receive unexpected error")
 	})
 }

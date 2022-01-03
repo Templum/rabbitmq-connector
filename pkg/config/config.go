@@ -51,8 +51,7 @@ func NewConfig(fs afero.Fs) (*Controller, error) {
 	var tlsConfig *tls.Config = nil
 
 	if readFromEnv(envUseTLS, "false") == "true" {
-		rabbitURL, err = getRabbitMQConnectionURL(true)
-		sanitizedURL = getSanitizedRabbitMQURL(true)
+		rabbitURL, sanitizedURL, err = getRabbitMQConnectionURL(true)
 
 		if cfg, confErr := generateTlsConfig(fs); confErr == nil {
 			tlsConfig = cfg
@@ -61,8 +60,7 @@ func NewConfig(fs afero.Fs) (*Controller, error) {
 		}
 
 	} else {
-		rabbitURL, err = getRabbitMQConnectionURL(false)
-		sanitizedURL = getSanitizedRabbitMQURL(false)
+		rabbitURL, sanitizedURL, err = getRabbitMQConnectionURL(false)
 	}
 
 	if err != nil {
@@ -177,42 +175,35 @@ func generateTlsConfig(fs afero.Fs) (*tls.Config, error) {
 	return cfg, nil
 }
 
-func getRabbitMQConnectionURL(isTls bool) (string, error) {
-	user := readFromEnv(envRabbitUser, "user")
-	pass := readFromEnv(envRabbitPass, "pass")
+// getRabbitMQConnectionURL returns the fully build url and the sanitized version for usage in logging
+func getRabbitMQConnectionURL(isTls bool) (string, string, error) {
+	user := readFromEnv(envRabbitUser, "")
+	pass := readFromEnv(envRabbitPass, "")
 	host := readFromEnv(envRabbitHost, "localhost")
 	port := readFromEnv(envRabbitPort, "5672")
 	vhost := readFromEnv(envRabbitVHost, "")
+	protocol := "amqp"
+	if isTls {
+		protocol = "amqps"
+	}
 
 	parsedPort, err := strconv.Atoi(port)
 
 	if err != nil {
 		message := fmt.Sprintf("Provided port %s is not a valid port", port)
-		return "", errors.New(message)
+		return "", "", errors.New(message)
 	}
 
 	if parsedPort <= 0 || parsedPort > 65535 {
 		message := fmt.Sprintf("Provided port %s is outside of the allowed port range", port)
-		return "", errors.New(message)
+		return "", "", errors.New(message)
 	}
 
-	if isTls {
-		return fmt.Sprintf("amqps://%s:%s/%s", host, port, vhost), nil
+	if user == "" && pass == "" {
+		return fmt.Sprintf("%s://%s:%s/%s", protocol, host, port, vhost), fmt.Sprintf("%s://%s:%s/%s", protocol, host, port, vhost), nil
 	}
 
-	return fmt.Sprintf("amqp://%s:%s@%s:%s/%s", user, pass, host, port, vhost), nil
-}
-
-func getSanitizedRabbitMQURL(isTls bool) string {
-	host := readFromEnv(envRabbitHost, "localhost")
-	port := readFromEnv(envRabbitPort, "5672")
-	vhost := readFromEnv(envRabbitVHost, "")
-
-	if isTls {
-		return fmt.Sprintf("amqps://%s:%s/%s", host, port, vhost)
-	}
-
-	return fmt.Sprintf("amqp://%s:%s/%s", host, port, vhost)
+	return fmt.Sprintf("%s://%s:%s@%s:%s/%s", protocol, user, pass, host, port, vhost), fmt.Sprintf("%s://%s:%s/%s", protocol, host, port, vhost), nil
 }
 
 func getTopology(fs afero.Fs) (internal.Topology, error) {
