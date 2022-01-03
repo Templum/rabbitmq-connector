@@ -43,6 +43,12 @@ func TestClient_InvokeSync(t *testing.T) {
 			return
 		}
 
+		if r.Method != fasthttp.MethodPost {
+			w.WriteHeader(400)
+			fmt.Fprint(w, "Method not supported")
+			return
+		}
+
 		switch r.URL.Path {
 		case "/function/exists":
 			w.WriteHeader(200)
@@ -127,6 +133,12 @@ func TestClient_InvokeAsync(t *testing.T) {
 			return
 		}
 
+		if r.Method != fasthttp.MethodPost {
+			w.WriteHeader(400)
+			fmt.Fprint(w, "Method not supported")
+			return
+		}
+
 		switch r.URL.Path {
 		case "/async-function/exists":
 			w.WriteHeader(202)
@@ -207,6 +219,12 @@ func TestClient_HasNamespaceSupport(t *testing.T) {
 			}
 			w.WriteHeader(401)
 			fmt.Fprint(w, "unauthorized")
+			return
+		}
+
+		if r.Method != fasthttp.MethodGet {
+			w.WriteHeader(400)
+			fmt.Fprint(w, "Method not supported")
 			return
 		}
 
@@ -324,6 +342,12 @@ func TestClient_GetFunctions(t *testing.T) {
 			return
 		}
 
+		if r.Method != fasthttp.MethodGet {
+			w.WriteHeader(400)
+			fmt.Fprint(w, "Method not supported")
+			return
+		}
+
 		namespace := r.URL.Query().Get("namespace")
 		if len(namespace) > 0 {
 			if namespace == "special" {
@@ -407,6 +431,12 @@ func TestClient_GetNamespaces(t *testing.T) {
 			}
 			w.WriteHeader(401)
 			fmt.Fprint(w, "unauthorized")
+			return
+		}
+
+		if r.Method != fasthttp.MethodGet {
+			w.WriteHeader(400)
+			fmt.Fprint(w, "Method not supported")
 			return
 		}
 

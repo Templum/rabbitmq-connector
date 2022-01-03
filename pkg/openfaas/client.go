@@ -77,6 +77,7 @@ func (c *Client) InvokeSync(ctx context.Context, name string, invocation *intern
 		req.SetBody(nil)
 	}
 
+	req.Header.SetMethod(fasthttp.MethodPost)
 	req.Header.Set("Content-Type", invocation.ContentType)
 	req.Header.Set("Content-Encoding", invocation.ContentEncoding)
 	req.Header.SetUserAgent("OpenFaaS - Rabbit MQ Connector")
@@ -118,6 +119,7 @@ func (c *Client) InvokeAsync(ctx context.Context, name string, invocation *inter
 		req.SetBody(nil)
 	}
 
+	req.Header.SetMethod(fasthttp.MethodPost)
 	req.Header.Set("Content-Type", invocation.ContentType)
 	req.Header.Set("Content-Encoding", invocation.ContentEncoding)
 	req.Header.SetUserAgent("OpenFaaS - Rabbit MQ Connector")
@@ -154,6 +156,7 @@ func (c *Client) HasNamespaceSupport(ctx context.Context) (bool, error) {
 
 	req.SetRequestURI(getNamespaces)
 
+	req.Header.SetMethod(fasthttp.MethodGet)
 	req.Header.SetUserAgent("OpenFaaS - Rabbit MQ Connector")
 	if c.credentials != nil {
 		credentials := c.credentials.User + ":" + c.credentials.Password
@@ -190,6 +193,7 @@ func (c *Client) GetNamespaces(ctx context.Context) ([]string, error) {
 
 	req.SetRequestURI(getNamespaces)
 
+	req.Header.SetMethod(fasthttp.MethodGet)
 	req.Header.SetUserAgent("OpenFaaS - Rabbit MQ Connector")
 	if c.credentials != nil {
 		credentials := c.credentials.User + ":" + c.credentials.Password
@@ -226,6 +230,7 @@ func (c *Client) GetFunctions(ctx context.Context, namespace string) ([]types.Fu
 
 	req.SetRequestURI(getFunctions)
 
+	req.Header.SetMethod(fasthttp.MethodGet)
 	req.Header.SetUserAgent("OpenFaaS - Rabbit MQ Connector")
 	if c.credentials != nil {
 		credentials := c.credentials.User + ":" + c.credentials.Password
