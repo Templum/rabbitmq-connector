@@ -47,7 +47,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.15
 
@@ -100,7 +100,7 @@ jobs:
           rabbitmq password: "pass"
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.15
 
