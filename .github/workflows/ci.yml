@@ -49,7 +49,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.15
+          go-version: 1.18
 
       - name: Build
         run: go build -v ./...
@@ -74,7 +74,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.29
+          version: v1.45.2
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           only-new-issues: true
   integration:
@@ -102,7 +102,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.15
+          go-version: 1.18
 
       - name: K8S Cluster Setup
         uses: helm/kind-action@v1.2.0
