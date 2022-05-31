@@ -541,8 +541,8 @@ github.com/opencontainers/selinux v1.8.2/go.mod h1:MUIHuUEvKB1wtJjQdOyYRgOnLD2xA
 github.com/openfaas/connector-sdk v0.0.0-20201220114541-89f0ffcc5448 h1:gHh56/nHvUPTcFyXszTOrPJePCg2Q3JKln11G1IU3PU=
 github.com/openfaas/connector-sdk v0.0.0-20201220114541-89f0ffcc5448/go.mod h1:hxiCgJmfEWQj17jwnr8yj1qbxQAqRPcudKU53lIu/QI=
 github.com/openfaas/faas-provider v0.16.1/go.mod h1:fq1JL0mX4rNvVVvRLaLRJ3H6o667sHuyP5p/7SZEe98=
-github.com/openfaas/faas-provider v0.18.9 h1:nHPlq9PYLGLuyhuXfASlBPOvXiZC/fJqHOr6m+0Fn1s=
-github.com/openfaas/faas-provider v0.18.9/go.mod h1:S217qfIaMrv+XKJxgbhBzJzCfyFvoIF+BvYdDo6XIDQ=
+github.com/openfaas/faas-provider v0.18.10 h1:3mThcrS8HRQdXNRdiC8eTKFbupKCdRtoE1Vh2JLs06M=
+github.com/openfaas/faas-provider v0.18.10/go.mod h1:FtcL25yNK2TFlGJjZwR0JsUBfdehrOHPo2h0ubii6No=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/pelletier/go-toml v1.8.1/go.mod h1:T2/BmBdy8dvIRq1a/8aqjN41wvWlN4lrapLU/GW4pbc=
 github.com/peterbourgon/diskv v2.0.1+incompatible/go.mod h1:uqqh8zWWbv1HBMNONnaR/tNboyR3/BZd58JJSHlUSCU=
