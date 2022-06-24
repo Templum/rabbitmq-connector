@@ -7,7 +7,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.8.2
 	github.com/streadway/amqp v1.0.0
-	github.com/stretchr/testify v1.7.4
+	github.com/stretchr/testify v1.7.5
 	github.com/testcontainers/testcontainers-go v0.13.0
 	github.com/valyala/fasthttp v1.37.0
 	go.uber.org/automaxprocs v1.5.1
