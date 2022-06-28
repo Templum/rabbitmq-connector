@@ -9,7 +9,7 @@ require (
 	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.7.5
 	github.com/testcontainers/testcontainers-go v0.13.0
-	github.com/valyala/fasthttp v1.37.0
+	github.com/valyala/fasthttp v1.38.0
 	go.uber.org/automaxprocs v1.5.1
 	gopkg.in/yaml.v2 v2.4.0
 )
