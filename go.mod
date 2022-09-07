@@ -1,5 +1,7 @@
 module github.com/Templum/rabbitmq-connector
 
+go 1.19
+
 require (
 	github.com/docker/go-connections v0.4.0
 	github.com/openfaas/connector-sdk v0.0.0-20201220114541-89f0ffcc5448
@@ -52,5 +54,3 @@ require (
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-go 1.18
