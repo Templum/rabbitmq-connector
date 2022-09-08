@@ -21,22 +21,22 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v1
+        uses: github/codeql-action/init@v2
         with:
           languages: ${{ matrix.language }}
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v1
+        uses: github/codeql-action/autobuild@v2
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v1
+        uses: github/codeql-action/analyze@v2
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v3
         with:
           # We must fetch at least the immediate parents so that if this is
           # a pull request then we can checkout the head.
@@ -47,9 +47,9 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
-          go-version: 1.15
+          go-version: 1.19
 
       - name: Build
         run: go build -v ./...
@@ -61,7 +61,7 @@ jobs:
         run: go test -coverprofile=coverage.txt -covermode=atomic -v ./...
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2.1.0
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.txt
@@ -71,16 +71,16 @@ jobs:
           verbose: true
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2.5.2
+        uses: golangci/golangci-lint-action@v3
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.29
+          version: v1.49.0
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           only-new-issues: true
   integration:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v3
         with:
           # We must fetch at least the immediate parents so that if this is
           # a pull request then we can checkout the head.
@@ -100,15 +100,15 @@ jobs:
           rabbitmq password: "pass"
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
-          go-version: 1.15
+          go-version: 1.19
 
       - name: K8S Cluster Setup
-        uses: helm/kind-action@v1.2.0
+        uses: helm/kind-action@v1.3.0
 
       - name: Get Arkade
-        run: curl -sLS https://dl.get-arkade.dev | sudo sh
+        run: curl -sLS https://get.arkade.dev | sudo sh
 
       - name: Get FaaS CLI
         run: ark get faas-cli && sudo mv /home/runner/.arkade/bin/faas-cli /usr/local/bin/
