@@ -10,7 +10,7 @@ require (
 	github.com/spf13/afero v1.9.2
 	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.8.1
-	github.com/testcontainers/testcontainers-go v0.14.0
+	github.com/testcontainers/testcontainers-go v0.15.0
 	github.com/valyala/fasthttp v1.40.0
 	go.uber.org/automaxprocs v1.5.1
 	gopkg.in/yaml.v2 v2.4.0
