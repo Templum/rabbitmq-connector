@@ -33,6 +33,14 @@ jobs:
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
+  golang:
+    name: Analyse Vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Running govulncheck
+        uses: Templum/govulncheck-action@v0.0.5
   docker:
     name: Analyse Container
     runs-on: ubuntu-latest
