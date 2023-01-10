@@ -50,6 +50,7 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.19
+          cache: true
 
       - name: Build
         run: go build -v ./...
@@ -103,6 +104,7 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.19
+          cache: true
 
       - name: K8S Cluster Setup
         uses: helm/kind-action@v1.5.0
