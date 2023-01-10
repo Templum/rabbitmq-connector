@@ -31,7 +31,10 @@ func TestBroker_Dial(t *testing.T) {
 	req := testcontainers.ContainerRequest{
 		Image:        "rabbitmq:3.7.4",
 		ExposedPorts: []string{"5672/tcp"},
-		WaitingFor:   wait.ForListeningPort(nat.Port("5672/tcp")),
+		WaitingFor:   wait.ForAll(
+			wait.ForListeningPort(nat.Port("5672/tcp")),
+			wait.ForLog("Server startup complete;"),
+		),
 		Env:          map[string]string{"RABBITMQ_DEFAULT_USER": "user", "RABBITMQ_DEFAULT_PASS": "pass"},
 	}
 

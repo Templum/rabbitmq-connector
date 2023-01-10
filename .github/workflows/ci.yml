@@ -50,6 +50,7 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.19
+          cache: true
 
       - name: Build
         run: go build -v ./...
@@ -103,6 +104,7 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.19
+          cache: true
 
       - name: K8S Cluster Setup
         uses: helm/kind-action@v1.5.0
@@ -114,7 +116,7 @@ jobs:
         run: ark get faas-cli && sudo mv /home/runner/.arkade/bin/faas-cli /usr/local/bin/
 
       - name: Setup OpenFaaS
-        run: ark install openfaas --basic-auth=false
+        run: ark install openfaas --basic-auth=false --set faasnetes.image=ghcr.io/openfaas/faas-netes:0.16.1 --set gateway.image=ghcr.io/openfaas/gateway:0.25.5
 
       - name: Await OpenFaaS Port
         run: kubectl -n openfaas wait --for=condition=available --timeout=600s deploy/gateway
