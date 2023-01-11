@@ -1,14 +1,14 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.231.6/containers/go
 {
-	"name": "Go",
+	"name": "Rabbit MQ Dev",
 	"build": {
 		"dockerfile": "Dockerfile",
 		"args": {
 			// Update the VARIANT arg to pick a version of Go: 1, 1.18, 1.17
 			// Append -bullseye or -buster to pin to an OS version.
 			// Use -bullseye variants on local arm64/Apple Silicon.
-			"VARIANT": "1.18-bullseye",
+			"VARIANT": "1.19-bullseye",
 			// Options
 			"NODE_VERSION": "none"
 		}
@@ -37,8 +37,11 @@
 		"[go]": {
 			"editor.codeActionsOnSave": {
 				"source.organizeImports": true
-			},
-		},
+			}
+		}
+	},
+	"features": {
+		"ghcr.io/devcontainers/features/docker-in-docker": "latest"
 	},
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
