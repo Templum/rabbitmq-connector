@@ -205,8 +205,8 @@ github.com/opencontainers/selinux v1.10.0/go.mod h1:2i0OySw99QjzBBQByd1Gr9gSjvuh
 github.com/openfaas/connector-sdk v0.0.0-20201220114541-89f0ffcc5448 h1:gHh56/nHvUPTcFyXszTOrPJePCg2Q3JKln11G1IU3PU=
 github.com/openfaas/connector-sdk v0.0.0-20201220114541-89f0ffcc5448/go.mod h1:hxiCgJmfEWQj17jwnr8yj1qbxQAqRPcudKU53lIu/QI=
 github.com/openfaas/faas-provider v0.16.1/go.mod h1:fq1JL0mX4rNvVVvRLaLRJ3H6o667sHuyP5p/7SZEe98=
-github.com/openfaas/faas-provider v0.19.1 h1:xH8lTWabfDZwzIvC0u1AO48ghD3BNw6Vo231DLqTeI0=
-github.com/openfaas/faas-provider v0.19.1/go.mod h1:Farrp+9Med8LeK3aoYpqplMP8f5ebTILbCSLg2LPLZk=
+github.com/openfaas/faas-provider v0.21.0 h1:rnTy1Gpx+0YvqriQD8miQ2DfpOJXYZbV3VMqe8ri5lc=
+github.com/openfaas/faas-provider v0.21.0/go.mod h1:Farrp+9Med8LeK3aoYpqplMP8f5ebTILbCSLg2LPLZk=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/sftp v1.13.1/go.mod h1:3HaPG6Dq1ILlpPZRO0HVMrsydcdLt6HRDccSgb87qRg=
