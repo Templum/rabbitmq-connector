@@ -1,6 +1,6 @@
 module github.com/Templum/rabbitmq-connector
 
-go 1.19
+go 1.20
 
 require (
 	github.com/docker/go-connections v0.4.0
