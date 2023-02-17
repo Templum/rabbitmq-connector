@@ -1,7 +1,5 @@
 module github.com/Templum/rabbitmq-connector
 
-go 1.20
-
 require (
 	github.com/docker/go-connections v0.4.0
 	github.com/openfaas/connector-sdk v0.0.0-20201220114541-89f0ffcc5448
@@ -43,7 +41,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/genproto v0.0.0-20220617124728-180714bec0ad // indirect
