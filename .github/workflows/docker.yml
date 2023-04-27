@@ -5,6 +5,13 @@ on:
     branches: [develop, v0, v1]
     tags:
       - "v*"
+    branches-ignore:
+      - dependabot/github_actions/*
+    paths-ignore:
+      - ./devcontainer
+      - ./hack
+      - ./github
+      - README.md
 
   workflow_dispatch:
 

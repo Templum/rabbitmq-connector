@@ -47,7 +47,8 @@
 	"extensions": [
 		"golang.Go",
 		"streetsidesoftware.code-spell-checker",
-		"premparihar.gotestexplorer"
+		"premparihar.gotestexplorer",
+		"GitHub.vscode-github-actions"
 	],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
