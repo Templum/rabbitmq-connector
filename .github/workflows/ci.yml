@@ -107,7 +107,7 @@ jobs:
           cache: false
 
       - name: K8S Cluster Setup
-        uses: helm/kind-action@v1.7.0
+        uses: helm/kind-action@v1.8.0
 
       - name: Get Arkade
         run: curl -sLS https://get.arkade.dev | sudo sh
