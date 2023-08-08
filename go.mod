@@ -12,7 +12,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.21.0
 	github.com/valyala/fasthttp v1.48.0
-	go.uber.org/automaxprocs v1.5.2
+	go.uber.org/automaxprocs v1.5.3
 	gopkg.in/yaml.v2 v2.4.0
 )
 
