@@ -1,6 +1,6 @@
 module github.com/Templum/rabbitmq-connector
 
-go 1.20
+go 1.21
 
 require (
 	github.com/docker/go-connections v0.5.0
@@ -9,7 +9,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.11.0
 	github.com/streadway/amqp v1.0.0
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.33.0
 	github.com/valyala/fasthttp v1.55.0
 	go.uber.org/automaxprocs v1.6.0
