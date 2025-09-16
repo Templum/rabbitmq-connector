@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/docker/go-connections v0.5.0
-	github.com/openfaas/connector-sdk v0.0.0-20201220114541-89f0ffcc5448
-	github.com/openfaas/faas-provider v0.21.0
+	github.com/openfaas/connector-sdk v0.8.0
+	github.com/openfaas/faas-provider v0.25.4
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.11.0
 	github.com/streadway/amqp v1.0.0
@@ -48,6 +48,7 @@ require (
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
+	github.com/openfaas/go-sdk v0.2.14 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
